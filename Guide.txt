@@ -1,0 +1,120 @@
+SpringBootApplication link to Angular Application. 
+-------------------------------------------------
+In Server Part(Spring BOOT Application):
+	1. Add the annotation below after the @GetMapping. The ip address is for id address of system that
+	has Angular Application.(IF its on the same system, give the system ip itself or Localhost)
+		<@CrossOrigin(origins = "http://172.23.65.239:4200")>
+
+In the Client part(Angular application):
+	1. On 'app.module.ts' file, 
+		<import { HttpClientModule } from '@angular/common/http';>
+	   then add <HttpClientModule> in imports: inside @ngModule
+	2. Create a service, then on .service.ts file,
+		 <import { Observable } from 'rxjs/Observable';>
+	   	 <constructor(private http:HttpClient) { }>
+  		 <getHello(): Observable<any>{
+    			return this.http.get('http://172.23.66.216:8080/greeting/Finra');
+  		   }>
+	   For angular 6+, we need to <npm i rxjs-compat> from command line into the project directory.
+	   The ip address above is the ip address that has the back-end service.
+	3. On any component.ts, import service,
+		<import { HelloWorldService } from '../hello-world.service'>
+		<data: any;
+ 		 constructor(private helloWorldService:HelloWorldService){}
+  		 ngOnInit(){
+    		 this.helloWorldService.getHello().subscribe(data =>{
+        	 this.data=data;
+        	 alert(data);
+        	 console.log(data);
+    		   });
+ 		 }>
+	Run ng serve --port 4444 to run on a different port
+	Run ng serve --host 0.0.0.0 to run using the ip address as angular cli command.
+
+LINK TO A HELP WEBSITE:https://developer.okta.com/blog/2017/12/04/basic-crud-angular-and-spring-boot
+==================================================================================================================
+Refer to this link for angular 6 basics:
+https://www.tutorialspoint.com/angular6/angular6_project_setup.htm
+===================================================================================================================
+
+Deploying angular app in Tomcat:
+---------------------------------
+1. Install  Apache Tomcat server in the computer.
+
+2. If Angular CLI is not installed, Install it globally using the command line(terminal) in your system.
+   <npm install -g @angular/cli>
+3. In the command line(terminal), cd to the angular project folder.
+
+4. Run the  following command  to build the project.
+    <ng build --prod --base-href=/angular/>
+    --prod reduces the file size efficiently by uglifying and minifying the files and it adds AOT compilation as well.
+
+    --base-href=/angular/ tells angular to create a reference directory where generated index.html will be placed. In this case, inside /angular
+
+5. From the angular project folder, copy the contents of dist folder to the folder(/angular in this case)  inside root directory  of TOMCAT server folder.
+
+6. Run the tomcat server .
+
+7. Open the browser and run <localhost:8080/angular/>
+
+=====================================================================================================================
+
+Convert json to csv and download the csv file
+-----------------------------------------------
+ //convert json to csv and download csv file
+        const replacer=(key,value) => value===null? '' : value; //Specify how you want to hadle null values here
+        const header=Object.keys(data[0]);
+        let csv=data.map(row => header.map(fieldName => JSON.stringify(row[fieldName],replacer)).join(','));
+        csv.unshift(header.join(','));
+        let csvArray=csv.join('\r\n');
+        var blob=new Blob([csvArray],{type:'text/csv'})
+        saveAs(blob,"myElements.csv");
+
+*Need to install from command, npm i file-saver --save, and import the saver into the .ts file
+=====================================================================================================================
+
+Git commands to push the code into the repository(Normally):
+------------------------------------------------------------
+1. <git config --global user.name "David Chaudhary">
+	Once done once at the very begining to set the user name
+2. <git config --global user.email "itsdvyd@gmail.com">
+	Once done once at the very begining to set the user email
+3. <git init>
+	to initialize the project as git project. Done for every new project directory
+4. <git add --all> or <git add -A>
+	to add all the files for staging. Select individual file name or folder if thats the only needed to stage.
+5. <git commit -m "initial commit"> 
+	to commit the changes that are staged with a message
+6. <git remote add origin "URL to git repo">
+	to point to the git repo where the files need to be pushed
+7. <git push -u origin master>
+	to push the code to master branch, -u sets remote url to default, later we can only use <git push>'
+	to force the code to the branch, add -f
+	select any branch according to the need
+-----------------------------------------------------
+Extras:
+1. <git rm --cached *> 
+	to unstage the added files
+2. <git clone "URL to git repo"> 
+	to clone from repo to the local system.
+3. <git clone -b feature --single-branch "URL to git repo">
+	to clone from a single branch. -b feature creates a feature branch and clones from only that branch in repo.
+4. <git checkout "name-of-branch">
+	to switch to a certain branch.(local branch).
+	add -b after checkout to create a branch and point to it if its not present(local branch).
+5. <git status>
+	to check the status of new changes made.
+6. <git reset Head~1>
+	to undo most recent commit.
+7. <git reset .>
+	to unstage all changes added to staging area.
+8. <git branch "branch-name">
+	to create a new branch in local.
+9. <git config --get remote.origin.url>
+	to get the url of remote repository
+10. <git remote show origin>
+	to get the detailed information about remote repository
+
+===================================================================================================================
+
+

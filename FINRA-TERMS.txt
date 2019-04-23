@@ -1,0 +1,5 @@
+1.Enrichment : users send us data, we show them on webpage like received files, accepted files and 
+	       few columns we derive based on their submitted data like late submissions column.
+2.PP : also called as ‘Participants” are Exchanges like NASDAQ, NYSE. They submit to CAT
+3.IM : Industrial Members, are Broker dealers or Brokerage Firms like Goldman Sacs, Fidelity. They submit to CAT also.
+4.ATS : Alternative trading system, is a venue to match the buy and sell orders of its subscribers.

@@ -1,0 +1,65 @@
+steps:
+1. Create a DockerFile
+2. Build the docker image
+3. Run the docker container
+
+docker images  --> Lists all the docker images
+docker ps      --> Lists all the running docker containers
+docker ps -a   --> Lists all the docker containers
+docker build -t <image_name> . --> Build a docker image
+docker run -p 8090:8080 <image_name> --> Run a docker container
+docker stop <container id> -->Stop a running docker container
+docker start <container id> -->Start a running docker container
+
+Linking angular and spring boot:
+https://developer.okta.com/blog/2017/12/04/basic-crud-angular-and-spring-boot
+
+consuming a rest API:
+https://vocon-it.com/2017/06/24/consuming-a-restful-web-service-with-angular/
+
+----------------------------------
+
+app.component.ts
+---------
+import { Component, OnInit } from '@angular/core';
+import { HelloWorldService } from './hello-world.service';
+
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent implements OnInit {
+  title = 'myFinraApp';
+  data: any;
+  constructor(private helloWorldService:HelloWorldService){}
+  ngOnInit(){
+    this.helloWorldService.getHello().subscribe(data =>{
+        this.data=data;
+      //  console.log(data);
+    });
+  }
+ 
+}
+
+
+
+------------------------------------
+hello-world-service.ts
+-----------
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs/Observable';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HelloWorldService {
+
+  constructor(private http:HttpClient) { }
+
+  getHello(): Observable<any>{
+    return this.http.get('http://172.23.66.216:8080/greeting/Finra');
+  }
+}

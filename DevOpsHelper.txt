@@ -1,0 +1,106 @@
+Conventions we generally follow:
+-----------------------------------
+Repositories:
+ 
+CATDD-portal-ui:_____________________________  
+CATDD-portal-api:
+	cm(configuraion Management): all the scripts needed to run the build, and deployments using the docker images,
+ 	pushing it to repositories, etc.Files that it consists are dictionaries, app.groovy, build.sh,
+		 build_image.sh, config_bootstrap.sh, deploy.sh, Dockerfile, push_image.sh
+	Code: actual project 
+
+CATDD-F3: F3 is a tool developed in finra to help create jobs in jenkins. ' .groovy' file for each component,
+	 like one for UI, and one for api. Purpose of F3 is to be able to use the build script, deployment
+	script and call them in each step of the build. (groovy-seed-job script in F3 my project: api_pipeline.groovy)
+	First step, just specify what branch we need to build. Using F3 we can create those jobs.Like For this step,
+ 	run build-image.sh, for this run my push_image.sh, for this run my deploy.sh, and for this run my build.sh 
+
+CATDD-infrastructure: Used to create general infrastructure like the ALB, and the cluster. Usually a one-time
+			 creation. But for each AMI(which is like the OS version for our containers) we need to
+			update it. Our images are based on the amazon linux images that aws releases every month.
+			In FINRA, we have AMI release every month. An application can only use 60 days old AMI
+			than the current date. 
+
+cm:
+	build.sh : includes compiler steps, all the maven command,
+		(From JENKINS, we are just running these build.sh). If there is a bug,or we added new step,
+		make the change, commit and push to bitbucket. build.sh is for building.	
+
+	build_image.sh:  is for the next step, where we compile and build Dockerfile
+
+	push_image.sh: for pushing deploy.
+
+	config_bootstrap.sh: is what runs when the container comes up. Like create a file, or at the end of
+	   deployment we want to check some status if the deployment is succesfull check some flags, emails and stuff
+
+	app.groovy: will have the name of our target,the ports we want application to listen to, environment variable
+ 		we want to setup.(how many instances are created. min/max. Autoscaling)
+
+----------------------------------------------------------------------------------------------------------------
+
+In jenkins, first part is to set the repo, so as the build step, it will first clone from the repository in the
+jenkins. Jenkins run in a container architecture. We have a jenkins master which is called builds4aws.finra.org.
+Everything that run runs on individual docker container. We can use the specific docker images for our specific
+combination of application. And our build start running on top of that. At the end of the build, the output is pushed
+to the S3 bucket(usually .tar,.jar,.zip). When we package our application, make sure we package all the environments
+needed, sometimes also the tests (sanity check, smoke test, deployment tests).
+Same image is pushed to prod, dev and QA.Then we deploy.
+
+Basically,	CLONE --> RUN YOUR BUILD --> PACKAGE --> PUSH TO S3
+
+----------------------------------------------------------------------------------------------------------------
+build --> build_image --> push_image(to ECR)
+----------------------------------------------------------------------------------------------------------------
+During DEPLOYMENT, we just bring up the container, and do small changes.
+Pushing the image to dev,devint,QA,QAint,ct(customer-test) and production environment from the same pipeline.
+
+For DEPLOYING we use provision like bring up my container, bring up my alb, create a cluster with this many
+instances.
+
+Application architecture:
+1) ALB --> Where the request come (like our catdd.api.finra.org, the search and DNS are in ALB, so whenever
+	a user types the above link, goes to alb first. ALB has rules, like if we get request for catdd.api.finra.org
+	forward it to this target.
+2) Then Authentication happens through FIP(FINRA IDENTITY PROTOCAL). USer authentication and stuff.
+3) (Could be another layer like SPLUNK). Splunk is like fINRA's general logging portal. Any action that happens
+	in EC2 need to be logged and splunk will pull it and show in a specific browser. Because dev team do not
+	have prod env access, so all the warning/error is logged and it is visible to everybody.
+4) Then the spring boot application later. 
+
+----------------------------------------------------------------------------------------------------------------
+F3 needs to be written in groovy.(There is a tutorial).
+1.Defines what th AGS is
+2.Define what docker image we need to use for deploy job
+3.Define what label is needed to build the image
+4.Define the component name(one for api and one for ui)
+
+Every card in the pipeline is a job. like dev job, QA job, ct job, prod job. We also have to create the pipeine.
+(api_pipeline.groovy  in bitbucket is copied from somewhere but hopefully wouldn't have to change anything for api.
+This file is the input for F3 tool)
+
+First job is the build job, so We specify in F3 (Checkout from bitbucket, from master and it runs the build.sh
+ in this image). For F3 tool to run, we need to create seedjob.
+
+Get repository that has .groovy file, select the branch to use, cloning into checkout folder in current directory,
+F3 versions keep changing just use it. And what pipeline it needs to use.
+
+			--------------------------------------------------------
+Base Build Job: The very first job of your pipeline. This job connects to VCS, builds your software, performs
+		 basic house-keeping operations such as tagging, generating a buildinfo file and uploading the
+		 built artifacts to S3.
+
+Base Deploy Job: This job downloads the artifacts from S3 (created previously by the upstream base build job) and
+		 runs standard deployment commands (eg. provision, dbdeploy).
+
+Base Pipeline View: A view that depicts the upstream-downstream dependencies and users see a pipeline.
+
+Pipeline Creation: Chaining of jobs using the Builder Pattern.
+----------------------------------------------------------------------------------------------------------------
+https://bitbucket.finra.org/projects/DM/repos/datamgt_docker/browse
+https://bitbucket.finra.org/projects/DM/repos/datamgt_f3/browse
+https://wiki.finra.org/display/DAPI/Deployment+Guide
+https://bitbucket.finra.org/projects/DO/repos/f3/browse
+Upstream job, downstream job meaning
+
+Send us a link of:
+point to another spring boot docker file.

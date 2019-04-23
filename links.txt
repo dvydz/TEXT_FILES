@@ -1,0 +1,18 @@
+http://jasonwatmore.com/post/2018/05/25/angular-6-custom-modal-window-dialog-box
+DialogueBOX for print/preview in angular
+
+https://www.atlassian.com/git/tutorials/using-branches
+https://code.visualstudio.com/docs/editor/versioncontrol
+https://getbootstrap.com/docs/4.0/utilities/flex/
+https://material.angular.io/guide/getting-started
+
+https://www.youtube.com/watch?v=5NOLuoG6fcQ
+https://www.youtube.com/watch?v=y97AhsHq0Kw&list=PLsyeobzWxl7otduRddQWYTQezVul0xIX6&index=11
+https://developer.okta.com/blog/2017/12/04/basic-crud-angular-and-spring-boot
+https://www.geeksforgeeks.org/difference-between-stream-of-and-arrays-stream-method-in-java/
+http://www.java2s.com/Tutorials/Java/Java_Lambda/0080__Java_Intersection_Type.htm
+
+------------------------------------------------------------------------------------------------------
+Finra:
+
+https://udc.finra.org/data-entities/OATS/OSO_RPTG_STATS
