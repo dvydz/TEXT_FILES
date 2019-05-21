@@ -3,3 +3,14 @@
 2.PP : also called as ‘Participants” are Exchanges like NASDAQ, NYSE. They submit to CAT
 3.IM : Industrial Members, are Broker dealers or Brokerage Firms like Goldman Sacs, Fidelity. They submit to CAT also.
 4.ATS : Alternative trading system, is a venue to match the buy and sell orders of its subscribers.
+
+
+--------------------------------------------------------------------------------------------------------------
+* Expired data still stays in database and in the UI column with an expiration date.
+* We can use the same ORDER_TYPE_CD name as a deleted one for a new ATS order within the same firm.
+* CREATE_USER_ID is log-in user-id when creating Ats order type. 
+* UPDT_USER_ID is log-in user-id when updating Ats order type. As there can >1 reporting firm for same org.
+* NS_CSTMR_ID is assigned by NASDAQ and it will be the same for one org, even if the org have >1 reporting firm,
+  FIRM_MP_ID(IMID)is assigned by FINRA and it is different for different reporting firm within same org.
+  So NS_CSTMR_ID can be generated from IMID.
+* TRADE_DT is OAT trading day which is 1 biz day prior to today. Lets say its 04/26/2019 today,TRADE_DT is 04/25/2019. 

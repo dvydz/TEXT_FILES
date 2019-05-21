@@ -1,0 +1,18 @@
+1. USE dbBasics
+   GO 
+
+2. SELECT * FROM Employee
+
+3. SELECT * FROM [Employee Name]
+
+4. SELECT * FROM Employee
+
+5. SELECT * FROM Employee WHERE FirstName='David'
+
+6. SELECT * FROM Employee WHERE FirstName IN ('David','Eric','Lisa')
+	IN acts as OR within the bracket data. 'David' OR 'Eric' OR 'Lisa'
+
+7. SELECT FirstName,LastName FROM Employee
+
+8. SELECT Employee.FirstName,Employee.LastName FROM Employee
+	to get columns from a specific table 

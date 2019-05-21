@@ -94,7 +94,7 @@ Git commands to push the code into the repository(Normally):
 -----------------------------------------------------
 Extras:
 1. <git rm --cached *> 
-	to unstage the added files
+	to unstage the added files(exact opposite of git add)
 2. <git clone "URL to git repo"> 
 	to clone from repo to the local system.
 3. <git clone -b feature --single-branch "URL to git repo">
@@ -114,7 +114,20 @@ Extras:
 	to get the url of remote repository
 10. <git remote show origin>
 	to get the detailed information about remote repository
-
+11. <git remote set-url origin "repo-url">
+	to replace the remote url
+12. <git log>
+	To see all the commits in the repository (made by all the developers)
+13. <git commit --amend -m "Initial Commit">
+	To make changes to the commit message
+14. <git fetch origin master>
+    <git reset —hard FETCH_HEAD>
+    <git clean -df>
+	If local git changed, and the origin git changed too, these commands set the local back to origin level.
+15. <git rebase master>
+	From feature branch, this will change the base master branch to the most recent one(lastest commit in master).
+	Example, if we are working on a feature branch that has been created from master, and if some developer
+	makes changes in the master branch, rebase will bring those changes in master to our branch also.
 ===================================================================================================================
 
 

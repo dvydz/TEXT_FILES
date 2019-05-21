@@ -11,8 +11,56 @@ https://www.youtube.com/watch?v=y97AhsHq0Kw&list=PLsyeobzWxl7otduRddQWYTQezVul0x
 https://developer.okta.com/blog/2017/12/04/basic-crud-angular-and-spring-boot
 https://www.geeksforgeeks.org/difference-between-stream-of-and-arrays-stream-method-in-java/
 http://www.java2s.com/Tutorials/Java/Java_Lambda/0080__Java_Intersection_Type.htm
-
+http://tutorials.jenkov.com/java-date-time/java-util-timezone.html
+http://www.java2s.com/Tutorials/Java/Java_Lambda/0070__Java_Functional_Interface.htm
+https://www.regular-expressions.info/refcapture.html
+https://www.guru99.com/jmeter-tutorials.html
+https://howtodoinjava.com/java-sorting-guide/
+https://www.codejava.net/java-se/file-io/how-to-compress-files-in-zip-format-in-java
+https://www.baeldung.com/java-daylight-savings
+https://itnext.io/become-a-git-pro-in-just-one-blog-a-thorough-guide-to-git-architecture-and-command-line-interface-93fbe9bdb395
+https://github.com/rsanchez-wsu/jfiles/wiki/DTP-(Data-Tools-Platform)
+https://reflectoring.io/bean-validation-with-spring-boot/
+https://dzone.com/articles/validation-in-java-applications
 ------------------------------------------------------------------------------------------------------
 Finra:
 
 https://udc.finra.org/data-entities/OATS/OSO_RPTG_STATS
+
+Finra Guidelines for UI:
+https://finra.invisionapp.com/share/E3RRP0QBUA7#/screens/302049277
+
+Cat wireframe:
+https://finra.invisionapp.com/share/WVQU0KACAN6#/screens/351668524
+
+https://wiki.finra.org/display/FCAT/CATDC+ATS+order+requirement
+
+https://patterns.finraui.dev.finra.org
+
+Design/arch diagrams:
+https://wiki.finra.org/display/DAPI/Duplicate+RDR+message 
+https://wiki.finra.org/display/DAPI/OTC+Intraday+and+Publish+Flow 
+https://wiki.finra.org/display/DAPI/DAPI-2051+-+Enhance+herd+emulator+to+allow+for+incremental+updates
+
+Basic CRUD wiki pages:
+https://wiki.finra.org/display/DataManagement/Business+Object+Format+Post
+https://wiki.finra.org/display/DataManagement/Business+Object+Format+Put 
+https://wiki.finra.org/display/DataManagement/Business+Object+Formats+Get
+https://wiki.finra.org/display/DataManagement/Business+Object+Format+Delete
+
+Oats ER Diagram:
+https://wiki.finra.org/pages/viewpage.action?pageId=1014432144 
+
+F3 overview: https://bitbucket.finra.org/projects/DO/repos/f3/browse
+F3 reference doc for configuring pipeline.groovy: https://bitbucket.finra.org/projects/DO/repos/f3/browse/docs/reference.md
+
+Bootcamp pre-reqs: https://wiki.finra.org/display/PET/Bootcamp+Prerequisites
+Bootcamp: https://devopsbootcamp.finra.org/
+
+https://finra.invisionapp.com/share/WVQU0KACAN6#/350317470_Screen_Shot_2019-03-05_At_8-01-16_AM
+
+Lambda Function:
+https://bitbucket.finra.org/projects/CATDC/repos/catdc-copy-register/browse
+https://bitbucket.finra.org/projects/CATDC/repos/sharedcm/browse
+
+https://www.finra.org/industry/consolidated-audit-trail-cat/cat-registration

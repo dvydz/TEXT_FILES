@@ -1,0 +1,24 @@
+1. New year day , 01/01/XXXX, martin Luther Kings Day ,third Monday of January each year, 
+president day, third Monday of February,  Good Friday,the Friday before Easter Sunday ,
+ Memorial Day , last Monday of May,  Independence Day, 07/04/XXXX, labor day,
+ first Monday of September, Thanksgiving Day, fourth Thursday of November, Christmas Day 12/25/XXXX
+
+so I think the fixed date will only be 01/01 new year, 07/04 independence day and 12/25 christmas
+
+yep and the good friday is hard to calculate. cause the eastern day is basing on lunars calendar?
+
+
+
+[?5/?13/?2019 5:01 PM]  Parikh, Sunny:  
+#!/bin/bash -ex
+export JAVA_HOME=/apps/jdk/jdk1.8.0_51
+export M2_HOME=/apps/maven/apache-maven-3.3.3
+export PATH=/apps/nodejs/node-v8.9.0/bin:/apps/maven/apache-maven-3.3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+mkdir ${WORKSPACE}/release/
+cd ${WORKSPACE}/checkout
+mvn -s /tmp/settings.xml clean install
+cp -f target/*.jar ${WORKSPACE}/release/
+cp -rf deploy/* ${WORKSPACE}/release/ 
+ 
+	 
