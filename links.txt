@@ -22,6 +22,8 @@ https://itnext.io/become-a-git-pro-in-just-one-blog-a-thorough-guide-to-git-arch
 https://github.com/rsanchez-wsu/jfiles/wiki/DTP-(Data-Tools-Platform)
 https://reflectoring.io/bean-validation-with-spring-boot/
 https://dzone.com/articles/validation-in-java-applications
+https://dzone.com/articles/custom-annotation-in-java-for-sql-injection-safe-p
+https://dzone.com/articles/everything-you-wanted-know
 ------------------------------------------------------------------------------------------------------
 Finra:
 
@@ -64,3 +66,6 @@ https://bitbucket.finra.org/projects/CATDC/repos/catdc-copy-register/browse
 https://bitbucket.finra.org/projects/CATDC/repos/sharedcm/browse
 
 https://www.finra.org/industry/consolidated-audit-trail-cat/cat-registration
+
+FIP:
+https://wiki.finra.org/display/FIP/FIP+Auth+client
