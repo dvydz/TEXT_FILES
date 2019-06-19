@@ -1,0 +1,92 @@
+06-18-2019
+Questions:
+Do we use getAll at all and expire?
+
+1. Http and Https configure	(listener rules in ALB to take care of requests on port 80(http) can do it)
+2. Logs/app.log error 
+3. PgAdmin UI problem.
+4. loose coupling. Application check for it ***
+5. JPQL vs SQL (Check for sql injection)	***
+6. Unit tests update
+---------------------------------------------------------------------------------------------------------
+06-14-2019
+
+Questions:
+1. For effective today, what time does it become effective?Ans-only date. And whats the action(let update everything, or just 2).Ans-Only 2 ****
+---------------------------------------------------------------------------------------------------------
+06-13-2019
+
+Questions:
+1.table created in public schema for catddd database. Other database works just fine $$$ (leave it for DBA)
+2.Update AtsOrderType question. ****
+
+.equals() and hashcode()		--
+---------------------------------------------------------------------------------------------------------
+06-12-2019
+
+1.expire atsorder type for the one that has null expiration date ****
+2.unit tests(controller(anyString))(service, "create_user_id) *****
+3.If effective date is in the future cannot expire. *****
+4.create database in schema, not public (Schemaname.tablename??Autocreating table in public schema) (leave it for DBA)
+5.update(futureDate)..Delete the old obj,create a new one..(what abt Update username, update ts remains empty)****
+
+(@Table(schema="catdd") creates table in public and specified schema while
+(spring.jpa.properties.hibernate.default_schema=catdd only creates the specified)
+application.properties(dev) overrides application.properties codes
+---------------------------------------------------------------------------------------------------------
+06-11-2019
+
+???? LOB problem, JDBC type, not the one in properties file.. ANS - Enabling BLOB,CLOB ****
+???? Not selecting dev while deployed  $$$$$
+???? Maven dependendcy tree	****
+@ConfigurationProperties	****
+wrapper around		****
+YAML	****
+Dependency from springboot vs apache		****
+---------------------------------------------------------------------------------------------------------
+06-10-2019
+
+https://wiki.finra.org/display/RAMPDI/Data+Collection+Service?preview=%2F1084055503%2F1084055530%2Froot.crt
+https://bitbucket.finra.org/plugins/servlet/search?q=root.crt
+
+1.expire, update ts and update id   *****
+2.new Ats order type added. nO need the trade date.    *****
+	Eventually be in the final database but not on the submit database  $$$$
+3. Reference data come from s3...  $$$$
+4. Case sensitive. Enter as is. save as is   *****
+5. Validation rules Everything  *****
+6. Ats Order Type view only receives imid,atsOrderType,desc,effDate,createdDate,expDate(Directly
+	send object, UI filters and takes)   *****
+7. Get method not needed. Get all only required   *****
+
+Questions:
+1.For Update(effDate=Future date), how? ats primary composite keys how to change?Delete and re-create? YES ****
+2.How is the current ats order type table connected to the final table..after getting validation passed $$$$
+3.What exactly is the fip parameters $$$$
+------------------------------------------------------------------------------------------------------------------------------------
+06-07-2019
+sudo commands
+
+The docker container is not up. Exits in matter of few seconds....
+Email: For FIP, I made fip_exclusion_list as * and fip_userprops as *...still showing whatever error.
+Look for cluster name in splunk after we run the deployment, if we see same error, just paste the error from splunk in the email
+
+2 things need to do:
+Deploy the application
+Connect to RDS Postgres  ****
+ -----------------------------------------------------------------------------------------------------------------------------------
+06-06-2019
+1)Set exception message for lenient=OptBoolean(FALSE);		$$$$
+3) enum, joda time		$$$$
+
+Once the application is running in production, we dont keep deploying instances.
+We will have scripts to deploy and DDl or any fixes   $$$$
+
+DNS issue is resolved
+https://api.portal.dev.aws.catnms.com 
+We are seeing an RSA Access manager login successful msg.
+This is related to FIP
+We need the exact splunk error to be able to report to FIP team
+
+
+

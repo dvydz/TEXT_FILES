@@ -14,6 +14,7 @@ http://www.java2s.com/Tutorials/Java/Java_Lambda/0080__Java_Intersection_Type.ht
 http://tutorials.jenkov.com/java-date-time/java-util-timezone.html
 http://www.java2s.com/Tutorials/Java/Java_Lambda/0070__Java_Functional_Interface.htm
 https://www.regular-expressions.info/refcapture.html
+https://evertpot.com/http/208-already-reported
 https://www.guru99.com/jmeter-tutorials.html
 https://howtodoinjava.com/java-sorting-guide/
 https://www.codejava.net/java-se/file-io/how-to-compress-files-in-zip-format-in-java
@@ -24,6 +25,16 @@ https://reflectoring.io/bean-validation-with-spring-boot/
 https://dzone.com/articles/validation-in-java-applications
 https://dzone.com/articles/custom-annotation-in-java-for-sql-injection-safe-p
 https://dzone.com/articles/everything-you-wanted-know
+https://www.loggly.com/ultimate-guide/java-logging-basics/
+https://javapapers.com/spring/profile-annotation-improvements-in-spring-4/
+https://www.baeldung.com/spring-profiles
+https://www.tutorialspoint.com/spring/spring_java_based_configuration.htm
+https://www.freecodecamp.org/news/lessons-learned-from-deploying-my-first-full-stack-web-application-34f94ec0a286/
+https://blog.mwaysolutions.com/2014/06/05/10-best-practices-for-better-restful-api/
+https://drissamri.be/blog/java/enable-https-in-spring-boot/
+https://howtodoinjava.com/spring-boot/spring-boot-ssl-https-example/
+https://www.petrikainulainen.net/programming/spring-framework/spring-data-jpa-tutorial-creating-database-queries-with-the-query-annotation/
+https://www.baeldung.com/jpa-embedded-embeddable
 ------------------------------------------------------------------------------------------------------
 Finra:
 

@@ -128,6 +128,8 @@ Extras:
 	From feature branch, this will change the base master branch to the most recent one(lastest commit in master).
 	Example, if we are working on a feature branch that has been created from master, and if some developer
 	makes changes in the master branch, rebase will bring those changes in master to our branch also.
+16. <git log>
+	To view latest commit log history
 ===================================================================================================================
 
 
