@@ -1,10 +1,91 @@
-06-18-2019
-Questions:
-Do we use getAll at all and expire?
+06-27-2019
+1.Semantic primary key vs technical primary key.............UUID
+-----------------------------------------------------------------------------------------------------------------
+06-26-2019
+1. Try in OSO, add composite with serial number
+2. Build and Deploy in Dev. Error due to Unit test(integration test like)
+	Tests Can't communicate with database directly 
+3. @Mock vs @MockBean ??? mockbean in controller where we use endpoint, mock in a regular class
+4. Cannot put @NotEmpty for integer !!!
+5. @EmbeddedId in CompositeObj VS @IdClass in EntityClass, 
+	put BindingValidation rules in entityClass,not in composite
+	Cannot add GeneratedValue while using @EmbeddedId, Only possible with @IdClass
+------------------------------------------------------------------------------------------------------------------
+Look into:
+-------------
+Nightly build
+concourse
+swagger
+java reflection API
+CodeCoverage
+transactional database like postgres
+howtouseFtp
+Yaml syntax
+Sql commands
+JPQL
+----------------
+pagination and sorting
+dockers
+entry point and cmd
 
-1. Http and Https configure	(listener rules in ALB to take care of requests on port 80(http) can do it)
-2. Logs/app.log error 
-3. PgAdmin UI problem.
+get by sort descending		****
+grep commands
+learn linux commands dockers command
+
+Sundari: check the difference between xml and yml syntax for accessing env vars in a springboot app. 
+		I looked at log4j2.yml of a different app and saw that they used `sys`, hence tried it.
+
+How git work....Resolve merge conflicts???
+whats git stash git stash pop???
+git add -p to commit only certain lines from a file
+git add, commit and push only certain files
+
+What we were doing for test is like integration testing
+ 
+Sundari: I am referring to tests that being run during the build
+		they cannot communicate with the DB directly 
+		The security settings on the DB only allow Inbound from CATDD-internal security group which is applied on the ECS instances
+		Please check the settings of CATDD-internal and CATDD-protected security groups
+
+-----------------------------------------------------------------------------------------
+06-24-2019
+Questions:
+Primary key? 
+Validation rules?
+
+1. merge feature/API to develop branch....
+2. http get sort by create_ts descending		****
+3. OSO story
+
+FTP SFTP FtpClient filezilla, cyberDuck....FTPServer....
+-----------------------------------------------------------------------------------------
+PostGres Connection error(Below:) --> Enable AppGate
+10:35:36 org.postgresql.util.PSQLException: The connection attempt failed.
+10:35:36   at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:292) ~[postgresql-42.2.5.jar:42.2.5]
+
+-----------------------------------------------------------------------------------------
+06-19-2019
+
+1. Test Cases(controller mock**, services logical**)(naming ***,url check ***)
+2. Bootcamp
+3. SourceTree
+4. BDD vs TDD
+made changes to the branch online (log.yml) ***
+test cases creaates a data in table too. so comment. For DEV.... QA has a seperate table for testing
+public void testRetrieveAtsOrderTypeOfCrdId_Success() test case updates		***
+Optional......get() remember	***
+Optional.of()		***
+AMI(3 months back)		***
+---------------------------------------------------------------------------------------------------------
+06-18-2019
+Questions: 
+Do we use getAll at all and expire? ****NO. Get rid of it
+what server is ec2 deployed in? **** Tomcat, set by CM
+when log files are created, where is it saved? ****(APP_LOG_PATH) Its the environment variable set with the docker image
+
+1. Http and Https configure	(listener rules in ALB to take care of requests on port 80(http) can do it)	***
+2. Logs/app.log error (????PET team.   Maybe Geetha or Harish,Maybe there's somethign in your springboot config that's failing to load system env vars)
+3. PgAdmin UI problem.		For right now, just install pgAdmin again and launch at the very first pop up.
 4. loose coupling. Application check for it ***
 5. JPQL vs SQL (Check for sql injection)	***
 6. Unit tests update
@@ -17,17 +98,17 @@ Questions:
 06-13-2019
 
 Questions:
-1.table created in public schema for catddd database. Other database works just fine $$$ (leave it for DBA)
+1.table created in public schema for catddd database. Other database works just fine *** (leave it for DBA)
 2.Update AtsOrderType question. ****
 
-.equals() and hashcode()		--
+.equals() and hashcode()		****
 ---------------------------------------------------------------------------------------------------------
 06-12-2019
 
 1.expire atsorder type for the one that has null expiration date ****
 2.unit tests(controller(anyString))(service, "create_user_id) *****
 3.If effective date is in the future cannot expire. *****
-4.create database in schema, not public (Schemaname.tablename??Autocreating table in public schema) (leave it for DBA)
+4.create database in schema, not public (Schemaname.tablename??Autocreating table in public schema)***(leave it for DBA)
 5.update(futureDate)..Delete the old obj,create a new one..(what abt Update username, update ts remains empty)****
 
 (@Table(schema="catdd") creates table in public and specified schema while

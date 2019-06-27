@@ -1,0 +1,59 @@
+Unit tests:
+1. Binding result mock(Add/Update)
+2. Test for url
+--------------------------------------------------------------------------------------------------------
+Login Screen:
+
+userid:							abc				def				ghi
+password:						abc				def				ghi
+
+												crd_id
+
+												JpMorgan
+																							
+Reference data:erd
+
+table:
+headers
+crd_id: 007		JpMorgan				abc,def,ghi			Multiple car_reporter_imid: finra01,lenovo1
+
+crd_id: 111		BankOfAmerica			xxx,yyy,zzz	
+
+table:
+crd_id:007		Multiple car_reporter_imid: finra01,lenovo1
+crd_id:111			abcd1,abc3
+
+crd_id=
+userid : David .............Login................Validation.......Table:validate........Crd_id:007(attribute in headers)
+
+--------------------------------------------------------------------------------------------------------
+Backend              FrontEnd
+					Input(5 field)
+createts,create user,trade date........
+Table
+ 1 2 3 4 5 6 
+
+Validation.....
+
+Table
+1 2 3 4 5 6 trade_dt
+
+	ERD REFERENCE DATA:
+	Holidays.....Table.......
+	
+	Create_userId...login........   catreporterImid...
+									abc, abd,abcdf,sdsf,
+																
+	effective date: 06/20/2019 	06/15/2019  abcdeI
+	
+					06/05/2019    expirtation....description....ACTIVE   expirtationtion(06/15/2019)
+					
+					06/05/2019											expirtation(06/09/2019)(READONLY)
+					
+					2 applications.....
+					1 Finra
+					2 test
+					
+					old obj delete,
+					new save
+	

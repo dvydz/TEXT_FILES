@@ -17,6 +17,8 @@ https://www.regular-expressions.info/refcapture.html
 https://evertpot.com/http/208-already-reported
 https://www.guru99.com/jmeter-tutorials.html
 https://howtodoinjava.com/java-sorting-guide/
+https://developer.okta.com/blog/2017/12/04/basic-crud-angular-and-spring-boot
+https://vocon-it.com/2017/06/24/consuming-a-restful-web-service-with-angular/
 https://www.codejava.net/java-se/file-io/how-to-compress-files-in-zip-format-in-java
 https://www.baeldung.com/java-daylight-savings
 https://itnext.io/become-a-git-pro-in-just-one-blog-a-thorough-guide-to-git-architecture-and-command-line-interface-93fbe9bdb395
@@ -35,8 +37,15 @@ https://drissamri.be/blog/java/enable-https-in-spring-boot/
 https://howtodoinjava.com/spring-boot/spring-boot-ssl-https-example/
 https://www.petrikainulainen.net/programming/spring-framework/spring-data-jpa-tutorial-creating-database-queries-with-the-query-annotation/
 https://www.baeldung.com/jpa-embedded-embeddable
+https://www.baeldung.com/java-junit-hamcrest-guide
+https://www.baeldung.com/java-optional
+https://dzone.com/articles/using-optional-correctly-is-not-optional
+https://vladmihalcea.com/how-to-map-a-composite-identifier-using-an-automatically-generatedvalue-with-jpa-and-hibernate/
+https://vladmihalcea.com/the-best-way-to-map-a-composite-primary-key-with-jpa-and-hibernate/
+https://medium.com/@bhagyajayashani/composite-key-handling-using-embeddedid-annotation-in-spring-boot-java-67c29da9d119
 ------------------------------------------------------------------------------------------------------
 Finra:
+https://wiki.finra.org/display/RAS/Splunk+Sidecar
 
 https://udc.finra.org/data-entities/OATS/OSO_RPTG_STATS
 

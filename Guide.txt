@@ -130,6 +130,8 @@ Extras:
 	makes changes in the master branch, rebase will bring those changes in master to our branch also.
 16. <git log>
 	To view latest commit log history
+17. <git push -f origin last_known_good_commit:branch_name>
+	To revert back to a certain commit in the repository
 ===================================================================================================================
 
 

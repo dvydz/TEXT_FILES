@@ -180,7 +180,33 @@ SN	firm_mp_id               order_type_cd				exp_date        effective_date
    
    get the memorial date:
 					LocalDate lastMonthInMonth
-   
+--------------------------------------------------------------------------------------------------------------------------------------------
+atsOr,imid,effDate,desc,expDate,createTs,createUser,updateTs,updateUser
+
+For future eff.....
+	If(atsComposite == atsComposite from path variable)If they do not mess with the composite key:{
+	(Its like already effective unless updateTs and updateUser has to be different)
+		atsOr,imid,effDate,createTs,createUser    Already there
+		desc,expDate	....from payload.... set existing(get from updated)
+		updateTs,updateUser .....updateUser get from path variable, updateTs from new Date
+		save existingAtsOrder
+	}
+	else{
+		If they mess with the composite key: (its like new entry)
+		atsOr,imid,effDate,desc,expDate (Payload)
+		createTs,createUser.....create new
+		updateTs,updateUser.....empty
+		save updatedAtsOrderType....
+	}
+		
+		
+		
+For already eff......	
+		atsOr,imid,effDate,createTs,createUser    Already there
+		desc,expDate		from payload.... set existing(get from updated)
+		updateTs,updateUser   updateUser get from path variable, updateTs from new Date
+		save existingAtsOrder
+------------------------------------------------------------------------------------------------------------------------------------------
    one_biz_day_prior == 01/01/2019(Saturday) --> NO TRADE
 			one_biz_day_prior= -1
    
