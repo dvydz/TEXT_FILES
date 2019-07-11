@@ -1,11 +1,95 @@
+07-11-2019
+1. #Do the Post API for OSO first, Review tomorrow, and we will come back to ATS Post Api later and fix it
+2. Field error vs Global error vs Object Error in binding result
+3. #Verify Error message response and response codes.
+4. @NotBlank vs @NotEmpty
+5. #The Binding result error message order is not consistent
+6. Multiple constraint order of excution in hibernate bean validation: 
+	interface Cheap {}
+	interface Expensive {}
+	@GroupSequence(value={AtsOrderType.class, Cheap.class,Expensive.class})
+	And provide groups={Cheap.class or Expensive.class} in the constraint fields
+	{NOTE: the names cheap,expensive could be changed and the priority of names depend on the order it is put in
+	@GroupSequence...}
+-------------------------------------------------------------------------------------------------------------
+07-10-2019
+1. Always Put ==null first for && condition so that .before and .after null doesnot come up
+2. Custom validation binding result, field, property and class level
+3. The BindingResult must come right after the model object that is validated or else Spring 
+	fails to validate the object and throws an exception.
+---------------------------------------------------------------------------------------------------------------
+07-09-2019
+1. #Error message, send every error as a response
+2. #Check different scenarios in wiki
+--------------------------------------------------------------------------------------------------------------
+07-08-2019
+1. #Accept filters front front end. For now, do from UI but get it done for API too.
+2. ExceptionHandlers, @ControllerAdvice. Implement best practise
+3. #Start POST API
+4. #ATS Validations update 
+5. #Does response message from API matter?
+6. SNS & SQS.
+7. #Is list fetched from DB table sorted by primary key?
+-------------------------------------------------------------------------------------------------------------
+07-03-2019
+1. #Cross-origin does not yet support ui.finra.*.catdd.com, we can have wildcards at front only. How do we do it?
+	For now, just allow everything ***
+2. We get the headers from ERD and store it in the session
+--------------------------------------------------------------------------------------------------------------
+07-02-2019
+1. #Change the oso composite to only serial number as primary key ***
+2. #Change the order of table columns ***
+	Manually create a table, map the name with entity class name, and drop the old table
+3. #Filter the get request
+
+--------------------------------------------------------------------------------------------------------------
+07-01-2019
+1. Add @Valid in obj with @EmbeddedId for validation
+2. #Create a Get API to accept filters to get data(UI passes the column names for everything)Make everything optional.
+	Just do the filter not the sort. Sorting is done in front end.
+3. #Add Version....v1 ***
+4. #Add Lombok
+5. Dont directly add to Portus, CM is managing everything through Bitbucket, The security groups are to be added to the build,
+	that way, when we need to go QA,we just need to deploy to QA and all the security group will already be there. Thats what
+	Portus 2.0 is.
+6. Dont give the full path for DNS, it changes across different environment so we need to set relative path and create 
+	a properties file to get the environment specific dns. API differs for different environment
+7. Sundari: Build is successful now. The issue was that, by default, all build jobs run in the DEV (finra-dev) env
+	And finra-core-dev has no access to finra-cat-dev. Changed the build job to run in CATDEV , it was a change in the build job
+	settings (in f3 code: https://bitbucket.finra.org/projects/CATDD/repos/catdd-f3/browse/f3/api_pipeline.groovy#42 ).
+	The jenkins job is completely automated, all the manual changes like env,roles have been removed and configured in f3.
+	All the settings are taken care by: https://bitbucket.finra.org/projects/CATDD/repos/catdd-f3/browse/f3/api_pipeline.groovy 
+---------------------------------------------------------------------------------------------------------------
+06-28-2019
+1. #Iterable<AtsOrderType> list=atsOrderTypeRepository.findAll(); Get it FIXed. This retrieves all(a lot of data) *** Verify
+	Modify AtsOrderType Service create accordingly
+2. #Iterable.getLast() only gets the last one in iterable. what if the last one is not yet effective and there can be multiple
+	ones for future date. Or a later effective date can be first in Iterables before an earlier one
+3. #Pass filters from UI to API and getAll accordingly 
+
+4. Nguyen, Thanh -> you will need to submit a SG group update request, from Jenkins-web-slaves to your RDS in DEV account
+	security group request....or actually you can do it with Portus
+	the RDS is running at port 5432, right?....just go to https://portus.finra.org....and add an inbound rule from JENKINS-web-slaves
+	at port 5432 to your RDS security group..by the way is the RDS is in CATDEV or DEV account?..If in catdev.
+	you will need to change the cluster the job is running on to CATDEV as well
+ 
+ 5. The application without unit test for controller when run starts in ec2 and the inbound rules allow the ec2 instance
+	to connect to the database but during the unit test when the application is started the jenkins-web-slave is trying
+	to access the database and not the ec2 thats why we need to add another inbound rules for JENKINS-web-slaves
+----------------------------------------------------------------------------------------------------------------
 06-27-2019
-1.Semantic primary key vs technical primary key.............UUID
+
+1. #Business Rules for OsoRelationship create like if expired relationship, create new with same combo,
+2. Semantic primary key vs technical primary key.............UUID
+3. Sequence in database table in hibernate_sequence.AUTO denotes current index
+	Sequence, auto, table, identity
 -----------------------------------------------------------------------------------------------------------------
 06-26-2019
-1. Try in OSO, add composite with serial number
-2. Build and Deploy in Dev. Error due to Unit test(integration test like)
+1. #Try in OSO, add composite with serial number
+2. #Build and Deploy in Dev. Error due to Unit test(integration test like)
 	Tests Can't communicate with database directly 
-3. @Mock vs @MockBean ??? mockbean in controller where we use endpoint, mock in a regular class
+3. @Mock vs @MockBean ??? use mockbean in controller where we use endpoint and has dependendcy to spring boot container,
+							use mock in a regular class where we dont need dependendcy from springboot container	***
 4. Cannot put @NotEmpty for integer !!!
 5. @EmbeddedId in CompositeObj VS @IdClass in EntityClass, 
 	put BindingValidation rules in entityClass,not in composite
@@ -42,7 +126,7 @@ git add, commit and push only certain files
 
 What we were doing for test is like integration testing
  
-Sundari: I am referring to tests that being run during the build
+***Sundari: I am referring to tests that being run during the build
 		they cannot communicate with the DB directly 
 		The security settings on the DB only allow Inbound from CATDD-internal security group which is applied on the ECS instances
 		Please check the settings of CATDD-internal and CATDD-protected security groups
@@ -53,121 +137,118 @@ Questions:
 Primary key? 
 Validation rules?
 
-1. merge feature/API to develop branch....
-2. http get sort by create_ts descending		****
-3. OSO story
+1. #merge feature/API to develop branch....
+2. #http get sort by create_ts descending		****
+3. #OSO story
 
 FTP SFTP FtpClient filezilla, cyberDuck....FTPServer....
 -----------------------------------------------------------------------------------------
-PostGres Connection error(Below:) --> Enable AppGate
+***PostGres Connection error(Below:) --> Enable AppGate
 10:35:36 org.postgresql.util.PSQLException: The connection attempt failed.
 10:35:36   at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:292) ~[postgresql-42.2.5.jar:42.2.5]
 
 -----------------------------------------------------------------------------------------
 06-19-2019
 
-1. Test Cases(controller mock**, services logical**)(naming ***,url check ***)
-2. Bootcamp
-3. SourceTree
+1. #Test Cases(controller mock**, services logical**)(naming ***,url check ***)
+2. #Bootcamp
+3. #SourceTree
 4. BDD vs TDD
-made changes to the branch online (log.yml) ***
-test cases creaates a data in table too. so comment. For DEV.... QA has a seperate table for testing
-public void testRetrieveAtsOrderTypeOfCrdId_Success() test case updates		***
-Optional......get() remember	***
-Optional.of()		***
-AMI(3 months back)		***
+5. made changes to the branch online (log.yml) ***
+6. test cases creates a data in table too. so comment. For DEV.... QA has a seperate table for testing
+	public void testRetrieveAtsOrderTypeOfCrdId_Success() test case updates		-->Integration testing ***
+7.	Optional......get() remember	***
+8.	Optional.of()		***
+8.	AMI(3 months back)		***
 ---------------------------------------------------------------------------------------------------------
 06-18-2019
-Questions: 
-Do we use getAll at all and expire? ****NO. Get rid of it
-what server is ec2 deployed in? **** Tomcat, set by CM
-when log files are created, where is it saved? ****(APP_LOG_PATH) Its the environment variable set with the docker image
 
-1. Http and Https configure	(listener rules in ALB to take care of requests on port 80(http) can do it)	***
+1. #Http and Https configure	(listener rules in ALB to take care of requests on port 80(http) can do it)	***
 2. Logs/app.log error (????PET team.   Maybe Geetha or Harish,Maybe there's somethign in your springboot config that's failing to load system env vars)
-3. PgAdmin UI problem.		For right now, just install pgAdmin again and launch at the very first pop up.
-4. loose coupling. Application check for it ***
-5. JPQL vs SQL (Check for sql injection)	***
-6. Unit tests update
+3. #PgAdmin UI problem.		For right now, just install pgAdmin again and launch at the very first pop up.
+4. #loose coupling. Application check for it ***
+5. #JPQL vs SQL (Check for sql injection)	***
+6. #Unit tests update
+7. #Do we use getAll at all and expire? ****NO. Get rid of it
+8. #what server is ec2 deployed in? **** Tomcat, set by CM
+9. #when log files are created, where is it saved? ****(APP_LOG_PATH) Its the environment variable set with the docker image
 ---------------------------------------------------------------------------------------------------------
 06-14-2019
 
 Questions:
-1. For effective today, what time does it become effective?Ans-only date. And whats the action(let update everything, or just 2).Ans-Only 2 ****
+1. #For effective today, what time does it become effective?Ans-only date. And whats the action(let update everything, or just 2).Ans-Only 2 ****
 ---------------------------------------------------------------------------------------------------------
 06-13-2019
 
 Questions:
-1.table created in public schema for catddd database. Other database works just fine *** (leave it for DBA)
-2.Update AtsOrderType question. ****
+1.#table created in public schema for catddd database. Other database works just fine *** (leave it for DBA)
+2.#Update AtsOrderType question. ****
 
-.equals() and hashcode()		****
+3. .equals() and hashcode()	has to be overridden together	****
 ---------------------------------------------------------------------------------------------------------
 06-12-2019
 
-1.expire atsorder type for the one that has null expiration date ****
-2.unit tests(controller(anyString))(service, "create_user_id) *****
-3.If effective date is in the future cannot expire. *****
-4.create database in schema, not public (Schemaname.tablename??Autocreating table in public schema)***(leave it for DBA)
-5.update(futureDate)..Delete the old obj,create a new one..(what abt Update username, update ts remains empty)****
+1.#expire atsorder type for the one that has null expiration date ****
+2.#unit tests(controller(anyString))(service, "create_user_id) *****
+3.#If effective date is in the future cannot expire. *****
+4.#create database in schema, not public (Schemaname.tablename??Autocreating table in public schema)***(leave it for DBA)
+5.#update(futureDate)..Delete the old obj,create a new one..(what abt Update username, update ts remains empty)****
 
-(@Table(schema="catdd") creates table in public and specified schema while
-(spring.jpa.properties.hibernate.default_schema=catdd only creates the specified)
-application.properties(dev) overrides application.properties codes
+6. (@Table(schema="catdd") creates table in public and specified schema while
+7. (spring.jpa.properties.hibernate.default_schema=catdd only creates the specified)
+8. application.properties(dev) overrides application.properties codes
 ---------------------------------------------------------------------------------------------------------
 06-11-2019
 
-???? LOB problem, JDBC type, not the one in properties file.. ANS - Enabling BLOB,CLOB ****
-???? Not selecting dev while deployed  $$$$$
-???? Maven dependendcy tree	****
-@ConfigurationProperties	****
-wrapper around		****
-YAML	****
-Dependency from springboot vs apache		****
+1. #LOB problem, JDBC type, not the one in properties file.. ANS - Enabling BLOB,CLOB ****
+2. #Not selecting dev application properties while deployed? why?   
+3. Maven dependendcy tree	****
+4. @ConfigurationProperties	****
+5. wrapper around		****
+6. YAML	****
+7. Dependency from springboot vs apache		****
 ---------------------------------------------------------------------------------------------------------
 06-10-2019
 
 https://wiki.finra.org/display/RAMPDI/Data+Collection+Service?preview=%2F1084055503%2F1084055530%2Froot.crt
 https://bitbucket.finra.org/plugins/servlet/search?q=root.crt
 
-1.expire, update ts and update id   *****
-2.new Ats order type added. nO need the trade date.    *****
-	Eventually be in the final database but not on the submit database  $$$$
-3. Reference data come from s3...  $$$$
-4. Case sensitive. Enter as is. save as is   *****
-5. Validation rules Everything  *****
-6. Ats Order Type view only receives imid,atsOrderType,desc,effDate,createdDate,expDate(Directly
+1. #expire, update ts and update id   *****
+2. #new Ats order type added. nO need the trade date.    *****
+	Eventually be in the final database but not on the submit database  ****
+3. #Reference data come from s3...  ****
+4. #Case sensitive. Enter as is. save as is   *****
+5. #Validation rules Everything  *****
+6. #Ats Order Type view only receives imid,atsOrderType,desc,effDate,createdDate,expDate(Directly
 	send object, UI filters and takes)   *****
-7. Get method not needed. Get all only required   *****
+7. #Get method not needed. Get all only required   *****		Now get all not required
 
 Questions:
-1.For Update(effDate=Future date), how? ats primary composite keys how to change?Delete and re-create? YES ****
-2.How is the current ats order type table connected to the final table..after getting validation passed $$$$
-3.What exactly is the fip parameters $$$$
+8. #For Update(effDate=Future date), how? ats primary composite keys how to change?Delete and re-create? YES ****
+9. #How is the current ats order type table connected to the final table..after getting validation passed ?
+10. #What exactly is the fip parameters ?
 ------------------------------------------------------------------------------------------------------------------------------------
 06-07-2019
-sudo commands
-
-The docker container is not up. Exits in matter of few seconds....
-Email: For FIP, I made fip_exclusion_list as * and fip_userprops as *...still showing whatever error.
-Look for cluster name in splunk after we run the deployment, if we see same error, just paste the error from splunk in the email
-
-2 things need to do:
-Deploy the application
-Connect to RDS Postgres  ****
+1. sudo commands
+2. #The docker container is not up. Exits in matter of few seconds....
+3. SundariEmail: For FIP, I made fip_exclusion_list as * and fip_userprops as *...still showing whatever error.
+	Look for cluster name in splunk after we run the deployment, if we see same error, just paste the error from splunk in the email
+4. #Deploy the application
+5. #Connect to RDS Postgres  ****
  -----------------------------------------------------------------------------------------------------------------------------------
 06-06-2019
-1)Set exception message for lenient=OptBoolean(FALSE);		$$$$
-3) enum, joda time		$$$$
-
-Once the application is running in production, we dont keep deploying instances.
-We will have scripts to deploy and DDl or any fixes   $$$$
-
-DNS issue is resolved
-https://api.portal.dev.aws.catnms.com 
-We are seeing an RSA Access manager login successful msg.
-This is related to FIP
-We need the exact splunk error to be able to report to FIP team
+1. Set exception message for lenient=OptBoolean(FALSE);		
+2. enum, joda time		
+3. Once the application is running in production, we dont keep deploying instances.
+	We will have scripts to deploy and DDl or any fixes   
+4. Sundari:DNS issue is resolved
+	https://api.portal.dev.aws.catnms.com 
+	We are seeing an RSA Access manager login successful msg.
+	This is related to FIP	
+	We need the exact splunk error to be able to report to FIP team
 
 
-
+Appendix:
+# -> needs to be done or Asked
+Regular -> Note for future
+**** -> Resolution or done

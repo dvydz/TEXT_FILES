@@ -1,3 +1,111 @@
+
+
+		07-01 : 07-05
+		
+		
+		
+		07-10 :	07-15
+		
+		
+		07-01 : 07-05 
+		
+		07-06 : 07-08
+		
+		07-10 : 07-15
+		
+		
+		
+		
+		
+		1. Take the list of all the same combo
+		2. Sort according to the effective date, asc
+		3. Compare the interval for currently active and future effective date entries
+			, and if a new entry is effective between those days, Accept it.
+			
+			07-08 : 07-10
+			
+			
+			07-10 : 07-20
+									07-20 :	07-25
+			07-25 : 07-26
+			
+			08-01 : 08-05	
+				
+		2 scenarios:
+		1. If no currently effective order, future only
+				Next effective: 07-10 : 07-20				07-06 : 07-10		07-15:07-25
+				currently	  :	07-09 : 07-09				07-11 : 07-14
+		check if valid or not
+		2. If there is a currently active order
+				
+				
+				Conditions to be duplicate:
+				If anything overlaps more than one day
+				
+				
+				07-06 : 07-10
+				07-22 : 07-24
+				08-01 : 08-02
+				08-06 :	08-09
+						07-12 : 07-23
+						
+						for no active:
+						
+						for future active:
+						
+						for active , and future active
+						
+						
+						if not effective and new xprtn date < efctv date
+						
+						if exp date is null -> last loop, if(null) -> 
+		
+		-----------------------
+		expiring today, can we create and expire today itself?
+		In the middle, if tried to put null as expiration?
+		
+		
+		
+		
+-----------------------------------------------------------------------------------------------------------------------
+For valid entry between two records interval.
+for example, 07-01 : 07-05 
+		
+			07-06 : 07-10	--> should be able to make this entry
+		
+			07-10 : 07-15
+	1. Take the list of all the same combo
+		2. Sort according to the effective date, asc
+		3. Compare the interval for currently active and future effective date entries
+			, and if a new entry is effective between those days, Accept it.
+-------------------------------------------------------------------------------------------------------------------------------
+1. If a combo of entered record(imid,subId,3rdparty) is active: 
+		For same combo record entry:
+				If effective_date for new record < expirationdate for active --> Duplicate entry*** 
+				If effective_date for new record > expirationdate for active: Possible***
+				If effective_date for new record = expirationdate for active:  Duplicate***
+						If no more record for future date --> Create a record
+						If entry exist, check for its effective_date & exp_date window and compare ??
+		For any other combination --> Create a record
+2. If the combo of entered record(imid,subId,3rdparty) is not active :
+		For same combo record entry --> Create a record
+		For any other combo --> Create a record
+
+If not active, but a future active exist with null exp date...
+What if one try to add record effective before that???
+
+.after(), .before() , what if on same day????/
+
+
+if (efctv_dt>=currentDate)
+{
+	if(xprtn_dt>currentDate){
+		if(duplicate record) duplicate record message
+	}
+	else xprtn_dt wrong 
+}
+else efctv_dt wrong
+--------------------------------------------------------------------------------------------------------------------------------
 SN	firm_mp_id               order_type_cd				exp_date        effective_date
 1 	 ABC						123						05/01/2019		05/01/2019
 2   ABC						123						05/02/2019		05/08/2019

@@ -43,6 +43,13 @@ https://dzone.com/articles/using-optional-correctly-is-not-optional
 https://vladmihalcea.com/how-to-map-a-composite-identifier-using-an-automatically-generatedvalue-with-jpa-and-hibernate/
 https://vladmihalcea.com/the-best-way-to-map-a-composite-primary-key-with-jpa-and-hibernate/
 https://medium.com/@bhagyajayashani/composite-key-handling-using-embeddedid-annotation-in-spring-boot-java-67c29da9d119
+https://cloud.google.com/blog/products/gcp/api-design-which-version-of-versioning-is-right-for-you
+https://www.springboottutorial.com/spring-boot-versioning-for-rest-services
+https://support.opendns.com/hc/en-us/articles/227986747-How-do-I-add-Domain-Wildcards-to-My-Block-or-Allow-Lists-
+https://howtodoinjava.com/spring-boot2/spring-boot2-rest-post-example/
+https://www.techiedelight.com/convert-iterator-list-java/
+http://zetcode.com/spring/bindingresult/
+https://beanvalidation.org/proposals/BVAL-248/
 ------------------------------------------------------------------------------------------------------
 Finra:
 https://wiki.finra.org/display/RAS/Splunk+Sidecar
