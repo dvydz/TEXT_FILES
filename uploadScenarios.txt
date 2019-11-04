@@ -1,0 +1,139 @@
+1. ApacheCommons stream to disk, FileItem coverted to file, then transferManager to upload file to s3 -> FAIL in the middle for 1gb file, OK for smaller files. Multipart(YES)
+2. ApacheCommons stream to disk, then transferManager to upload stream to s3 -> 1gb file (Avg upload time : 2:44) , Multipart(YES), Thread not seem to be having effect
+	2:39, 2:30, 2:54, 2:51
+
+3. ApacheCommons stream to server then transferManager to upload stream to s3(No content length) -> 1gb file (Avg upload time : 2:28) , SinglePart
+	2:08, 2:46, 2:23, 2:36
+4. ApacheCommons stream to server then transferManager to upload stream to s3(Yes content length) -> 1gb file (Avg upload time : 2:01) , SinglePart
+	2:18, 1:50, 1:56, 2:02
+		
+	Came to a conclusion that some ways above using multipart because of TRANSFER_PART_COMPLETED_EVENT log in progressListener
+	
+	Questions:
+	1. How do we verify if it is actually using a multipart upload?
+	2. Best way to get the content-length for metadata when we are streaming to s3 using transferManager?
+	3. Use streaming using apache commons and store in an EFS, then put to s3. Using stream does it do multipart? or using the file?
+	
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1.   Client -> Server (Apache Commons streaming)         &       Server -> s3 (Transfer Manager - singlePart - Streaming)
+
+		fileSize|   Wifi	| Ethernet  |Content-length
+		  1 GB	|			|	 :31    |	NO
+				|			|	 :28    |		
+				|			|	 :26    |		
+				|			|	 :28    |		
+	  -----------------------------------------------
+				|			|	 :52    |	YES
+				|			|	1:06    |		
+				|			|	 :51    |	
+						
+   -> Content-length can only be known if client supplies it as a header but we want to avoid that.
+   -> Another way to get the content length is to buffer the stream into the memory and get the size which defeats the whole purpose of streaming.   
+
+******************************************************************************************************************************************************************
+
+2. Client -> Server (Apache commons file upload)           Save to a disk or EFS			Server -> S3 (Transfer manager  -> Stream or file)
+	
+	a)upload STREAM from server to S3
+															 |}
+		   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 	0:25	|	2:33	|	2:58 |}		0:24 	  |		0:52     | 1:16		
+						|		0:25	|	2:11	|	2:36 |}		0:25 	  | 	1:15     | 1:40
+						|				|			|		 |}		0:25  	  |		1:07     | 1:32
+						|				|			|		 |}		0:24  	  |		1:04     | 1:28		
+															 |}
+						
+	b)upload FILE from server to S3
+													 |}
+		   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 			|			|		 |}		0:24 	  |		0:18     | 0:42		
+						|				|			|		 |}		0:24 	  | 	0:18     | 0:42
+						|				|			|		 |}		0:23  	  |		0:19     | 0:42
+						|				|			|		 |}		0:24  	  |		0:19     | 0:43		
+															 |}
+	
+  
+   -> Reasonably the best way to do file upload. People use Lambdas to achieve this
+   -> On average, to upload a 1gb file it takes about --> Streaming(1 minutes 58 seconds,1:56, 2:11 | Ethernet: 1:26,1:19, 1:17; ), file(1 minutes 2 seconds, 1:09 | Ethernet: 43,51,42)                          		   
+   -> temp file not deleted after upload had completed ???? have to explicitly do item.delete();
+   -> Does Stream do multipart? or just file?
+   
+******************************************************************************************************************************************************************  
+3. Client -> Server (Apache Commons streaming) 								   Server -> s3 (Transfer Manager - in chunks - multipart streaming)
+
+
+????????????????????????????????????????????????
+
+
+
+******************************************************************************************************************************************************************
+4. Client -> server(storing in disk)..................Server->(s3)
+
+Uploading 1 gb file on average takes : 50 seconds
+
+-----------------------------------------------------------------------------------------------------------------------------
+5. Store in memory if less than 20MB, else store it in a disk temporarily, then use transferManager to upload to s3(James)
+			   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total 
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 			|			|		 |}		0:46 	  |		0:15     | 1:01		
+						|				|			|		 |}		0:42 	  | 	0:16     | 0:58
+						|				|			|		 |}		0:42  	  |		0:15     | 0:57
+						|				|			|		 |}		0:43  	  |		0:14     | 0:57	
+
+-----------------------------------------------------------------------------------------------------------------------------
+Streaming...................store upto 5MB, mark the position, then upload that chunk, come back and store another chunk, repeat...
+
+Client to server time, server to s3 time 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+FIle name validation scenarios:
+
+DATA FILE:
+
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2     	PASS																			***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.json.bz2		PASS																			***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dav.bz2		FAIL -> File Format incorrect													***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.xx3		FAIL -> Compression type incorrect												***
+2022_MYID_20170101_OrderEvents_000123.csv.bz2					PASS									(Optional group)						***
+2022_MYID_20170101_OrderEvents_000123.json.bz2					PASS									(Optional group)						***
+2022_MYID_20170101_OrderEvents_000123.dav.bz2					FAIL -> File Format incorrect													***
+2022_MYID_20170101_OrderEvents_000123.csv.xx3					FAIL -> Compression type incorrect												***
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2		FAIL -> Unauthorized user														***
+1111_MYID_20170101_OrderEvents_000123.csv.bz2					FAIL -> Unauthorized user				(Optional group)						***
+2022_MYID_20170101_FileGroup1_000123.csv.bz2					FAIL -> File name format incorrect			(missing fileKind)					???
+2022_MYID_20170101_FileGroup1_OrderEvents.csv.bz2				FAIL -> File name format incorrect			(missing fileNumber)				***
+2022_MYID_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing file generation date)		***
+2222_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing imid)						***
+MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing orgid)						***
+20170101_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing orgid and imid)			***
+2222_20170101_OrderEvents_000123.csv.bz2						FAIL -> File name format incorrect			(missing imid and group)			***
+2222_20170101_FileGroup1_000123.csv.bz2							FAIL -> File name format incorrect			(missing imid and fileKind)			***		
+
+META FILE:
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv     	PASS																												****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.json		PASS																												****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.dav		FAIL -> File Format incorrect																						****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dell.csv		FAIL ->	**Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+2022_MYID_20170101_OrderEvents_000123.meta.csv					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.json					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.dav					FAIL -> Format incorrect																							****
+2022_MYID_20170101_OrderEvents_000123.dell.csv					FAIL -> **Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv		FAIL -> Unauthorized user               																			****
+1111_MYID_20170101_OrderEvents_000123.meta.csv					FAIL -> Unauthorized user				(Optional group)															****
+2022_MYID_20170101_FileGroup1_000123.meta.csv					FAIL -> File name format incorrect			(missing fileKind)														????
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing fileNumber)													****
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing file generation date)											****
+2222_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing imid)															****
+MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing orgid)															****
+20170101_FileGroup1_OrderEvents_000123.meta.csv					FAIL -> File name format incorrect			(missing orgid and imid)												****
+2222_20170101_OrderEvents_000123.meta.csv						FAIL -> File name format incorrect			(missing orgid and group)												****
+2222_20170101_FileGroup1_000123.meta.csv						FAIL -> File name format incorrect			(missing imid and fileKind)		

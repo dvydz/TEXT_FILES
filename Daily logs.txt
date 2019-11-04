@@ -1,16 +1,1075 @@
+11-04-2019
+1. 
+----------------------------------------------------------------------------------------------------------
+10-30-2019
+1. The diamond problem
+2. Multiple data source spring
+3. # Why do methods getCurrentUser run at first when I make a get call for oso. And why does it run 3 times?????
+4.    // convenience method to provide a mapping for list of ews Organizations to a map with key as orgId, and value as orgName
+    default Map<Integer, String> ewsOrganizationMap() {
+        return findByCustomOrgTypesAndSubtypes(CatddConstants.ORGANIZATION_TYPES, CatddConstants.ORGANIZATION_SUBTYPE_TO_EXCLUDE).stream().collect(
+            Collectors.toMap(EwsOrganizationEntity::getOrganizationId, EwsOrganizationEntity::getOrganizationName));
+    }
+	Method inside the repository to convert the ewsOrganizationList to map.
+	
+5. #What if no name for the organization in the db? should it return null??? ******Set a log message 
+6. Can we set logger in a DTO class ? Ya if we need to. But better to have a common method somewhere in a common class and call that instead ***
+7. Use verb for method name;
+8. You dont need to add javadoc in the implementation class if javadoc is already available in the interface
+9. Interface methods are public by default
+10. In order to check for ISSO user, we need two headers. userprincipalname and memberof, where memberof=CN=ISSO_CATDD_D,
+	We need to update the application.yml file for ISSO user where we need to change the regex, headernames to match that of the isso_dev.dict.
+		Then add the security roles of ISSO_CATDD_D to allow them to access certain endpoints like FN_OSO_RELATIONSHIP_GET
+		And useEwsAuthentication: false in security:
+----------------------------------------------------------------------------------------------------
+10-29-2019
+1. #Add @Cacheable in DAO method instead of service layer for clean seperation	****
+2. #Cache credstash too because multiple calls to get the same user password.. Retry for Credstash ???
+3. #Add Spring retry for file upload
+4. #Cache ews org id for submitter, third_party and org_id name story so that we dont make expensive calls for every record.		****
+5. Java stream Api.....Method reference does not provide a way to pass multiple arguments... so we can use lambda expression
+    osoRelationshipDetails.setOsoRelationshipDetails(osoRelationshipList.stream().map(OsoRelationshipDetail::new).collect(Collectors.toList()));
+	Note- ::new sends a osoRelationshipEntity from osoRelationshipList
+																VS
+	osoRelationshipDetails.setOsoRelationshipDetails(
+            osoRelationshipList.stream().map((osoRelationshipEntity) -> new OsoRelationshipDetail(osoRelationshipEntity, ewsOrganizationDetailList))
+                .collect(Collectors.toList()));
+				
+	osoRelationshipResponse.setCatReporterOrganizationName(ewsOrganizationEntityList.stream().filter(ewsOrganizationDetail
+         -> ewsOrganizationDetail.getOrganizationId().equals(osoRelationshipEntity.getCatReporterOrganizationId())).
+            findAny().orElseThrow(() -> new IllegalArgumentException("Not found any")).getOrganizationName());
+				
+	The above search will be really expensive because of one hundred thousand records. 
+	Its best to retrive from the database as a list. Then in an implementation or any method. Convert it into a map. Then find the value, based on the key.
+	Map<Integer, String> ewsOrganizationMap =
+            ewsOrganizationEntityList.stream().collect(Collectors.toMap(EwsOrganizationEntity::getOrganizationId, EwsOrganizationEntity::getOrganizationName));
+			
+6. We can use @Cacheable for caching in the DAO layer methods instead of the service layer methods...
+7. Jackson ignore unknown properties: Catdc team should have it in their code to ignore unknown properties. Refer to Lambda code javaUtils
+	 // ignore unknown properties.
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+8. what name shows as response for DTO depends on on the Class name but the object of it that we create. So Depending on the object name is what we get in response 
+	payload.
+9. Its very expensive to loop through a list to find a match. Always use hashset.
+-------------------------------------------------------------------------------------------------------
+10-24-2019
+1. #Do we not need to add the headernames in .dict config files, and entitlement FN_FILE_UPLOAD
+2. #why is userPrincipalName, orgId, and role required while cfirstname and others in headers are optional?
+3. catdd-api-ews is the branch to deploy in dev
+4. #Verify the bugfix worked ***
+5. #I merged the code to develop without git pull all the changes from develop. But my changes were not a conflict. So it shouldnt be a problem. ****
+6. #Update the wiki page	***
+7. #See what branch is depolyed in QA
+8. #james's update to file upload	***
+9. JDBC for lambda function....addBatch()....
+10. Jams vs cron job scheduler
+-----------------------------------------------------------------------------------------------------
+10-23-2019
+1. @Rule
+    public TemporaryFolder testFolder = new TemporaryFolder();                 Junit4
+	
+	File tempFolder = testFolder.newFolder("/tmp");
+
+    @TempDir
+    File temporaryFolder;														Junit5		
+2. /temp for windows and /tmp for linux machines in the root folder.
+	        ReflectionTestUtils.setField(fileUploadHelper, "fileRootFolderName", "/");
+	give only "/" to create on the root. Platform independent
+3. For return type null, use         doThrow(new Exception).when() instead of when().thenThrow();
+4. @MockitoSettings(strictness = Strictness.LENIENT)
+5. ###Push from controller the servletFileRequest object...
+6. when we are mocking something and that is also being initialized inside the method as new Method(), the mock doesnot work.Because it always works with the new 
+	object that is created. So we can create a @Bean of it and @Autowired.
+7. ###See if ServletFileUploader is thread-safe. if it is safe, its okay to use the bean as default(singleton). or else we set it as prototype...Or other way is to
+	send an object it from controller. So that for every call, there is a seperate object of it.
+8. Whatever we @Autowired in the class we have to test, we have to mock it all in test class.
+9. User user = currentUserService.getCurrentUserInfo().getUser();
+	 To mock something like this use when(currentUserService.getCurrentUserInfo()).thenReturn(), 
+10. we have a exception handler somewhere in the applicaition. If we have throws for exceptions, later at the end it gets handled from there. We could add
+	more exceptions to it.
+11. #Add the Timestamp, add the junit test for helper
+12. DateTimeFormatter patternFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+	String dateWithCertainFormat = patternFormat.print(new DateTime());
+13. DateTimeFormat is thread-safe and immutable
+14. Good practise to put the private static final Logger LOGGER = LogManager.getLogger(FileUploadHelper.class); first thing inside the class.
+15. need to use AccessDeniedException from import org.springframework.security.access.AccessDeniedException;
+     and not the java.nio.AccessDeniedException because it asks us to handle it
+
+-----------------------------------------------------------------------------------------------------
+10-22-2019
+1. Do unit tests for service and controller, and helper class for file upload
+2. Add requestHost in currentUser, and populate the requestHost field in fileSubmissionInformationEntity ****
+	Update CurrentUserInfo, CurrentUserServiceImpl, ApplicationUser, HttpHeaderApplicationUserBuilder, the get it wherever you need
+3. Change the configs, for ews_dev.dict, 
+4.      final String fileName = "test.txt";
+        final byte[] content = "Dummy content".getBytes();
+        MockMultipartFile mockMultipartFile =
+            new MockMultipartFile("content", fileName, "text/plain", content);
+        MockMultipartHttpServletRequest req = new MockMultipartHttpServletRequest();
+                req.addFile(mockMultipartFile);
+        fileUploadHelper.validateMultipartContent(req);
+        String message = assertDoesNotThrow(() -> DOES_NOT_THROW_EXCEPTION);
+        assertEquals(DOES_NOT_THROW_EXCEPTION, message);
+	@Test
+    public void testValidateMultipartContent_withMultipartFile_success()
+    {
+        MockMultipartHttpServletRequest req = new MockMultipartHttpServletRequest();
+        fileUploadHelper.validateMultipartContent(req);
+        String message = assertDoesNotThrow(() -> DOES_NOT_THROW_EXCEPTION);
+        assertEquals(DOES_NOT_THROW_EXCEPTION, message);
+    }
+
+    @Test
+    public void testValidateMultipartContent_withNonMultipartFile_throwException()
+    {
+        HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+        Exception thrown = assertThrows(RuntimeException.class, () -> fileUploadHelper.validateMultipartContent(req));
+        assertTrue(thrown.getMessage().equals(CatddConstants.NON_MULTIPART_CONTENT));
+    }
+5. MockMultipartFile mockMultipartFile = new MockMultipartFile(fileName, stubInputStream);
+   MockMultipartHttpServletRequest request = new MockMultipartHttpServletRequest();
+   HttpServletRequest request = new MockHttpServletRequest();
+6. We dont need to create a HttpServletRequest, then create fileItemIterator, thenFileIteamStream. You can directly mock it as follows and use it:
+		FileItemStream item = Mockito.mock(FileItemStream.class);
+        when(item.isFormField()).thenReturn(false);
+        when(item.getName()).thenReturn("file");
+        when(item.openStream()).thenReturn(stubInputStream);
+7. Stream when once read, its read. The stream.available becomes 0 the second time.
+8. ReflectionTestUtils.setField(fileUploadHelper, "fileRootFolderName", "/tmp");   ->  Set @Value properties, its the java variable name in " ", not application.yml
+	reflection can be used to do many other thing about variables and stuff.
+9. Rethrow exception...... catch(Exception e){ throw; } -> preserves stacktrace.... catch(Exception e){ throw e;} -> loses stacktrace
+10. Whats the point of rethrowing the exception using throw e so  many times in file upload example ?????
+11. Create a resources folder inside test, then we can save files like .json from which we can read data to populate stuff in our unit tests.
+	For example, for to populate BusinessObjectData, we created HerdUtilsTest_BusinessObjectData.json inside resources.
+	And then used Resources.toString(Resources.getResource(fileName), Charsets.UTF_8); from google.common.io to read from .Json into String.
+	Then, BusinessObjectData businessObjectData = JsonUtils.unmarshal(BUSINESS_OBJECT_DATA_VALUE, BusinessObjectData.class); to convert to java object
+12. We cannot mock Static methods of Mocked class using Mockito, so there are alternatives like jmockit which allows us to do so. Inside @Test method, we can
+	    new MockUp<HerdUtils>()
+		{
+			@mockit.Mock
+            public String getS3BucketName(BusinessObjectData businessObjectData)
+            {
+                return "testBucketName";
+            }
+        };
+13. If we are checking for an exception lets say at line25, do we also need to mock lines after that, for unit testing???
+14. BDDMockito.willAnswer( invocation -> { throw new FileUploadBase.FileSizeLimitExceededException("msg",100L,100); }).
+		given(fileUploadHelper).uploadFile(any(), anyString(), anyString());   -> to mock the checked exception in mockito.
+15. Best to always put values including "_" and "." for String.split into a final variable and then use it in methods, except for in unit tests.
+16. Good practice to put private as much as we can.
+17. when(fileStatusRepository.findByStatus(anyString())).thenReturn(Optional.of(fileStatusEntity));
+		To mock a repository that has an Optional findBY().
+
+
+---------------------------------------------------------------------------------------
+10-21-2019
+1. For retries, resilience4j or Spring retries
+2. HerdDaoImpl.... Spring retry or resilience4j
+3. To-do ->  MaxUploadSizeExceededException  ***
+4. Rate Limiter (block too frequent requests), Bulkhead (avoid too many concurrent requests), Circuit-breaker..........Netflix hystrix....Resilience4j, and spring...
+	exponential backoff,
+6. Resilience4j has springboot2 support where we can use annotations @Retry, and fallback, by setting properties in application.yml :
+	resilience4j.retry:
+  instances:
+    preRegisterBusinessObjectData:
+      maxRetryAttempts: 3
+      waitDuration: 5s
+      enableExponentialBackoff: true
+      exponentialBackoffMultiplier: 2
+      retryExceptions:
+      - org.springframework.web.client.HttpServerErrorException
+      - java.io.IOException
+      ignoreExceptions:
+      - io.github.robwin.exception.BusinessException
+5. Rest call to DM for file upload:
+	1. First call is to preRegisterBusinessObjectData to get the s3 bucket location
+	2. Second call to registerBusinessObjectStorageFiles to register the uploaded file
+	3. Third call to updateBusinessObjectDataToValid after which SNS messages are triggered.
+6. RestTemplate to call another API from a class. Herd had a method that we call which calls the API.
+7.  String dataFileCompression = isDelFile ? nameParts[++i] : nameParts[i++];
+									OR
+            String dataFileCompression = nameParts[nameParts.length-1];
+8. MockitoAnnotations.initMocks(this) VS @ExtendWith(MockitoExtension.class)   is the same.
+9.  HttpServletRequest mockedRequest = Mockito.mock(HttpServletRequest.class) AND @Mock HttpServletRequest mockedRequest seem to not be the same.
+10. Why does some method run without initializing the mock as well ????
+11. AtsOrderType atsOrderType = Mockito.mock(AtsOrderType.class)  and @Mock AtsOrderType atsOrderType   turns out to not be the same;
+12. FileItemStream file = Mockito.mock(FileItemStream.class); Pass this as parameter, and for every .getSomething(), mock the response
+
+-----------------------------------------------------------------------------------
+10-18-2019
+1. use Files.size(diskFile) from java nio to get the file size from the path in disk
+2. Herd_info table has data that we use to make a call to DM(using the s3 file prefix) to get the s3 location. enum table...Help himanshu with stats...
+//Filename.split   deleted css javascript code....add ^ $
+createdStatus uses the name
+3. Substring vs Split
+	 String dataFileFormat = fileName.substring(fileName.indexOf("."), fileName.lastIndexOf("."))
+4.                 if(META.equalsIgnoreCase(fileName.substring(fileName.indexOf("."), fileName.lastIndexOf("."))))
+                {
+                    String metaFileFormat = fileName.substring(fileName.lastIndexOf("."));
+
+                    if (!(metaFileFormat.equalsIgnoreCase(CSV)) && !(metaFileFormat.equalsIgnoreCase(JSON)))
+                    {
+                        throwIllegalArgumentException(fileName);
+                    }
+                }
+                else
+                {
+                    String dataFileFormat = fileName.substring(fileName.indexOf("."), fileName.lastIndexOf("."));
+                    if (!(dataFileFormat.equalsIgnoreCase(JSON)) && !(dataFileFormat.equalsIgnoreCase(CSV)))
+                    {
+                        throwIllegalArgumentException(fileName);
+                    }
+
+                    String dataFileCompression = fileName.substring(fileName.lastIndexOf("."));
+                    if (!dataFileCompression.equalsIgnoreCase(BZ2))
+                    {
+                        throw new IllegalArgumentException(String.format(CatddConstants.FILE_COMPRESSION_INVALID, fileName));
+                    }
+
+                }
+5. ToString using apache commong lang3
+	@Override
+    public String toString()
+    {
+        return new ToStringBuilder(this).append("id", id).append("fileName", fileName).append("fileType", fileType).append("fileSize", fileSize)
+            .append("partitionValue", partitionValue).append("statusId", fileStatus).append("herdInfoId", herdInformation).toString();
+    }
+-----------------------------------------------------------------------------------------
+10-15-2019
+1. uniqueFolder.resolve(fileName);   .resolve from path java nio concatenates the fileName with uniqueFolder
+2. Once the input stream is started to read upto a certain point. In order to get the entire stream later again we need to concat, (already read + remaining)
+	SequenceInputStream -> Concat 2 input streams
+3. Throws is like transferring the responsibility of handling the exception to the method calling it. Method calling it has to have a try catch or throws.
+4. ReThrow exception -> If we dont handle exception, we simply rethrow it. using throws
+5. ec2 has the root drive which also contains /tmp which acts as a disk space
+6. Memory leak, OOM error,  Permanent generation(permGen space)......visualgc, Jmap -> tool to investigate OOM error
+7. LOGGER.isInfoEnabled()??????
+8. The moment we define any parameterized constructor, we must also define a no-arg constructor if we want to instantiate 
+	the object of that class via a no-arg constructor.
+9. For transactional database, we need primary key and better to have a constraint.
+10. @UniqueConstraint and @Column(unique=true)
+11. Constraint using @Id, is it primary key composite? or the primary key can be like an auto increment id and constraint can be something else?
+13. Normalization rdb
+14. PK, FK.........    @GeneratedValue(generator = TABLE_NAME + "_seq")
+15. We use the data in herd_info to make a call to DM using s3_key_prefix, which returns us the s3 location.
+
+-------------------------------------------------------------------------------------------
+10-15-2019(FileUpload)
+
+1. Rest endpoint available for UI to upload a file.
+2. Api gets the file along with the fip login info from which we confirm if the filename and fip info matches.
+3. verify the size, name, extensions etc
+4. Extract info from file name and file upload, and populate the DB table
+
+Basically :::
+1. Create the file in db table. Received
+2. Validation
+3. Call DM with herd_info data to get the s3 location
+4. upload the file
+5. Register to DM
+--------------------------------------------------------------------------------------------
+10-15-2019(Rest URI Naming)
+1. Use forward slash (/) to indicate a hierarchical relationships.
+2. Do not use trailing forward slash (/) in URIs.
+3. Use hyphens (-) to improve the readability of URIs.
+4. Do not use underscores ( _ ).
+5. Use lowercase letters in URIs.
+6. Do not use file extenstions.
+7. Never use CRUD function names in URIs.
+8. Use query component to filter URI collection.
+-----------------------------------------------------------------------------------------------
+10-14-2019(Spring -> Came up terms)
+1. AWT (Abstract window toolkit), upcasting, Factory Design Pattern, Driver class,Eager loading(with load on startup), Lazy loading(without load on startup)
+
+
+-------------------------------------------------------------------------------------------
+10-11-2019
+1. Expression lambda Vs Statement Lambda
+2. Adding a new package, add to @ComponentScan in main application class. Configs and everything is as of Module level.
+3. CacheConfigurationBuilder.newCacheConfigurationBuilder(SimpleKey.class, EwsOrganizationDetails.class, ResourcePoolsBuilder.heap(10000))
+						.withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(3600)))
+						  .withExpiry(ExpiryPolicyBuilder.timeToIdleExpiration(Duration.ofSeconds(0))));
+	Doing as above, two .withExpiry overrides the first one. Need to find a way to chain it.
+4. Xml-based Vs Annotation-based vs Java-based configuration
+http://math.hws.edu/javanotes/c5/s1.html
+-------------------------------------------------------------------------------------
+10-09-2019
+1. Himanshu code style check : multiple places.....
+2. Do we need to log cache actions?
+3. EhCache -> package net.sf.ehcache(version 2) VS package org.ehcache(version 3).....EhCache vs Redis
+	TTI,TTL, Jcache, heap, offHeap, disk, 
+	We could either do a ehcache.xml in resources(we need to specify in application.properties -> spring.cache.jcache.config: classpath:ehcache.xml)
+	, or use CacheManager in cachingConfig method.(Xml configuration OR Java Configuration)
+	<config
+	   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+	   xmlns='http://www.ehcache.org/v3'
+	   xsi:schemaLocation="
+				http://www.ehcache.org/v3
+				http://www.ehcache.org/schema/ehcache-core-3.7.xsd">
+
+	   <!-- Default cache template -->
+	   <cache-template name="default">
+		  <expiry>
+			 <ttl unit="seconds">500</ttl>
+		  </expiry>
+		  <resources>
+			 <heap>1000</heap>
+			 <!--To save in offHeap memory-->
+			 <offheap unit="MB">10</offheap>
+		  </resources>
+	   </cache-template>
+
+	   <!-- Cache configurations -->
+	   <cache alias="ewsOrganizationCache" uses-template="default">
+		  <key-type>org.springframework.cache.interceptor.SimpleKey</key-type>
+		  <value-type>org.finra.catdd.model.dto.EwsOrganizationDetails</value-type>
+
+	   </cache>
+	</config>
+	
+	+
+	
+	@Configuration
+	@EnableCaching
+	public class CacheHelper
+	{
+	}
+							OR
+	----------------------------------------------------------						
+	Below code does not require ehcache.xml
+	package org.finra.catdd.dao.config;
+
+	import java.time.Duration;
+
+	import org.ehcache.config.builders.CacheConfigurationBuilder;
+	import org.ehcache.config.builders.ExpiryPolicyBuilder;
+	import org.ehcache.config.builders.ResourcePoolsBuilder;
+	import org.ehcache.jsr107.Eh107Configuration;
+	import org.springframework.beans.factory.annotation.Value;
+	import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
+	import org.springframework.cache.annotation.EnableCaching;
+	import org.springframework.cache.jcache.config.JCacheConfigurerSupport;
+	import org.springframework.context.annotation.Bean;
+	import org.springframework.context.annotation.Configuration;
+
+	import org.finra.catdd.common.CatddConstants;
+
+	@Bean
+    public JCacheManagerCustomizer cacheManagerCustomizer() {
+        return cm -> {
+            cm.createCache("ewsOrganizationCache", createConfiguration(1000, Duration.ofMinutes(2)));
+        };
+    }
+
+    private javax.cache.configuration.Configuration<Object, Object> createConfiguration(long size, Duration tti) {
+        return Eh107Configuration.fromEhcacheCacheConfiguration(
+            CacheConfigurationBuilder.newCacheConfigurationBuilder(Object.class, Object.class,
+                ResourcePoolsBuilder.heap(size))
+                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(tti))
+                .build());
+    }
+	----------------------------------------------------------
+	For the below configuration, couldnt find the CacheConfigurationBuilder:
+	
+	@Bean
+    public CacheManager cacheManager()
+    {
+        SimpleCacheManager cacheManager = new SimpleCacheManager();
+        cacheManager.setCaches(Arrays.asList(
+            new ConcurrentMapCache("ewsOrganizationCache")));
+
+        return cacheManager;
+    }
+	And
+	package org.finra.catdd.dao.config;
+
+
+	import static org.ehcache.config.builders.CacheManagerBuilder.newCacheManagerBuilder;
+
+	import java.time.Duration;
+
+	import org.ehcache.Cache;
+	import org.ehcache.CacheManager;
+	import org.ehcache.config.builders.CacheConfigurationBuilder;
+	import org.ehcache.config.builders.ExpiryPolicyBuilder;
+	import org.ehcache.config.builders.ResourcePoolsBuilder;
+	import org.springframework.cache.annotation.CachingConfigurerSupport;
+	import org.springframework.cache.annotation.EnableCaching;
+	import org.springframework.cache.interceptor.SimpleKey;
+	import org.springframework.context.annotation.Bean;
+	import org.springframework.context.annotation.Configuration;
+
+	import org.finra.catdd.common.CatddConstants;
+	import org.finra.catdd.model.dto.EwsOrganizationDetails;
+
+	@Configuration
+	@EnableCaching
+	public class CacheHelper extends CachingConfigurerSupport
+	{
+		private CacheManager cacheManager;
+
+		public CacheHelper()
+		{
+			cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build(true);
+	//        cacheManager.init();
+
+			cacheManager
+				.createCache(CatddConstants.EWS_ORGANIZATION_CACHE,
+					CacheConfigurationBuilder.newCacheConfigurationBuilder(SimpleKey.class, EwsOrganizationDetails.class, ResourcePoolsBuilder.heap(10000))
+						.withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(3600)))
+						  .withExpiry(ExpiryPolicyBuilder.timeToIdleExpiration(Duration.ofSeconds(0))));
+
+		}
+
+		@Bean
+		public Cache<SimpleKey, EwsOrganizationDetails> getEwsOrganizationCacheManager()
+		{
+			return cacheManager.getCache(CatddConstants.EWS_ORGANIZATION_CACHE, SimpleKey.class, EwsOrganizationDetails.class);
+		}
+
+	}
+	
+	--> Very simple implementation of cache using ConcurrentMapCache. Does not have any configuration
+			import org.springframework.cache.CacheManager;
+			import org.springframework.cache.annotation.EnableCaching;
+			import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+			import org.springframework.context.annotation.Bean;
+			import org.springframework.context.annotation.Configuration;
+
+			import org.finra.catdd.common.CatddConstants;
+
+			@Configuration
+			@EnableCaching
+			public class EhcacheConfig {
+
+				@Bean
+				public CacheManager cacheManager() {
+					return new ConcurrentMapCacheManager(CatddConstants.EWS_ORGANIZATION_CACHE);
+				}
+			}
+
+4. Default value for @Value
+	@Value("${some.key:my default value}")
+	private String stringWithDefaultValue;
+5. entries on heap meaning????   The maxEntriesLocalHeap enforcement is only going to count the number of key/value pairs you store in the cache ****
+6. timeToLiveExpiry = creationTimeOfCache + timeToLive
+	timeToIdleExpiry = mostRecentTimeCacheWasUsed + timeToIdle
+7. We dont need to unit test configuration. (cross-cutting concerns)
+8. If we need more cache for other methods, we can create another bean using the generic createConfiguration method, and the annotate @Cacheable in the new method
+	to be cached.
+9. EWS Cache unit test for methods using it. NOT WORKING CURRENTLY. Because it requires a junit Context(Spring context), instead of Application Context. Hard to do.
+package org.finra.catdd.service;
+
+		import static org.mockito.ArgumentMatchers.any;
+		import static org.mockito.Mockito.when;
+
+		import java.time.Duration;
+		import java.util.ArrayList;
+		import java.util.List;
+
+		import org.apache.commons.lang3.time.StopWatch;
+		import org.ehcache.Cache;
+		import org.ehcache.CacheManager;
+		import org.ehcache.config.CacheConfiguration;
+		import org.ehcache.config.builders.CacheConfigurationBuilder;
+		import org.ehcache.config.builders.ExpiryPolicyBuilder;
+		import org.ehcache.config.builders.ResourcePoolsBuilder;
+		import org.junit.jupiter.api.BeforeEach;
+		import org.junit.jupiter.api.Test;
+		import org.junit.jupiter.api.extension.ExtendWith;
+		import org.mockito.InjectMocks;
+		import org.mockito.Mock;
+		import org.mockito.junit.jupiter.MockitoExtension;
+		import org.springframework.beans.factory.annotation.Autowired;
+		import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
+		import org.springframework.test.context.ContextConfiguration;
+
+		import org.finra.catdd.common.CatddConstants;
+		import org.finra.catdd.dao.EwsOrganizationRepository;
+		import org.finra.catdd.model.dto.EwsOrganizationDetail;
+		import org.finra.catdd.model.dto.EwsOrganizationDetails;
+		import org.finra.catdd.model.entity.EwsOrganizationEntity;
+		import org.finra.catdd.service.helper.EwsOrganizationHelper;
+		import org.finra.catdd.service.impl.EwsOrganizationServiceImpl;
+
+		import org.finra.catdd.dao.config.EhcacheConfig;
+
+		@ExtendWith(MockitoExtension.class)
+		@ContextConfiguration(classes = {EhcacheConfig.class})
+		//@ContextConfiguration
+		public class EwsOrganizationServiceImplCacheTest
+		{
+			@Autowired
+			@InjectMocks
+			private EwsOrganizationService ewsOrganizationService = new EwsOrganizationServiceImpl();
+
+			@Mock
+			private EwsOrganizationRepository ewsOrganizationRepository;
+
+			@Mock
+			private EwsOrganizationHelper ewsOrganizationHelper;
+
+			private EwsOrganizationDetails ewsOrganizationDetails;
+
+			private List<EwsOrganizationDetail> ewsOrganizationDetailList;
+
+			private List<EwsOrganizationEntity> ewsOrganizationEntityList;
+
+			private EwsOrganizationDetail ewsOrganizationDetail;
+
+			@Autowired
+			CacheManager cacheManager;
+
+			@Autowired
+			Cache cache;
+
+			@Autowired
+			JCacheManagerCustomizer cacheManagerCustomizer;
+
+
+			@BeforeEach
+			public void init()
+			{
+				ewsOrganizationDetailList = new ArrayList<>();
+
+				ewsOrganizationDetail = createEwsOrganizationDetailObject(1011, "Test Firm inc.");
+				ewsOrganizationDetailList.add(ewsOrganizationDetail);
+
+				EwsOrganizationDetail ewsOrganizationDetail2 = createEwsOrganizationDetailObject(2022, "Test Firm inc. 2");
+				ewsOrganizationDetailList.add(ewsOrganizationDetail2);
+
+				ewsOrganizationDetails = new EwsOrganizationDetails();
+				ewsOrganizationDetails.setEwsOrganizationDetails(ewsOrganizationDetailList);
+
+				ewsOrganizationEntityList = new ArrayList<>();
+				EwsOrganizationEntity ewsOrganizationEntity = createEwsOrganizationEntityObject(1011, "FIRM", 2, "Test Firm inc.");
+				ewsOrganizationEntityList.add(ewsOrganizationEntity);
+			}
+
+			@Test
+			public void testRetrieveEwsOrganizationDetails()
+			{
+
+		//                CacheConfiguration cacheConfiguration = CacheConfigurationBuilder.newCacheConfigurationBuilder(Object.class, Object.class,
+		//                    ResourcePoolsBuilder.heap(1000))
+		//                    .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofSeconds(300)))
+		//                    .build();
+		//
+		//                cacheManager.createCache(CatddConstants.EWS_ORGANIZATION_CACHE, cacheConfiguration);
+
+		//                EhcacheConfig ehcacheConfig = new EhcacheConfig(1000, 3600);
+		//                ehcacheConfig.cacheManagerCustomizer();
+
+				when(ewsOrganizationRepository.findByCustomOrgTypesAndSubtypes(any(), any())).thenReturn(ewsOrganizationEntityList);
+				when(ewsOrganizationHelper.convertEntityToDto(any())).thenReturn(ewsOrganizationDetail);
+
+				StopWatch watch1 = new StopWatch();
+				watch1.start();
+				ewsOrganizationService.retrieveEwsOrganizationDetails();
+				watch1.stop();
+				System.out.println(watch1.getTime());
+
+				StopWatch watch2 = new StopWatch();
+				watch2.start();
+				ewsOrganizationService.retrieveEwsOrganizationDetails();
+				watch2.stop();
+				System.out.println(watch1.getTime());
+
+				// Verify repository method was invoked once
+				//        verify(ewsOrganizationRepository, times(1)).findByCustomOrgTypesAndSubtypes(any(), any());
+			}
+
+			public EwsOrganizationDetail createEwsOrganizationDetailObject(Integer orgId, String firmName)
+			{
+				EwsOrganizationDetail ewsOrganizationDetail = new EwsOrganizationDetail();
+				ewsOrganizationDetail.setOrganizationId(orgId);
+				ewsOrganizationDetail.setOrganizationName(firmName);
+				return ewsOrganizationDetail;
+			}
+
+			public EwsOrganizationEntity createEwsOrganizationEntityObject(Integer orgId, String firmType, Integer firmSubType, String firmName)
+			{
+				EwsOrganizationEntity ewsOrganizationEntity = new EwsOrganizationEntity();
+				ewsOrganizationEntity.setOrganizationId(orgId);
+				ewsOrganizationEntity.setOrganizationType(firmType);
+				ewsOrganizationEntity.setOrganizationSubtype(firmSubType);
+				ewsOrganizationEntity.setOrganizationName(firmName);
+				return ewsOrganizationEntity;
+			}
+		}
+
+------------------------------------------------------------------------------------------------
+10-03-2019
+1.@SpringBootApplication(exclude = { SecurityAutoConfiguration.class }) to disable default security and add our own
+2. Have annotations like @Service, @Repository only in implementation layer, not the interface(Or maybe just the interface?)
+3. Mockito Spy.... NotAMockException
+4. public final static List<String> ORGANIZATION_TYPES = Collections.unmodifiableList(Arrays.asList("FIRM", "OTHER"));
+5. Dont need unit test for repository interface if it does not have an implementation
+5. verify()
+6. Method name starting with verb
+7. @SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
+8. Construction injection. properties from application.yml into application
+	public class Test {
+    private final String value;
+
+    public Test(@Value("${some.value}") String value){
+        this.value=value;
+        System.out.println(this.value);
+    }
+	}
+9.Mocking the application.yml for @value in junit5 using mockito.
+	ReflectionTestUtils.setField(osoRelationshipHelper, "FINRA_HELP_DESK_NUMBER", "888-696-3348"); Also used to set value for a field without setter method
+10. Better practise to put variables like phone number and stuff in application.yml than in java code.
+----------------------------------------------------------------------------------------
+09-30-2019
+1. FastByteArrayOutputStream, BufferedReader, InputStreamReader, Byte[] vs ByteBuffer
+2. .toArray(new String[0]) -> new String[] to make sure the Array is of type String. If nothing is specified, it is an object array.
+3. CriteriaApi -> Dynamic Query builder
+4. Criteria builder. Equals in <List> and other predicates:
+		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<ABCEntity> criteriaQuery = criteriaBuilder.createQuery(ABCEntity.class);
+        Root<ABCEntity> ewsOrganizationEntityRoot = criteriaQuery.from(ABCEntity.class);
+        List<Predicate> predicates = new ArrayList<>();
+        Expression<String> expression = ewsOrganizationEntityRoot.get("organizationType");
+        predicates.add(expression.in(organizationTypes));
+        predicates.add(criteriaBuilder.notEqual(ewsOrganizationEntityRoot.get("organizationSubtype"), organizationSubtypeToExclude));
+        criteriaQuery.where(predicates.toArray(new Predicate[predicates.size()]));
+        criteriaQuery.orderBy(criteriaBuilder.asc(ewsOrganizationEntityRoot.get("organizationName")));
+        return entityManager.createQuery(criteriaQuery).getResultList();
+   
+   @Mock
+   Expression expressionMocked;
+   when(criteriaBuilderMocked.upper(any())).thenReturn(expressionMocked);
+
+------------------------------------------------------------
+09-27-2019
+1. Creating a rest endpoint: controller, dto as return type, 
+-----------------------------------------------------------------------------------------
+09-25-2019
+1. Need to try to ways to upload:
+	1. Stream the data to EFS(disk for local), and initiate a multipart from EFS to s3.
+	2. Use a low level API to stream chunks(5mb) directly multipart upload to s3
+	3. Streaming plus single part transfer manager
+2. System.getProperty("java.io.tmpdir") -> users/AppData/Local/Temp/
+3. https://community.oracle.com/thread/1455708    -> Temp file not deleted for DiskFileItemFactory                   item.delete();
+4. Lower vs higher level API
+--------------------------------------------------------------------------------------------------------------
+09-24-2019
+1.https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/PutObjectRequest.html
+	https://github.com/aws/aws-sdk-java/issues/839 (Not possible)
+	https://github.com/filestack/filestack-java
+2. Steps for file upload from client -> Server -> s3
+	1. Stream from client to Server using Apache commons file upload Stream API, Multipart upload
+	2. Get the file size for the stream
+	3. Stream to s3
+3. content-length in @RequestHeaders for filesize 21474836 bytes gives 21475039 bytes, without speciying the content-length ????
+4. keepAlive
+5. sha-256 vs md5. SHA1, SHA2, SHA3
+6. Digital Ocean vs AWS	
+7. EFS vs
+-------------------------------------------------------------------------------
+09-23-2019
+1. ModelMapper -> Entity To DTO Conversion for a Spring REST API
+2. attachments3serviceimpl, herd for fileUpload
+3. #Check to see how to get the size of the uploaded stream without hogging the memory.  1) Upload in chunks, by buffering like 1mb at a time 
+4. ModelAndView, DispatcherServlet, @ConfigurationProperties
+5. We use TransferManager instead of PutObjectRequest because it supports asynchronous uploads and downloads
+6. BOM vs POM
+---------------------------------------------------------
+09-20-2019
+1. Rest API for file upload
+2. Audit table design
+3. Transfer Manager to upload to s3
+4. Let DM know
+--------------------------------------------------------------------------------------------------------
+09-19-2019
+1. #Compare.....Using Java utitily to compare two files if they match
+2. #Work on file upload Rest Api. 
+3. BufferedReader, FileReader, InputStreamReader, mark() and reset(), IO vs NIO
+---------------------------------------------------------------------------------------------------------
+09-17-2019
+1. #Create a wiki page for pros and cons of serverside multipart FileUpload using ApacheCommons fileUpload streaming and aws transfer manager ****
+2. #James's pull request. make changes to it accordingly to submitter id and third party such that one organization can only see their data	****
+3. SpEl,Spring AOP -> Join Point, point-cut(AspectJ) cross-cutting concerns
+	The crosscutting concern is a concern which is applicable throughout the application and it affects the entire application. For example: logging,
+	security and data transfer are the concerns which are needed in almost every module of an application, hence they are cross-cutting concerns.
+4. StreamSupport.stream(organizationIdList.spliterator(), true).allMatch(o -> o == null)
+5. When uploading directly from an input stream, content length must be specified before data can be uploaded to Amazon S3.
+	-> If not provided, the library will have to buffer the contents of the input stream in order to calculate it.
+	-> Amazon S3 explicitly requires that the content length be sent in the request headers before any of the data is sent.
+	-> By buffering the entire stream into memory manually, this solution only repeats manually what the AWS SDK already does automatically,
+	only this time without any printed warning! For a more efficient solution see my answer below
+	ACL - Access control list
+-----------------------------------------------------------------------------------------
+09-16-2019
+1. Aws s3 multipart file upload: Pros
+	~ pick up where we left off while uploading.
+	~ breaks your larger objects into chunks and upload a number of chunks in parallel
+	~ Example : 5gb file can be broken into as many as 10,000 parts, where each part has to be atleast 5MiB. Makes it 50gb max size.
+2. http://alexmojaki.github.io/s3-stream-upload/javadoc/apidocs/alex/mojaki/s3upload/StreamTransferManager.html
+	https://aws.amazon.com/blogs/developer/parallelizing-large-uploads-for-speed-and-reliability/
+3. Proxy/server file upload -> Tried Apache commons fileUpload Streaming + Aws multipart upload
+	FileX - presigned url -> credentials good for 1 hour, use this url from browser to upload. Does not support Multipart
+	 JavaScript s3 sdk version from browser to s3 upload.
+4.	Verify if the streaming actually is doing multipart??? **Might only be possible with file.
+	Multipart upload isn't possible for InputStream. Parallel upload would need to be able to read from different segments in the stream concurrently,
+	i.e. we would need random access to the data.
+		https://stackoverflow.com/questions/24955421/transfermanager-vs-putrequestobject-in-amazons3
+5. Approaches :
+FileX API 
+User first calls FileX REST API to get the pre-signed URL, and then uploads the file to S3 using the pre-signed HTTP url. 
+
+FileX S3 Direct
+User first calls FileX to get the STS token and file location, and then uses AWS S3 Javascript SDK to upload the file to S3. 
+
+Server Proxy 
+User first uploads the file to Reporter Portal backend server, and then the backend server upload the file to S3 using S3 TransferManager.
+-----------------------------------------------------------------------------------
+09-12-2019
+1. Multi-part upload : Uploading a single file as a set of parts. 3 step process, initiate upload(receive upload Id), upload each part(id + etag), finalize upload 
+	Instead of using the lengthy 3-part multipart upload for every upload, use Aws sdk transferManager for ease.
+	* Disk file item factory is not used. that means the the data is not stored in the disk first.
+   access-key : 
+   secret-key :
+   Transfer manager : attempts to use multiple threads for uploads to improve throughput
+   key : foldername/fileName is the key
+   5 layers implementation AWS
+   https://www.javacodegeeks.com/2017/03/amazon-s3-tutorial.html
+2. aws-credentials-refresh.jar, .properties file, same folder. run the jar through command line to refresh the aws credentials
+	That creates a credentials file inside .aws in the user directory. Also add config file with following data:
+		[default]
+		region=us-east-1
+		output=json
+		role_arn=arn:aws:iam::474848416659:role/APP_CATDD
+3. Apache commons vs Apache tomcat for fileUpload imports
+4. ?ssl=true;sslfactory=org.postgresql.ssl.NonValidatingFactory 
+5. MD5 hashing algorithm, MD5 checksum
+6. Read the contents into a byte array
+   byte[] bytes = IOUtils.toByteArray(uploadedStream);
+   metadata.setContentLength(bytes.length);
+   ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+			It loads it into the memory, the entire size, so not really a streaming.
+7. #Need to figure out the stream size. Dig into transfer manager utility.
+8. #How do we make sure transfer manager is using multipart file upload for streaming. 
+9. Mebibyte(MiB), Base64
+10. @PostConstruct
+
+-------------------------------------------------------------------------------
+09-11-2019
+1. Batch process, namespace
+2. #ATS check, if more than one expired ones, still says already exist ****
+3. #Check if more than 1 effective in DB table, update and create....
+4. Factory class
+5. Monolithic vs microservices
+
+--------------------------------------------------------------------------------------
+09-09-2019
+1. #File upload:
+	Java web services, Jersey framework, HTTP Post encoding type:multipart/form-data
+	USING: Apache Commons FileUpload -> Streaming API
+2. Uploading from client to server, THEN, server to s3. Doing the 1st part now. Trying to store it in the memory
+3. tomcat-embedded-jasper, jstl,
+4. Default spring multi-part uploader needs to be disabled to use the apache commons fileUpload because the same request cannot be parsed twice.
+	Uploading from postman, key : file, value : file upload
+5. fsutil file createnew <file> <size in bytes>
+	Creating a dummy file of any size command
+6. # look into Aws sdk transfer manager.....how Streaming works with multipart together
+7. encoding types: application/x-www-form-urlencoded and multipart/form-data
+-----------------------------------------------
+-------------------------------------------------------
+09-04-2019
+1. # Start by creating a DAO, entity, service, interface for getting the reference data and putting it in the table.
+		OrgId, IMID, Audit entity info....
+2. SQS is subscribed to SNS. Whenever there is an update in DM(herd), SNS notifies us with the file location and details. Then we use AWS SDK to get the file.
+3. ControllerAdvice error handling spring for rest API
+MQ,KAFKA, DLQ PCI data MPI data
+-----------------------------------------------------------------------------------------------
+09-03-2019
+1. Lambda function
+2. SQS Queue, that subscribe to SNS
+3. F5, F3
+4. ALB
+5. Flowchart
+6. Bastion host
+7. FIP
+8. ISSO Stack
+9. EWS
+10. IAM role,
+11. X-path, chmod
+--------------------------------------------------------------------------------------------------------
+08-28-2019
+1. #Use the same criteria builder we have for get, for both put and postgres ***
+2. #update the constant and use it	***
+3. #Remove the effective date thing from criteria builder (Himanshu) ***
+4. #Include organizationId as a part of unique record for ATS or not? Himanshu		***
+5. Null pointer for OSO ??? Himanshu. verify ATS  ***
+6. Spaces and blank lines in code.
+7. #Case sensitive query paramter..... Himanshu 
+8. #Use entity for the query parameters
+9. #Null bug bix for post ATS/OSO ***
+10. Mavne surefire
+
+OsoRelationshipServiceImpl.java
+/OsoRelationshipRepositoryCustomImplTest.java
+OsoRelationshipRepositoryCustomImpl.java
+------------------------------------------------------------------------------------------------
+08-27-2019
+1. #Bug???? is orgId part of unique combination???? **** Future this is true
+2. hibernate-jpamodelgen
+3. #Does case matter for findBy?????		** It should not
+4. #For ATS, the findBy is still the regular JPA Query not the criteria builder one, for create and update. For Get its already there ! ???? Do it. Use same
+5. Copy wrong unit test HINMANSHU for customRepoTEst ***
+6. Need to do individual mvn clean install for seperate package to update it
+-----------------------------------------------------------------------------------------------------------------------------------
+08-22-2019
+1. #Create a wiki page to create a constants class.
+2. CollectionUtils class
+3. Position based/named parameters for @Query in repository.
+4. Two rest endpoint:
+	    @GetMapping(value = "/atsOrderTypes", params = "processingDate")
+		@GetMapping(value = "/atsOrderTypes", params = "atsOrderType")
+5. Criteria builder to create dynamic queries based on different query parameter combination. 
+	EntityManager, CriteriaQuery, Root, Predicate
+
+---------------------------------------------------------------------------------------------------
+08-20-2019
+1. assertDoesNotThrow(() -> {return "Does not throw Exception!";}); to unit test if no exception is thrown
+---------------------------------------------------------------------------------------------------------------------------------
+08-14-2019
+1. #Set expiration date when null to something far in the future	***
+2.   /**
+     * Handles duplicates for update
+     * <p>
+     * Note: The record is called a duplicate if another record with the same IMID, ATS order type, and can be updated to match the needs of the user
+     *
+     * @param newAtsOrderTypeEntity The new updated record.
+     * @param existingAtsOrderTypeEntity The existing record that is being updated
+     */
+3. #Add more unit tests for ATS, more asserts		***
+4. repository.save() return a new id;
+---------------------------------------------------------------------------------------
+08-13-2019
+1. http://localhost:8080/swagger-ui.html
+	@ApiModel, @ApiModelProperty, @Api
+-------------------------------------------------------------------------------------
+08-12-2019
+1. Code coverage tools : Atlassian Clover, Cobertura, JaCoCo
+2. package org.omg.portableserver does not exist --> Recompile, or add to git staging first
+3. Fluent interface vs Application builder
+	 ApplicationUser applicationUser = new ApplicationUser.ApplicationUserBuilder().userId(USER_ID)
+                    lastName(LAST_NAME).build();
+4. #update helper class to check expiration date with current date
+5. DB_PASSWORD=ENC(CATDD.dev.catdd_appuser) in dev.dictionary to get password from credstash
+-------------------------------------------------------------------------------------
+08-09-2019
+1. Good practise to put simple date formatter inside method that uses it instead of creating a static due
+	to its thread-unsafe nature.
+	Also, for setting up current date, use instantly. dont create variable at the begining.
+2. Good practice to final static variables, and not the object declaration itself.
+3. Good practice to put the versions of pom dependency in the <properties/> like
+	actual version value.
+4.	How do you know the current user?
+	Yes, through a cookie - FIP cookie.  FIP sits in front of the Portal Application.
+	It does authentication, and then injects the userId, entitlements, orgId..etc
+	into the request headers.  Portal app builds an user object based on this information.
+	This endpoint will read the user object using Spring SecurityContext.
+	The user object is also used by the app for its security model (which endpoint
+	this user can access). 
+-------------------------------------------------------------------------------
+8-06-2019
+1. Spring Security: 
+	* Setting in application.yml
+	* Never put configuration files in the application because we can't change it while
+	the application id deployed.
+2. mvn clean install -DskipTest
+3. mvn checkstyle:check, mvn pmd:check, mvn findbugs:check
+4. Object mapper. Json object to string
+5. Marshal/Unmarshal -> Convert to byteStream/Convert back to data, like serialization
+6. ApiOperation, ApiResponses for swagger
+7. @BeforeAll, @BeforeEach. Avoid @BeforeAll because for running parallel tests, it might
+	not get the value.
+8. Run clover for test coverage report:
+	mvn clean package clover:clean clover:instrument clover:aggregate clover:clover
+	Target:site: index.html -> WebPage to show the details
+9. Branch coverage
+
+------------------------------------------------------------------------------
+07-31-2019
+1. Multi-module project 
+2. Connection Pool, Embedded tomcat configuration for production environment( Not using default)
+3. Test Post and Put.  NOW
+4. Helper class for validation (validation on the efctv_dt)
+5. Thrd_prty and cat_submtr_id oso **** Assigned to Himanshu
+6. Remove eplicit update_ts because hibernate manages it ****
+7. Add sequence names and stuff in Entity id
+8. FindById() override for active indicator??
+9. Check violations.
+10. If active indicator=i for toUpdate, ?????...
+11. PMD, CheckStyle, FindBugs...Source code analyzer
+12. f12 for inspect if user is smart to see stuff
+----------------------------------------------------------------------------------------------------------
+07-26-2019
+1. #base class, AuditEntity that can be extended to any class   @MappedSuperclass, @Version(for concurrent update)
+	Hibernate verison optimistic lock
+2. #Rename entity classes to AtsOrderTypeEntity
+3. #DTO package
+4. #@Transactional.... Transaction manager in service layer
+5. #Dependency management, pom for everything dao,
+6. #Helper funciton
+7. #Import the Finra base in eclipse
+8. Look into herd
+9. #Remove date validation	****
+10. #Code style. Import in eclipse(or intelliJ).....(Alt+Ctrl+L to make changes)
+	(Alt+Ctrl+O to remove unused imports)
+11. Wiki APi page
+
+
+//If effective date after Current Date OR effective date = Current date 
+		if(!newAtsOrderTypeEffectiveDate.before(currentDate)) {	
+			//If expiration date after effective date OR effective date = expiration date
+			if((newAtsOrderTypeExpirationDate==null) || (!(newAtsOrderTypeExpirationDate.before(currentDate)))) {
+------------------------------------------------------------------------------------------------------------------
+07-25-2019
+1. AppSec(Application Security)
+2. Zero Down time(blue-green switch)
+3. #Api documentation
+4. #buildinfo, currentUser, error info, exception handler class
+5. GoDaddy : Domain name registrar
+6. Route53 : 
+7. Use Junit5, Springboot
+8. Don't have SYSO in the application. Bad practise
+----------------------------------------------------------------------------------------------------------
+07-22-2019
+1. #Filter by efctv_dt or updt_dt whichever is latest. (A new Max-of column, then sort by that)  ****
+2. #Error response message(Relationship already exists for all)	****
+3. #For OSO and ATS, Active indicator in db(boolean column). If a record is updated, make that one inactive, and create a new one
+	propagating the same data. PLUS updating the uptd_dt and uptd_ts. Add original id too, when the record is totally updated,
+	we link it to the original id that was updated
+4. X-path, AWS SDK, AOP, Camelcase, Spring security, Use Spring data - NO JPA  
+5. Headers : map, multi-map and httpheaders object...........@RequestHeaders	
+6. Cross-site-scripting(XSS) : injecting malicious script from front end
+7. Unit test DAO? Maybe Not
+8. We can Fork a repo, then clone it. From local, push changes to fork and create pr from fork to the repo 
+------------------------------------------------------------------------------------------------
+07-19-2019
+1. #Do unit testing for OSO
+-------------------------------------------------------------------------------------------------
+07-18-2019
+1. Thrd_prty and cat_submtr_id and cat_rprtr_imid combo has to be greater than the same cat_submtr_id and cat_rprtr_imid combo
+----------------------------------------------------------------------------------------------
+07-17-2019
+1. #indexOf giving -1(not found) for ones with null expiration date	**** Use Iterables.getLast instead
+2. #Exp and efctv validation	****
+3. #Case insensitive	****
+4. # find by id null	****
+5. #if nothing changed, and update submitted????? No changes made ****
+6. #If UI passed the id for updating the effective date, could be done. Validation part  ****
+7. For Updating an effective record, the efctv_dt is always <= current Date, and it always fails validation,	
+	So in the custom validation constraint for efctv_dt, make it class level, and either pass different payload from UI for
+	already efctv vs future efctv, and based on the difference skip the validation. OR Just get the to-update row from repo
+	in the constraint validator class and check if it is efctv in the past or future.
+-------------------------------------------------------------------------------------
+07-16-2019
+1. #Change the Post API, remove all the weird scenarios		****
+2. #@Valid for 2 cases for update, future effDate and existing	****
+3. #Can we create multiple records for future as long as it is efective where last one ends? NO ****
+4. #For update, if 07-25:07-27,and 07-27:07-30, can they update the first record? NO ****
+5. For order by, if we are using native query, we can do Greater('create_ts','update_ts) which will sort by whichever is greatest for each record.
+	Jpa might not have this for criteria builder. NOT sure.
+---------------------------------------------------------------------------------------
+07-15-2019
+1. objectError.getCode() to get the field name for object error. Changed class name to match fieldName.
+2. #Remove the boilderplate codes
+3. #Null pointer exception showing when thrd_prty is empty. ***
+4. Postgres sql query for where 'id=null' is 'id is null'
+5. order by efctv_dt, xprtn_dt.... Orders first by efctv_dt and then if efctv_dt are the same, orders the same ones by xprtn_dt
+6. listIterator.next() moves to next everytime it is called. Two syso of same thing print different result.
+7. S3 select
+------------------------------------------------------------------------------------------------------------------
+07-12-2019(Api review)
+1. Save cache for crd_id and delete everyday at the end.
+2. #Make * for cross origin, upto *.catnms.com
+3. Different previleage different crd_id will have, some will have read-only, while some
+	have admin rights. Let them add or just view depending on previleage.
+4. #Send fieldnames in response along with response message,	****
+	example: cat_rprtr_imid, cat_rprtr_imid must not be null	*** ?Ask Lavanya, Map, : instead of ,
+5. #Json format of response:	****
+		{
+			"status":"Ats Order Type created"
+		}
+		{
+			"status":"Failed to created Ats Order Type",
+			"errors":{
+					cat_rprtr_imid, cat_rprtr_imid must not be null,
+					ats_order_type, ats_order_type must not be null
+				   }
+		}
+		{
+			"status":"Duplicate Ats Order Type"
+		}
+6. #Add Ramiz as code-reviewer
+7. #Temporary hard code real values for input, meeting with sunny and lavanya.		****
+8. #Exact same input twice: Duplicate example: 07-20 : 07-20, input 07-20 : 07-20	****
+9. #Update API changes will not have delete and add, we can update directly. Response 200
+10. #	JPMC ABC 07/12 07/13
+		JPMC ABC 07/14 07/15
+		Can one create 07-13 : 07-14 ?			For now we can.
+		
+	#	JPMC ABC 07/12 07/14
+		Can one create 07/14 07/14 ?	For now we can.
+11. #Swagger for rest
+12. Send custom headers response: HttpHeaders httpHeaders=new HttpHeaders[];
+13. Response Map<String,Object> to return a json response with name-value pairs, with
+	different value types. (Check Also: ObjectMapper, visibility, JSONobject)
+--------------------------------------------------------------------------------------
+07-12-2019
+1. Scenarios that I checked for post OsoRelationship
+	ExistingInDB	    Scenarios	
+	07-13 : 07-16 ->	07-11 : 07-12	 08-06 : 08-16
+	07-20 : 07-25 ->	07-16 : 07-19	 07-13 : 08-15
+	08-01 : 08-06 ->	07-26 : 08-01	 07-22 : 07-28
+2. Cast Object Error to field error
+3. #Do we need to respond that a field only accepts long and not string ???? NO, it comes 
+	from erd reference validation *****
+4. #ATS:
+		1. effective today and expiration today, PrevRecordExpdate=today? Yes create****	
+		2. Duplicate primary key ! ??? Change primary key to Serial no. ATS ****
+			JPMC ABC 07/12	07/12	
+			JPMC ABC 07/12	08/01
+5. Custom constraint validation. If same validation rule applies for 2 different entity classs,
+	could share the constraintValidation class by providing Object object and checking if(object instanceof CLASSNAME)
+
+---------------------------------------------------------------------------------
 07-11-2019
-1. #Do the Post API for OSO first, Review tomorrow, and we will come back to ATS Post Api later and fix it
+1. #Do the Post API for OSO first, Review tomorrow, and we will come back to ATS Post Api later and fix it ****
 2. Field error vs Global error vs Object Error in binding result
 3. #Verify Error message response and response codes.
 4. @NotBlank vs @NotEmpty
-5. #The Binding result error message order is not consistent
+5. #The Binding result error message order is not consistent ? Its Ok if random***
 6. Multiple constraint order of excution in hibernate bean validation: 
 	interface Cheap {}
 	interface Expensive {}
 	@GroupSequence(value={AtsOrderType.class, Cheap.class,Expensive.class})
 	And provide groups={Cheap.class or Expensive.class} in the constraint fields
 	{NOTE: the names cheap,expensive could be changed and the priority of names depend on the order it is put in
-	@GroupSequence...}
+	@GroupSequence...}		-> SKIPPED ! Not working as expected
+7. To check for valid effective, and expiration date in ATS, avoided .before and .after and chose compareTo to prevent
+	null pointer exception
+8. Scenarios that I checked for post ATS:
+			Current: 07-10-2019
+		Existing in DB			Scenarios
+		07-12 : 07-14		->	07-11 : 07-11R# 		08-15 : 08-20G#	 
+		07-22 : 07-24		->	07-15 : 07-21B# 		07-20(or any before xprn of last) : 08-20H#	  		
+		08-02 : 08-06		->	07-25 : 08-01B# 		07-23 : 08-01H#
+		08-09 : 08-15 		->	08-06 : 08-09E#			07-24 : 08-01B#
+
+		Current: 07-10-2019
+		Existing in DB			Scenarios
+		07-12 : 07-14		->	07-11 : 07-11R# 		08-15 : 08-20F#	 
+		07-22 : 07-24		->	07-15 : 07-21B# 		07-20(or any before xprn of last) : 08-20S#	  		
+		08-02 : 08-06		->	07-25 : 08-01B# 		07-23 : 08-01S#
+		08-09 : null 		->	08-06 : 08-09D#			07-24 : 08-01B#   		
 -------------------------------------------------------------------------------------------------------------
 07-10-2019
 1. Always Put ==null first for && condition so that .before and .after null doesnot come up
@@ -19,17 +1078,17 @@
 	fails to validate the object and throws an exception.
 ---------------------------------------------------------------------------------------------------------------
 07-09-2019
-1. #Error message, send every error as a response
-2. #Check different scenarios in wiki
+1. #Error message, send every error as a response	****
+2. #Check different scenarios in wiki	****
 --------------------------------------------------------------------------------------------------------------
 07-08-2019
-1. #Accept filters front front end. For now, do from UI but get it done for API too.
+1. #Accept filters front front end. For now, do from UI but get it done for API too. Skip for now***
 2. ExceptionHandlers, @ControllerAdvice. Implement best practise
-3. #Start POST API
-4. #ATS Validations update 
-5. #Does response message from API matter?
+3. #Start POST API	***
+4. #ATS Validations update 	****
+5. #Does response message from API matter?	Yes ****
 6. SNS & SQS.
-7. #Is list fetched from DB table sorted by primary key?
+7. #Is list fetched from DB table sorted by primary key? NO, for now create_ts desc ****
 -------------------------------------------------------------------------------------------------------------
 07-03-2019
 1. #Cross-origin does not yet support ui.finra.*.catdd.com, we can have wildcards at front only. How do we do it?

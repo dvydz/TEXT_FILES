@@ -1,0 +1,229 @@
+ATS Order Type scenarios:
+
+1. ADD
+	Current system date: 08/13/2019
+	CatReporterIMID			AtsOrderType		Description		EffectiveDate		ExpirationDate
+	*	ItsIMID				 ItsOrder				desc		08/06/2019				08/14/2019			Invalid EffectiveDate		***
+	*	ItsIMID				 ItsOrder				desc		08/06/2019				08/09/2019     Invalid EffectiveDate, exp date  **! Fix later
+	*	ItsIMID				 ItsOrder				desc		08/13/2019				08/07/2019			Invalid ExpirationDate		***
+	*	ItsIMID				 ItsOrder				desc		08/13/2019				08/13/2019			Valid						***
+	*	ItsIMID				 ItsOrder				desc		08/13/2019				08/29/2019			Valid 						***
+	*	ItsIMID				 ItsOrder				desc		08/18/2019				08/22/2019			Valid						***						
+	*	ItsIMID				 ItsOrder				desc		08/18/2019				null				Valid						***						
+
+		If one exists, eff:08-13-2019 exp:08-20-2019
+	*	ItsIMID				 ItsOrder				desc		08/13/2019				08/18/2019			Invalid						***	AlreadyExistException
+
+	*	If one exists, eff:08-13-2019 exp:08-20-2019
+		ItsIMID				 ItsOrder				desc		08/22/2019				08/28/2019			Invalid						***	AlreadyExistException
+
+	*	If one exists, eff:08-13-2019 exp:null
+		ItsIMID				 ItsOrder				desc		08/22/2019				08/28/2019			Invalid						***	AlreadyExistException
+	
+	*	If one exists, eff:08-13-2019 exp:08-22-2019
+		ItsIMID				 ItsOrder				desc		08/13/2019				08/22/2019			Invalid						***		AlreadyExistException			
+
+	*	If one exists, eff:08-22-2019 exp:08-29-2019
+		ItsIMID				 ItsOrder				desc		08/13/2019				08/22/2019			Invalid						***		AlreadyExistException
+	
+	*	If one exists, eff:08-05-2019 exp:currentDate(08/13/2019)
+		ItsIMID				 ItsOrder				desc		08/14/2019				08/22/2019			Valid						***	
+		
+	*	Doing it again: 
+		If one exists, eff:08-05-2019 exp:currentDate(08/13/2019)
+		ItsIMID				 ItsOrder				desc		08/14/2019				08/22/2019			Invalid						***	
+	
+	*	If one exists, eff:08-05-2019 exp:currentDate(08/13/2019)
+		ItsIMID				 ItsOrder				desc		08/13/2019				08/22/2019			Invalid						***	AlreadyExistException
+	
+	*	If one exists, eff:08-05-2019 exp:currentDate(08/13/2019)
+		ItsIMID				 ItsOrder				desc		08/16/2019				08/22/2019			Invalid						***		AlreadyExistException
+	
+	* New combo		***
+
+------------------------------------------------------------------------------------------------------------------------------------
+2. UPDATE
+	Current system date: 08/22/2019
+	
+	For Already effective, not yet expired: IMID:007	AtsOrderType:LENOVO	 Desc:This is a description  eff:08-05-2019   exp:08-25-2019
+	CatReporterIMID			AtsOrderType		Description		           EffectiveDate		ExpirationDate
+  *	007						LENOVO			This is a description			08-05-2019			08-30-2019		***			UPDATE
+  *	007						LENOVO			This is a description			08-05-2019			null			***			UPDATE
+  * 111						LENOVO			This is a description			08-05-2019			08-25-2019		***			FAIL      	IllegalArumentException
+  * 007						LENOVO			This is a description			08-15-2019			08-25-2019		***			FAIL		IllegalArumentException
+  *	007						LENOVO			This is a description			08-15-2019			08-10-2019		***			FAIL		Invalid expirationdate
+  *	007						LENOVO			This is a description			08-05-2019			08-25-2019		***			FAIL		AlreadyExistException(No changes made)
+  
+
+  	For Already effective, not yet expired: IMID:007	AtsOrderType:LENOVO	 Desc:This is a description  eff:08-05-2019 exp:null(01-01-3099)
+	CatReporterIMID			AtsOrderType		Description		           EffectiveDate		ExpirationDate
+  *	007						LENOVO			This is a description			08-05-2019			08-30-2019		***			UPDATE
+  *	007						LENOVO			This is a description			08-05-2019			null			***			FAIL		AlreadyExistException(No changes made)
+  * 111						LENOVO			This is a description			08-05-2019			null			***			FAIL		IllegalArumentException
+  * 007						LENOVO			This is a description			08-15-2019			null			***			FAIL		IllegalArumentException
+  *	007						LENOVO			This is a description			08-05-2019			08-10-2019		***			FAIL		Invalid expirationdate
+		-> Cannot Update to an expired record
+		
+		UPDATING ALREADY EXPIRED -----------
+
+	For Future effective: IMID:007	AtsOrderType:LENOVO	 Desc:This is a description  eff:09-05-2019 exp:10-05-2019
+	Other Existing :IMID:007 AtsOrderType:PIPER	 Desc:This is a description  eff:09-11-2019 exp:10-11-2019
+	Other Existing :IMID:007 AtsOrderType:DAPPER	 Desc:This is a description  eff:08-05-2019 exp:currentDate(08-22-2019)
+	Other Existing :IMID:007 AtsOrderType:BLUETOOTH	 Desc:This is a description  eff:09-11-2019 exp:null(01-01-3099)
+	CatReporterIMID			AtsOrderType		Description		           EffectiveDate		ExpirationDate
+  *	111						LENOVO			This is a description			08-27-2019			08-30-2019		***			UPDATE
+  *	111						LENOVO			This is a description			08-23-2019			null			***			UPDATE
+  *	007						LENOVO			This is a description			08-23-2019			null			***			UPDATE
+  *	007						LENOVO			This is a description			09-05-2019			10-05-2019		***			FAIL		AlreadyExistException(No changes made)
+  *	007						LENOVO			This is a description			09-05-2019			08-30-2019		***			FAIL		Invalid ExpirationDate
+  *	007						LENOVO			This is a description			09-05-2019			08-01-2019		***			FAIL		Invalid ExpirationDate
+  *	007						PIPER			This is a description			09-11-2019			10-11-2019		***			FAIL		AlreadyExistException
+  *	007						PIPER			This is a description			08-25-2019			09-09-2019		***			FAIL		AlreadyExistException    
+  *	007						DAPPER			This is a description			08-25-2019			09-09-2019		***			FAIL		AlreadyExistException
+  *	007						DAPPER			This is a description			nextDay				09-09-2019		***			UPDATE		
+  *	007(Updating again)		DAPPER			This is a description			nextDay				09-09-2019		***			FAIL		AlreadyExistException
+  *	007						BLUETOOTH		This is a description			08-25-2019			09-09-2019		***			FAIL		AlreadyExistException
+  *	007						BLUETOOTH		This is a description			09-11-2019			null			***			FAIL		AlreadyExistException
+  *	007						LENOVO			This is a description			08-05-2019			08-30-2019		***			FAIL		Invalid EffectiveDate
+  
+	For Future effective: IMID:007	AtsOrderType:LENOVO	 Desc:This is a description  eff:09-05-2019 exp:null(01-01-3099)
+	Other Existing :IMID:007 AtsOrderType:PIPER	 Desc:This is a description  eff:09-11-2019 exp:10-11-2019
+	Other Existing :IMID:007 AtsOrderType:DAPPER	 Desc:This is a description  eff:08-05-2019 exp:01-01-3099
+	Other Existing :IMID:007 AtsOrderType:BLUETOOTH	 Desc:This is a description  eff:09-11-2019 exp:null(01-01-3099)
+	CatReporterIMID			AtsOrderType		Description		           EffectiveDate		ExpirationDate
+  *	111						LENOVO			This is a description			08-25-2019			08-30-2019		***			UPDATE
+  *	111						LENOVO			This is a description			08-23-2019			null			***			UPDATE
+  *	007						LENOVO			This is a description			08-23-2019			null			***			UPDATE
+  *	007						LENOVO			This is a description			09-05-2019			null			***			FAIL		AlreadyExistException(No changes made)
+  *	007						LENOVO			This is a description			09-05-2019			10-05-2019		***			UPDATE		
+  *	007						LENOVO			This is a description			09-05-2019			08-30-2019		***			FAIL		Invalid ExpirationDate
+  *	007						LENOVO			This is a description			09-05-2019			08-01-2019		***			FAIL		Invalid ExpirationDate
+  *	007						PIPER			This is a description			09-11-2019			10-11-2019		***			FAIL		AlreadyExistException
+  *	007						PIPER			This is a description			08-23-2019			09-09-2019		***			FAIL		AlreadyExistException
+  *	007						DAPPER			This is a description			08-23-2019			09-09-2019		***			FAIL		AlreadyExistException
+  *	007						DAPPER			This is a description			nextDay				09-09-2019		***			FAIL		AlreadyExistException
+  *	007						BLUETOOTH		This is a description			08-23-2019			09-09-2019		***			FAIL		AlreadyExistException
+  *	007						BLUETOOTH		This is a description			09-11-2019			null			***			FAIL		AlreadyExistException(no changes made)
+  *	007						LENOVO			This is a description			08-05-2019			08-30-2019		***			FAIL		Invalid	EffectiveDate
+	
+	
+---------------------------------------------------------------------------------------------------------------------------------------------
+1. When effective and expiration date both, display error for both of them.	LATER !!!!
+2. Haven't handled null pointer exception if exiting has expiration date null. Expiration date 3099 took care of it ***
+3. While adding a relationship, do we need to convert description to uppercase? NO	***
+4. Compare expiration date to current and effective date instead of just effective date ***
+5. When updating future effective records, not being saved ***
+6. For future effective, No changes made not working ***
+7. validateRequest if id=null
+	
+	
+Updating this
+	  *	111						LENOVO			This is a description			08-25-2019			08-30-2019		****			UPDATE			(TO UPDATE)
+	TO
+	  *	222						ABC			This is a description			08-25-2019			08-30-2019		****			UPDATE
+	While
+	  *	222						ABC			This is a description			08-25-2019			08-30-2019		****			UPDATE       Already exists		(EXISTING)
+				And if effective, check for if new one starts tomorrow and old ends today
+
+	  ------------------------------------------------------------------------------------------------------
+Updating this
+	  *	222						ABC			This is a description			08-25-2019			08-30-2019		****			UPDATE			(TO UPDATE)
+	TO																																									
+	  *	222						ABC			description						08-30-2019			09-30-2019		****			UPDATE			(Updating to)
+	While
+	  *	222						ABC			This is a description			08-25-2019			08-30-2019		****			UPDATE       Already exists		(EXISTING)
+	Repo:
+
+
+	
+	
+	
+	        if ((atsOrderListNonExpired.size() > 1) ||
+            (!(existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime())) &&
+                ((!existingAtsOrderTypeEntity.getExpirationDate().equals(CatddDateUtils.getCalendarDate().getTime())) ||
+                    (!updatedAtsOrderTypeEntity.getEffectiveDate().equals(calendarNextDay.getTime())))) ||
+            ((existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime())) &&
+                !(existingAtsOrderTypeEntity.getAtsOrderType().equals(atsOrderTypeEntityToUpdate.getAtsOrderType()) &&
+                    (existingAtsOrderTypeEntity.getCatReporterIndustryMemberId().equals(atsOrderTypeEntityToUpdate.getCatReporterIndustryMemberId())))))
+        {
+            throw new AlreadyExistsException(String
+                .format("A non expired ATS order type already exists for the IMID %s and order type %s",
+                    atsOrderListNonExpired.get(0).getCatReporterIndustryMemberId(),
+                    existingAtsOrderTypeEntity.getAtsOrderType()));
+        }
+		
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   /* What we want the order to update to, if that order is future effective, and different from combo that we are updating,
+             throw AlreadyExistException      */
+            if (((existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime())) &&
+                !(existingAtsOrderTypeEntity.getAtsOrderType().equals(atsOrderTypeEntityToUpdate.getAtsOrderType()) &&
+                    (existingAtsOrderTypeEntity.getCatReporterIndustryMemberId().equals(atsOrderTypeEntityToUpdate.getCatReporterIndustryMemberId())))))
+            {
+                throwAlreadyExistsException(existingAtsOrderTypeEntity);
+            }
+			
+			
+toUpdate		  222			MMM			This is a description			09-11-2019			09-30-2019
+
+existing 		  222			MMM			This is a description			09-09-2019			10-30-2019
+
+Updated			  222			MMM			This is a description			09-22-2019			09-28-2019						Update ****
+-----------------------------------------
+
+toUpdate		  222			MMM			This is a description			09-11-2019			09-30-2019
+
+existing 		  222			MMM			This is a description			08-05-2019			10-30-2019
+
+Updated			  222			MMM			This is a description New			09-15-2019			09-30-2019						Update ****
+-----------------------------------------------------
+
+toUpdate		  222			MMM			This is a description			09-11-2019			09-30-2019
+
+existing 		  SBC			MMM			This is a description			09-09-2019			10-30-2019
+
+Updated			  SBC			MMM			This is a description			09-15-2019			09-30-2019    					Exception ***	
+
+
+Updating a future effective record,
+1.	Nothing in the existing list -> unique combination -> The future effective if condition doesnot pass in helper and the record is updated.
+2.  Existing is past effective(not yet expired) -> Payload cannot have a old effective date but if expiration is changed -> Thrown Exception. Pass from past-date-if-condition.
+3.	Existing is future effective(not yet expired ofcourse) -> Payload can be anything -> Successfully update -> if ats and imid is the same
+	If Imid and ats is not the same, meaning one already exists so throw exception.
+
+
+If an existing is past effective and not yet expired. The exception is thrown
+
+If an existing is future effective, not yet expired. The exception is thrown
+
+If we are updating something future effective and only changing the dates, Allow
+
+
+  /* What we want the order to update to, if its not expired, throw AlreadyExistException. */
+            if (!existingAtsOrderTypeEntity.getExpirationDate().before(CatddDateUtils.getCalendarDate().getTime()))
+            {
+                throwAlreadyExistsException(existingAtsOrderTypeEntity);
+            }
+
+--------------------------------
+
+Changing a future effective to 
+{
+	"atsOrderType": {
+						"catReporterOrganizationId" : "2222",
+						"catReporterIndustryMemberId": "togo",
+						"orderType": "ZATHINAAQB",
+						"effectiveDate": "2019-09-07",
+						"orderDescription": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+						"expirationDate":"2019-10-11"
+					}
+}
+
+
+Given that similar exists with a different orgId will create it instead, but not if orgId is the same,
+Do we want to add the orgId thing in the new logic. 
+
+
+
+OSO has problem. Nul pointer exception
+
+

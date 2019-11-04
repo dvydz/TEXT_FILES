@@ -1,4 +1,85 @@
+07-16-2019
+Get rid of all weird scenarios.
+New scenarios:
+	Cur Date: 07-16-2019
+	
+	In DB, 07-13 : 09-15: Currently Efctv
+	Add:   07-13 : 09-15	(NO) *		Invalid efctv_dt
+		   09-14 : 10-15	(NO)
+		   09-15 : 10-15	(YES)      After this, if tried to input the same again, it should fail
+		   09-16 : 10-15	(NO)
+	
+	In DB, 07-30 : 09-15: Future Efctv
+	Add:   07-30 : 09-15    (NO)	*
+	       07-17 : 07-30    (NO)	*
+		   09-14 : 10-15	(NO)	*
+		   09-15 : 10-15	(YES)	* After this, if tried to input the same again, it should fail
+		   09-16 : 10-15	(NO)	*
+	______________________________________________________________________________
 
+	In DB, 07-13 : 09-15 Currently Efective	(YES, only xprtn_dt)
+		   09-15 : 09-25 
+		   
+	A A A	07-20 : 07-25			Update...... A A A	only update efctv_dt>=cur date	
+		
+	A A A	07-25 : 07-30			
+
+	A A A	07-30 : 08-15			Update.......A A A only update xprtn_dt anthing
+	
+	
+	
+	
+	A A A	07-20 : 07-25			Update...... A B C	create....	(cross check for A B C)
+		
+	A A A	07-25 : 07-30			
+
+	A A A	07-30 : 08-15			Update.......A A A only update xprtn_dt anthing
+
+--------------------------------------------------------------------------
+		OSOUpdate:		07-16-2019
+		
+		1. If osoToUpdate_efctv_date>curDate{
+			Can update everything, What about the crtd_by and crtd_dt ???? Is it like a new record or updating an old?***Like update
+			* Filter according to not yet effective oso
+			If a new combo --> {
+					Create a new record
+					totally new one...like create does(id remains the same though)
+				}
+			If existing combo -->{
+					1. If
+				}
+					You cannot delete a record, but what if... 07-15 : 07-20, 07-21 : 07-25, 07-26 :07-28
+					If someone wants to update the middle one for future date, they cannot because duplicate
+		}
+		
+		2. IF UpdatedObject_efctv_date<=curDate{
+			Everything is the same, can only change the xprtn_dt
+		}		
+		
+	
+		
+		SCENARIOS: current: 07/16/2019
+		64 One exists: 07-13 : 07-17
+		
+		65 07-18 : 07-20	Can update the efctv_dt upto(on or after last xprtn_dt),
+						and xprtn_dt upto(on or before) the next row efctv_dt.		
+		66 07-23 : 07-25
+		67 07-28 : 08-01	If this is the last row, Can update the efctv_dt upto(on or after last xprtn_dt) 
+						but xprtn_dt=any(on or after efctv)(even null is fine)
+		
+		And ----------------------------
+		Nothing exists that is currently effective
+		
+		07-18 : 07-20 	1.Can update the efctv_dt upto(after curDate),
+						  and xprtn_dt upto(on or before) the next row efctv_dt.
+						2.If this is the last row, Can update the efctv_dt upto(after curDate),
+						  and xprtn_dt upto any(on or after efctv_dt)(even null is fine)
+		07-23 : 07-25
+		07-28 : 08-01
+						3. I
+						
+						
+	-------------------------------------------------------------------------------------------------------------------
 
 		07-01 : 07-05
 		
