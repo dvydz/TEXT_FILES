@@ -1,0 +1,388 @@
+
+INSERT INTO catdd_owner.herd_info_lk(
+	herd_info_id, actn_type, strg_name, name_space, bus_objct_dfntn, usage_cd, file_type, frmt_vrsn, prtn_key)
+	VALUES (2, 'FDBK_DWNLD', 'S3_MANAGED', 'IndustryMember', 'ORDER_EVENTS', 'INT', 'TXT', 0, ?);
+	
+---------------------------------------------------------
+
+getMessageType -> make a db call, check against businessObjectdata, if present then return new FeedbackProcessor() else return NoOpProcessor().
+					--------------> Create a connection, get businessObjectdata, compare. 
+				
+--------------------------------------------------------------------------------
+ @Test
+    @Tag("api")
+    @Tag("feedback")
+    @Publish(name = "Verify roles for getting feedback file details", description = "User and Readonly roles should able to get feedback file details.", coverage = "CATDD-405")
+    public void testRoleForgetFeedbackFiles()
+    {
+        Role role = Role.CAT_PRIV_CATDD_IM_USER;
+
+        Map<String, Object> queryParam = new HashMap<>();
+        queryParam.put(QueryParams.CAT_RPRTR_ORG_ID.getValue(), role.getOrgId());
+        queryParam.put(QueryParams.START_DATE.getValue(), "");
+        queryParam.put(QueryParams.END_DATE.getValue(), "");
+        queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+        FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+        FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+        List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+        FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+        assertEquals(actualFeedbackFileDetails, expectedFeedbackFileDetails, "Feedback file details are mismatching");
+    }
+
+    private FeedbackFileDetailsOutput buildFeedbackFileOutput(List<FeedbackFileInformationEntity> feedbackFileInformationEntityList, Map<String, Object> queryParams)
+    {
+        List<FeedbackFileDetailOutput> feedbackFileDetailOutputList = feedbackFileInformationEntityList.stream()
+                .map((feedbackFileInformationEntity -> convertFeedbackFileInformationEntityToFeedbackFileDetailOutput(feedbackFileInformationEntity)))
+            .collect(Collectors.toList());
+
+        FeedbackFileDetailOutput[] feedbackFileDetailOutputs = new FeedbackFileDetailOutput[feedbackFileDetailOutputList.size()];
+        feedbackFileDetailOutputs = feedbackFileDetailOutputList.toArray(feedbackFileDetailOutputs);
+
+        FeedbackFileDetailsOutput feedbackFileDetailsOutput = FeedbackFileDetailsOutput.builder().catOrganizationId((Integer) queryParams.get(QueryParams.CAT_RPRTR_ORG_ID.getValue()))
+            .startDate((String) queryParams.get(QueryParams.START_DATE.getValue()))
+            .endDate((String) queryParams.get(QueryParams.END_DATE.getValue()))
+            .perspective((String) queryParams.get(QueryParams.PERSPECTIVE.getValue()))
+            .feedbackFileDetailOutputs(feedbackFileDetailOutputs)
+            .build();
+
+        return feedbackFileDetailsOutput;
+    }
+
+---------------------------------------------------------------------------------------------------------------
+SQS message example:
+{
+    "Records": [
+        {
+            "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+            "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
+			"{  \"message\" : \"{ \\\"eventDate\\\" : \\\"\\\", \\\"businessObjectDataKey\\\" : { \\\"namespace\\\" : \\\"IndustryMember\\\", \\\"businessObjectDefinitionName\\\" : \\\"ORDER_EVENTS\\\", \\\"businessObjectFormatUsage\\\" : \\\"ING\\\", \\\"businessObjectFormatFileType\\\" : \\\"TXT\\\", \\\"businessObjectFormatVersion\\\" : 0, \\\"partitionValue\\\" : \\\"2019-10-15\\\",\\n \\\"subPartitionValues\\\" : [\"1331_MOTF_20191015_testFilePair_OrderEvents_144443\"] }, \\\"newBusinessObjectDataStatus\\\" : \\\"VALID\\\" , \\\"oldBusinessObjectDataStatus\\\" : \\\"\\\" }\",  \"type\" : \"\",  \"signature\" : \"\",  \"timestamp\" : \"\",\"topicArn\" : \"\",\"messageId\" : \"\",  \"signatureVersion\" : \"1\",  \"unsubscribeURL\" : \"\",  \"signingCertURL\" : \"\"}",
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1545082649183",
+                "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+                "ApproximateFirstReceiveTimestamp": "1545082649185"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+            "awsRegion": "us-east-2"
+        }
+        
+        ]
+}
+--------------------------------------------------------------------------------------------------------------------
+file format and compression, can it be uppercase?
+
+1. Create the file in db table with info that we have at hand.  ***
+2. Validation....
+		File name format check ***
+		File name should not exceed 90 characters ***
+		Check if the submitter id matches fip logged in user ***
+		File format check(for both meta and data files)... json,csv ***
+		Meta files has .meta before file format ***
+		File compression type check(.bz2) ***
+		
+		Do we need to verify imid??? NO ***
+		
+		File upload size(<1gb) 
+		************Couldnt upload more than 10 files********UI part
+		************Total size of file <5gb********UI part
+		
+3. Call DM with herd_info data to get the s3 location
+4. upload the file
+5. Register to DM
+
+
+https://stackoverflow.com/questions/336210/regular-expression-for-alphanumeric-and-underscores
+--------------------------------------------------------------------------------------------------------------------
+if part size is 5MB
+
+Lets say I use 3 Streams,
+
+10000/3 = 3333 ....... Each stream can have upto 3333*5= 16 GB
+
+is the given stream file size divided into 10000 parts....?
+
+
+
+Portal -> Endpoint for upload with file			-> store details in db
+												-> server-to-s3 -> response from s3
+------------------------------------------------------------------------------------------------------------------------
+
+If the submitter from existing is used as thrdparty or submitter in another firm, restrict
+
+
+		Before                                                       After
+
+1. If existing record(based on imid),						If existing record(based on imid),
+	check(new submitter = old submitter)						check(new submitter = old submitter)
+	and check(new thrdparty = old thrdparty)						or check(new thrdparty = old submitter)
+	Exception if true													Exception if true                          If existing record(based on imid)
+																													check(new submitter = old thrdparty)
+																														or check(new thrdparty = old thrdparty)	
+																															Exception if true
+
+
+			
+Same submitter, different third party........ or no third-party(in both existing and new)........or new has third-party, existing doesnt
+check(new Expiration date > old expiration date) -> Third Party relationship can not exist beyond submitter relationship
+
+
+					New																			Existing
+orgId				79																				7059(same org, response -> 1), 79(diff org, response -> 2)
+imid				ABC																				ABC
+Submitter			999																				999		
+third				111																				222
+effective			10-04-2019																	09-04-2019
+expiration			10-25-2019																	10-20-2019
+
+					Response	1.Third Party relationship can not exist beyond submitter relationship
+				OR	Response	2.IMID/Submitter Relationship Already Exits. Please Contact FINRA CAT Help Desk %S for Assistance. 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+					New																			Existing
+orgId				79																				7059(same org, response -> 1), 79(diff org, response -> 2)
+imid				ABC																				ABC				
+Submitter			999																				999			
+third																								
+effective			10-04-2019																	09-04-2019
+expiration			10-25-2019																	10-20-2019
+				
+					Response	1.Relationship Already Exists
+				OR	Response	2.IMID/Submitter Relationship Already Exits. Please Contact FINRA CAT Help Desk %S for Assistance. 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+					New																			Existing(same org, response -> 1), 79(diff org, response -> 2)
+orgId				79																				7059
+imid				ABC																				ABC		
+Submitter			999																				999			
+third				123																				123
+effective			10-04-2019																	09-04-2019
+expiration			10-25-2019																	10-20-2019
+
+					Response	1.Relationship Already Exists
+				OR	Response	2.IMID/Submitter Relationship Already Exits. Please Contact FINRA CAT Help Desk %S for Assistance. 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+					New																			Existing
+orgId				79																				7059
+imid				ABC																				ABC
+Submitter			999																				999
+third				111																				
+effective			10-04-2019																	09-04-2019
+expiration			10-25-2019																	10-20-2019
+
+							Third Party relationship can not exist beyond submitter relationship
+				OR			IMID/Submitter Relationship Already Exits. Please Contact FINRA CAT Help Desk %S for Assistance.
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+Same submitter, new has no third-party, existing has third-party
+check(new Expiration date < old expiration date) -> Expiring Submitter relationship while Third Party relationship exists beyond submitter relationship 
+																												OR IMID/Submitter Relationship...........
+				New																			Existing
+orgId				79																				88
+imid				ABC																				ABC
+Submitter			999																				999
+third																								222
+effective			10-04-2019																	09-04-2019
+expiration			10-18-2019																	10-20-2019
+	
+			
+			
+If(orgId_old = org_idnew & submitter_old = submitter_new   AND  (third-party_old=null & third-party_new!=null) ->call checker...adding child...
+If(orgId_old = org_idnew & submitter_old = submitter_new   AND  (third-party_old!=null & third-party_new=null) ->call checker...adding parent...
+
+If(submitter_old = submitter_new   AND  (third-party_old=abc & third-party_new=def OR newthirdpaty=oldthirdparty) ->new exception...
+
+
+--------------------------------------------------------------------
+File_submission table	-> no change
+
+Herd_info_lookup_table		-> removed constraint
+
+status_lookup_table		-> added a grant
+
+feedback_table	-> added
+
+herd_sequence -> added
+
+feedback_sequence -> added
+
+----------------------------------------------------
+File uploaded at 1pm, shows 6pm. because when I just save the local time, it saves in utc,
+
+-----------------------------------------------------
+
+1. Add all feedbacks to a list. then execute send the list. After connection, add a for loop or stream the list and after that commit. ***
+
+2. When we add to the herd_table what is the partition key gonna be? only compare with the rest except partition key ???	***
+
+3. Where is the return ignore.name() enum going to
+
+4. Sequence naming.... Sequence review...... Add into.....	***
+
+5. remove propertyUtility and lambdaTest	***
+
+6. redundant true???? controller ***
+
+7. GetHerdInfo() instead of checkHerdInfo(). Rename in lambda, and java doc too.
+
+https://wiki.finra.org/display/DataManagement/Business+Object+Data+Status+Change+Event+Notification
+
+---------------------------------------------------------------------------------------------
+File upload:
+
+1. ApacheCommons stream to disk, FileItem coverted to file, then transferManager to upload file to s3 -> FAIL in the middle for 1gb file, OK for smaller files. Multipart(YES)
+2. ApacheCommons stream to disk, then transferManager to upload stream to s3 -> 1gb file (Avg upload time : 2:44) , Multipart(YES), Thread not seem to be having effect
+	2:39, 2:30, 2:54, 2:51
+
+3. ApacheCommons stream to server then transferManager to upload stream to s3(No content length) -> 1gb file (Avg upload time : 2:28) , SinglePart
+	2:08, 2:46, 2:23, 2:36
+4. ApacheCommons stream to server then transferManager to upload stream to s3(Yes content length) -> 1gb file (Avg upload time : 2:01) , SinglePart
+	2:18, 1:50, 1:56, 2:02
+		
+	Came to a conclusion that some ways above using multipart because of TRANSFER_PART_COMPLETED_EVENT log in progressListener
+	
+	Questions:
+	1. How do we verify if it is actually using a multipart upload?
+	2. Best way to get the content-length for metadata when we are streaming to s3 using transferManager?
+	3. Use streaming using apache commons and store in an EFS, then put to s3. Using stream does it do multipart? or using the file?
+	
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1.   Client -> Server (Apache Commons streaming)         &       Server -> s3 (Transfer Manager - singlePart - Streaming)
+
+		fileSize|   Wifi	| Ethernet  |Content-length
+		  1 GB	|			|	 :31    |	NO
+				|			|	 :28    |		
+				|			|	 :26    |		
+				|			|	 :28    |		
+	  -----------------------------------------------
+				|			|	 :52    |	YES
+				|			|	1:06    |		
+				|			|	 :51    |	
+						
+   -> Content-length can only be known if client supplies it as a header but we want to avoid that.
+   -> Another way to get the content length is to buffer the stream into the memory and get the size which defeats the whole purpose of streaming.   
+
+******************************************************************************************************************************************************************
+
+2. Client -> Server (Apache commons file upload)           Save to a disk or EFS			Server -> S3 (Transfer manager  -> Stream or file)
+	
+	a)upload STREAM from server to S3
+															 |}
+		   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 	0:25	|	2:33	|	2:58 |}		0:24 	  |		0:52     | 1:16		
+						|		0:25	|	2:11	|	2:36 |}		0:25 	  | 	1:15     | 1:40
+						|				|			|		 |}		0:25  	  |		1:07     | 1:32
+						|				|			|		 |}		0:24  	  |		1:04     | 1:28		
+															 |}
+						
+	b)upload FILE from server to S3
+													 |}
+		   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 			|			|		 |}		0:24 	  |		0:18     | 0:42		
+						|				|			|		 |}		0:24 	  | 	0:18     | 0:42
+						|				|			|		 |}		0:23  	  |		0:19     | 0:42
+						|				|			|		 |}		0:24  	  |		0:19     | 0:43		
+															 |}
+	
+  
+   -> Reasonably the best way to do file upload. People use Lambdas to achieve this
+   -> On average, to upload a 1gb file it takes about --> Streaming(1 minutes 58 seconds,1:56, 2:11 | Ethernet: 1:26,1:19, 1:17; ), file(1 minutes 2 seconds, 1:09 | Ethernet: 43,51,42)                          		   
+   -> temp file not deleted after upload had completed ???? have to explicitly do item.delete();
+   -> Does Stream do multipart? or just file?
+   
+******************************************************************************************************************************************************************  
+3. Client -> Server (Apache Commons streaming) 								   Server -> s3 (Transfer Manager - in chunks - multipart streaming)
+
+
+????????????????????????????????????????????????
+
+
+
+******************************************************************************************************************************************************************
+4. Client -> server(storing in disk)..................Server->(s3)
+
+Uploading 1 gb file on average takes : 50 seconds
+
+-----------------------------------------------------------------------------------------------------------------------------
+5. Store in memory if less than 20MB, else store it in a disk temporarily, then use transferManager to upload to s3(James)
+			   fileSize    	|		    Wifi(timeToUpload)		 |}    EthernetCable(timeToUpload)   |
+						----------------------------------------------------------------------------------------
+						| Client-Server | Server-S3	| total	 |} Client-Server |  Server-S3   | total 
+		------------------------------------------------------------------------------------------------------
+		  1 GB			|	 			|			|		 |}		0:46 	  |		0:15     | 1:01		
+						|				|			|		 |}		0:42 	  | 	0:16     | 0:58
+						|				|			|		 |}		0:42  	  |		0:15     | 0:57
+						|				|			|		 |}		0:43  	  |		0:14     | 0:57	
+
+-----------------------------------------------------------------------------------------------------------------------------
+Streaming...................store upto 5MB, mark the position, then upload that chunk, come back and store another chunk, repeat...
+
+Client to server time, server to s3 time 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+FIle name validation scenarios:
+
+DATA FILE:
+
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2     	PASS																			***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.json.bz2		PASS																			***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dav.bz2		FAIL -> File Format incorrect													***
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.xx3		FAIL -> Compression type incorrect												***
+2022_MYID_20170101_OrderEvents_000123.csv.bz2					PASS									(Optional group)						***
+2022_MYID_20170101_OrderEvents_000123.json.bz2					PASS									(Optional group)						***
+2022_MYID_20170101_OrderEvents_000123.dav.bz2					FAIL -> File Format incorrect													***
+2022_MYID_20170101_OrderEvents_000123.csv.xx3					FAIL -> Compression type incorrect												***
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2		FAIL -> Unauthorized user														***
+1111_MYID_20170101_OrderEvents_000123.csv.bz2					FAIL -> Unauthorized user				(Optional group)						***
+2022_MYID_20170101_FileGroup1_000123.csv.bz2					FAIL -> File name format incorrect			(missing fileKind)					???
+2022_MYID_20170101_FileGroup1_OrderEvents.csv.bz2				FAIL -> File name format incorrect			(missing fileNumber)				***
+2022_MYID_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing file generation date)		***
+2222_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing imid)						***
+MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing orgid)						***
+20170101_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing orgid and imid)			***
+2222_20170101_OrderEvents_000123.csv.bz2						FAIL -> File name format incorrect			(missing imid and group)			***
+2222_20170101_FileGroup1_000123.csv.bz2							FAIL -> File name format incorrect			(missing imid and fileKind)			***		
+
+META FILE:
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv     	PASS																												****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.json		PASS																												****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.dav		FAIL -> File Format incorrect																						****
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dell.csv		FAIL ->	**Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+2022_MYID_20170101_OrderEvents_000123.meta.csv					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.json					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.dav					FAIL -> Format incorrect																							****
+2022_MYID_20170101_OrderEvents_000123.dell.csv					FAIL -> **Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv		FAIL -> Unauthorized user               																			****
+1111_MYID_20170101_OrderEvents_000123.meta.csv					FAIL -> Unauthorized user				(Optional group)															****
+2022_MYID_20170101_FileGroup1_000123.meta.csv					FAIL -> File name format incorrect			(missing fileKind)														????
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing fileNumber)													****
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing file generation date)											****
+2222_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing imid)															****
+MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing orgid)															****
+20170101_FileGroup1_OrderEvents_000123.meta.csv					FAIL -> File name format incorrect			(missing orgid and imid)												****
+2222_20170101_OrderEvents_000123.meta.csv						FAIL -> File name format incorrect			(missing orgid and group)												****
+2222_20170101_FileGroup1_000123.meta.csv						FAIL -> File name format incorrect			(missing imid and fileKind)		
+-----------------------------------------------------------------------------------------------------------------------------------
+05/20/2019
+* Implement REST endpoint to CREATE ATS Order Types:
+
+      1.Expiration Date (required) - this must be a timestamp date
+	Effective Date (required) - this must be a timestamp date
+        ----------------------------------------------------------> No Timestamp, only date ????
+      2.Lets say for IMID, if provided a special characters, how is the response gonna look like, error code, or msg?
+      3.Same combination of AtsOrderType and IMID replaces the existing record.
+	How should we do it?

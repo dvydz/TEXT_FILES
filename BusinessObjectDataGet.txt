@@ -1,0 +1,197 @@
+BusinessObjectDataGet:
+
+{
+    "id": 1826506,
+    "namespace": "IndustryMember",
+    "businessObjectDefinitionName": "ORDER_EVENTS",
+    "businessObjectFormatUsage": "INT",
+    "businessObjectFormatFileType": "TXT",
+    "businessObjectFormatVersion": 0,
+    "partitionKey": "BASE_FILE_NM",
+    "partitionValue": "9_OAKF_20190925_testFilePair_OrderEvents_441378",
+    "subPartitionValues": [],
+    "version": 0,
+    "latestVersion": true,
+    "status": "VALID",
+    "storageUnits": [
+        {
+            "storage": {
+                "name": "S3_MANAGED",
+                "storagePlatformName": "S3",
+                "attributes": [
+                    {
+                        "name": "bucket.name",
+                        "value": "4748-4841-6659-catdm-devint"
+                    },
+                    {
+                        "name": "download.role.arn",
+                        "value": "arn:aws:iam::474848416659:role/CATDM_DOWNLOADER"
+                    },
+                    {
+                        "name": "key.prefix.velocity.template",
+                        "value": "$namespace/$dataProviderName/$businessObjectFormatUsage/$businessObjectFormatFileType/$businessObjectDefinitionName/schm-v$businessObjectFormatVersion/data-v$businessObjectDataVersion/$businessObjectFormatPartitionKey=$businessObjectDataPartitionValue#if($CollectionUtils.isNotEmpty($businessObjectDataSubPartitions.keySet()))#foreach($subPartitionKey in $businessObjectDataSubPartitions.keySet())/$subPartitionKey=$businessObjectDataSubPartitions.get($subPartitionKey)#end#end"
+                    },
+                    {
+                        "name": "kms.key.id",
+                        "value": "arn:aws:kms:us-east-1:474848416659:key/ebf526e6-597c-449f-9aac-6a86ba42d3d3"
+                    },
+                    {
+                        "name": "upload.role.arn",
+                        "value": "arn:aws:iam::474848416659:role/CATDM_UPLOADER"
+                    },
+                    {
+                        "name": "validate.file.existence",
+                        "value": "true"
+                    },
+                    {
+                        "name": "validate.file.size",
+                        "value": "false"
+                    },
+                    {
+                        "name": "validate.path.prefix",
+                        "value": "true"
+                    }
+                ]
+            },
+            "storageDirectory": {
+                "directoryPath": "industrymember/cat/int/txt/order-events/schm-v0/data-v0/base-file-nm=9_OAKF_20190925_testFilePair_OrderEvents_441378"
+            },
+            "storageFiles": [
+                {
+                    "filePath": "industrymember/cat/int/txt/order-events/schm-v0/data-v0/base-file-nm=9_OAKF_20190925_testFilePair_OrderEvents_441378/9_OAKF_20190925_testFilePair_OrderEvents_441378.integrity.json",
+                    "fileSizeBytes": 427,
+                    "rowCount": null
+                }
+            ],
+            "storageUnitStatus": "ENABLED",
+            "storageUnitStatusHistory": null,
+            "storagePolicyTransitionFailedAttempts": null,
+            "restoreExpirationOn": null
+        }
+    ],
+    "attributes": [
+        {
+            "name": "baseFeedbackFile",
+            "value": "{\n  \"feedbackVersion\" : \"2.2\",\n  \"submitter\" : 9,\n  \"reporter\" : \"OAKF\",\n  \"fileGenerationDate\" : 20190925,\n  \"fileName\" : \"9_OAKF_20190925_testFilePair_OrderEvents_441378.json.bz2\",\n  \"receiptTimestamp\" : \"20190925T110902.707000000\"\n}"
+        },
+        {
+            "name": "derivedCrd",
+            "value": "4"
+        },
+        {
+            "name": "doneForDay",
+            "value": "true"
+        },
+        {
+            "name": "eventNotificationTime",
+            "value": "Wed Sep 25 15:09:05 UTC 2019"
+        },
+        {
+            "name": "fileFormat",
+            "value": "json"
+        },
+        {
+            "name": "fileName",
+            "value": "9_OAKF_20190925_testFilePair_OrderEvents_441378.json.bz2"
+        },
+        {
+            "name": "lambdaRequestId",
+            "value": "c5c5e826-6917-5f01-b087-be23ec46bb7c"
+        },
+        {
+            "name": "numberOfAttempts",
+            "value": "1"
+        },
+        {
+            "name": "overallProcessClosed",
+            "value": "false"
+        },
+        {
+            "name": "processDate",
+            "value": "2019-09-25"
+        },
+        {
+            "name": "recordCount",
+            "value": "1"
+        },
+        {
+            "name": "reporterId",
+            "value": "OAKF"
+        },
+        {
+            "name": "result",
+            "value": "Success"
+        },
+        {
+            "name": "sqsFirstReceiveTimestamp",
+            "value": "1569424145824"
+        },
+        {
+            "name": "sqsMessageId",
+            "value": "676b69e9-077e-4a14-b5ba-45f1399f08af"
+        },
+        {
+            "name": "submitterId",
+            "value": "9"
+        },
+        {
+            "name": "targetFileName",
+            "value": "9_OAKF_20190925_testFilePair_OrderEvents_441378.integrity.json"
+        },
+        {
+            "name": "targetOrgIds",
+            "value": "9"
+        },
+        {
+            "name": "uploadOrgId",
+            "value": "9"
+        },
+        {
+            "name": "uploadTimestamp",
+            "value": "2019-09-25T11:09:02.707-04:00"
+        }
+    ],
+    "businessObjectDataParents": [
+        {
+            "namespace": "IndustryMember",
+            "businessObjectDefinitionName": "INCOMING_FILE",
+            "businessObjectFormatUsage": "UPL",
+            "businessObjectFormatFileType": "TXT",
+            "businessObjectFormatVersion": 0,
+            "partitionValue": "7a8e2854-45b1-4ffc-9cda-0ed5fbb4725b",
+            "subPartitionValues": [],
+            "businessObjectDataVersion": 0
+        },
+        {
+            "namespace": "IndustryMember",
+            "businessObjectDefinitionName": "ORDER_EVENTS",
+            "businessObjectFormatUsage": "ACK",
+            "businessObjectFormatFileType": "TXT",
+            "businessObjectFormatVersion": 0,
+            "partitionValue": "9_OAKF_20190925_testFilePair_OrderEvents_441378",
+            "subPartitionValues": [],
+            "businessObjectDataVersion": 0
+        },
+        {
+            "namespace": "IndustryMember",
+            "businessObjectDefinitionName": "ORDER_EVENTS",
+            "businessObjectFormatUsage": "INT_META",
+            "businessObjectFormatFileType": "TXT",
+            "businessObjectFormatVersion": 0,
+            "partitionValue": "9_OAKF_20190925_testFilePair_OrderEvents_490449",
+            "subPartitionValues": [],
+            "businessObjectDataVersion": 0
+        }
+    ],
+    "businessObjectDataChildren": [],
+    "businessObjectDataStatusHistory": null,
+    "retentionExpirationDate": null
+}
+
+
+
+------------------------------------------------------------------
+Api call: using svc_catdd_d user name and password from credstash
+https://catdm-int.dev.aws.catnms.com:8443/herd-app/rest/businessObjectData/namespaces/
+IndustryMember/businessObjectDefinitionNames/ORDER_EVENTS/businessObjectFormatUsages/
+INT/businessObjectFormatFileTypes/TXT?partitionValue=9_OAKF_20190925_testFilePair_OrderEvents_441378&businessObjectFormatVersion=0

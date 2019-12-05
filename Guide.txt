@@ -140,6 +140,12 @@ Extras:
 	to search for a string in the branch you are on
 21. <git branch -d feature/CATDD-01
 	to delete a branch. You must to checked out to some other branch before doing itg
+22. <git fetch>
+    <git checkout test>
+	to checkout to a remote branch
+33. <git add -A>
+    <git reset --  src/main/java/org/finra/catdd/lambda/handler/HandlerTest.java>
+	to add all to staging except for one.
 ===================================================================================================================
 
 

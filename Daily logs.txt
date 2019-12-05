@@ -1,6 +1,499 @@
+12-04-2019
+Automation:(RestAssured)
+1. 	@ParameterizedTest annotation is for tests that accepts parameters from a method using annotation @MethodSource("usersRoles").
+	The method is something like 	public static Stream<Role> usersRoles() {return DataProviders.ewsAccountUsersRole();}
+2. We could use Map<String, Object> queryParam = new HashMap<>();
+				queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId()); to add the queries params.
+3. a) make a dao class that we reads from DB which we compare the actual api called results against.
+   b) A package for the test. Like Feedback. Which has FeedbackBuiler, FeedbackHelper and A function package that has actions(that has method to call the Api),
+     out(what the ValueObjects class would be converted to), valueObjects(like DTO methods that has expected api response payload).
+   c) Tests -> The actual test class where we compare results from DB call and the actual API call.
+   d) Note: Remember to specify what environment we want to run the test against in local -> appEnv=dev
+4.  Lombok annotations: @AllArgsConstructor, @Getter, @ToString, @EqualsAndHashCode, @Builder, @JsonIgnoreProperties(ignoreUnknown = true)
+
+-----------------------------------------------------------------------------------------------------------------
+11-26-2019
+1. Canonical Metamodel JPA Queries. Example AtsOrderTypeEntity_ . Underscore at the end. hibernate-jpamodelgen
+2. During Blue/Green deployment, the inflight request will be completed in the old blue. For example, starting a 1GB file upload right before the switch
+	should finish it in the old-blue even after the switch is made. It was a time-out period though. like 15 minutes for example.
+	The load balancer is smart enough to let the request that is already in progress to finish in the same stack.
+	New requests should be routed to the green stack immediately after the switch.
+3. From lambda -> Functions -> LambdaName -> Monitoring -> ViewLogsInCloudwatch -> type:text -> MessageId
+	To see the sqs message for the lambda file executed.
+4. Converting a given Date as String to Timestamp.     
+		    ZonedDateTime zonedDateTimeFromSQS = ZonedDateTime.parse(herdBusinessObjectDataStatusChangeEvent.getEventDate());
+            ZonedDateTime EasternZonedDateTime = zonedDateTimeFromSQS.withZoneSameInstant(ZoneId.of("America/New_York"));
+            feedback.setGeneratedTimestamp(Timestamp.valueOf(EasternZonedDateTime.toLocalDateTime()));
+5. In order to compareTo override for arrays, do the following.
+	Boolean.valueOf(Arrays.equals(array1, that.array1)).compareTo(true); This works but the following doesn't:
+	Arrays.equals(array1, that.array1).compareTo(true) because Boolean.valueOf has compareTo method.
+6. Converting list to array:
+	    FeedbackFileDetailOutput[] feedbackFileDetailOutputs = new FeedbackFileDetailOutput[feedbackFileDetailOutputList.size()];
+        feedbackFileDetailOutputs = feedbackFileDetailOutputList.toArray(feedbackFileDetailOutputs);
+7. ctrl + shift + N -> to find inside the project
+8. om.fasterxml.jackson.databind.exc.InvalidFormatException: Can not deserialize value of type java.sql.Timestamp from String"2017-04-12 17:04:42.8966":
+	not a valid representation. Cannot deserialize Cannot parse date while it seems to fit:
+	Set     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "America/New_York") for required format.
+9. See what type a variable is : a.getClass().getName() where a is the variable
+10. If date is received in String, we can easily use any Formatter to format into any Date. private final String feedbackTimestamp;
+11. java Clock
+12. Timestamp now = Timestamp.valueOf(LocalDateTime.now(ZoneId.of(EASTERN_TIMEZONE)));
+
+-----------------------------------------------------------------------------------
+11-22-2019
+1. In spring, CollectionUtils.isEmpty(empList) is null safe, unlike empList.isEmpty()
+2. Optional .get() gives java.util.NoSuchElementException when Optional.empty()
+3. Use businessObjectFormat from herd(swagger) to get the partition key
+4. finally block is executed before return in try
+5. we can put the cache initialization in static block instead of constructor if multiple times the object has to be created for the CacheHelper.
+	Creating multiple objects of the CacheManager does not help in caching.
+	public class CacheHelper
+	{
+		private static CacheManager cacheManager;
+		private static Cache<String , ArrayList> listCache;
+
+		static
+		{
+			System.out.println("I am inside static block ********************");
+			cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
+			cacheManager.init();
+
+			listCache = cacheManager.createCache("list", CacheConfigurationBuilder
+				.newCacheConfigurationBuilder(String.class, ArrayList.class, ResourcePoolsBuilder.heap(10)));
+		}
+		
+	//    public CacheHelper() {
+	//        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
+	//        cacheManager.init();
+	//
+	//        listCache = cacheManager.createCache("list", CacheConfigurationBuilder
+	//                .newCacheConfigurationBuilder(String.class, ArrayList.class, ResourcePoolsBuilder.heap(10)));
+	//    }
+
+		public Cache<String, ArrayList> getListCache()
+		{
+			return listCache;
+		}
+	}
+	
+	public class ValuesCalc
+	{
+		private CacheHelper cache = new CacheHelper();
+		private static String listCache = "listCache";
+
+		public void getListOfValues() {
+			System.out.println("***************"+cache.getListCache().containsKey(listCache));
+			List list;
+			if (cache.getListCache().containsKey(listCache)) {
+				list=cache.getListCache().get(listCache);
+			}
+			else
+			{
+				System.out.println("Calculating list and caching result.");
+
+				list = Arrays.asList("abc", "def", "ghi");
+				ArrayList<String> arrayList = new ArrayList<String>(list);
+				cache.getListCache().put(listCache, arrayList);
+			}
+		}
+	}
+6. Need to think about how it will work will multithreading whenever we use caching.
+7. Always use Timestamp now = new Timestamp(DateTime.now().getMillis()); instead of new Date().getTime(); JODA time
+	Or System.currentTimeMillis()
+	With timezone: current timestamp . Didnt work for lambda
+		private DateTimeZone zone = DateTimeZone.forID("America/New_York");
+        Timestamp now = new Timestamp(new DateTime(zone).getMillis());
+
+	The following works with lambda deployed. Gets the current time
+	LocalDateTime now = LocalDateTime.now(ZoneId.of("America/New_York"));		Java time
+	feedback.setCreatedOn(Timestamp.valueOf(now));
+------------------------------------------------------------------------------------------------------------------------
+11-21-2019
+1. Flyway configuration/setup is already done for jenkins pipelines and stuff. So only need to update the flyway scripts.
+   * V2019.4.3.04__create_fdbk_file_info.sql file for example.
+   * Next script name it like V2019.4.3.07__create_fdbk_file_info.sql. Leave the gap for Alters and stuff incase we need to modify.
+   * Place DDL commands related to one table together. For example, for file-submission-table, we need herd_info_table and status_lookup_table. Also,
+	 Sequence for file-submission-table and herd_info_table. 
+		
+		--drop sequence if exists catdd_owner.fdbk_file_info_seq;
+		--DROP TABLE if exists catdd_owner.fdbk_file_info;
+
+		CREATE SEQUENCE if not exists catdd_owner.fdbk_file_info_seq
+			INCREMENT 1
+			START 1
+			MINVALUE 1
+			MAXVALUE 9223372036854775807
+			CACHE 1;
+
+		ALTER SEQUENCE catdd_owner.fdbk_file_info_seq
+			OWNER TO catdd_owner;
+
+		COMMENT ON SEQUENCE catdd_owner.fdbk_file_info_seq
+			IS 'fdbk_file_info_seq id for each entry in table';
+
+		GRANT ALL ON SEQUENCE catdd_owner.fdbk_file_info_seq TO catdd_owner;
+		GRANT ALL ON SEQUENCE catdd_owner.fdbk_file_info_seq TO catdd_datafix_role;
+		GRANT SELECT ON SEQUENCE catdd_owner.fdbk_file_info_seq TO catdd_read_role;
+
+
+
+		CREATE TABLE if not exists catdd_owner.fdbk_file_info
+		(
+			file_id bigint         NOT NULL,
+			file_nm                character varying(300),
+			cat_rprtr_org_id       bigint,
+			cat_sbmtr_id           bigint NOT NULL,
+			sbmtr_3rd_prty         bigint,
+			gend_ts                timestamp without time zone NOT NULL,
+			prtn_value             character varying(100),
+			buckt_nm               character varying(150) NOT NULL,
+			file_key               character varying(300) NOT NULL,
+			herd_info_id bigint    NOT NULL,
+			crtd_ts                timestamp without time zone NOT NULL,
+			crtd_by                character varying(50) NOT NULL,
+			updtd_ts               timestamp without time zone NOT NULL,
+			updtd_by               character varying(50) NOT NULL
+		);
+
+		ALTER TABLE catdd_owner.fdbk_file_info
+			OWNER to catdd_owner;
+
+		ALTER TABLE catdd_owner.fdbk_file_info
+		  ADD CONSTRAINT herd_info_id_herd_info_lk FOREIGN KEY (herd_info_id)
+		  REFERENCES catdd_owner.herd_info_lk (herd_info_id);
+
+		GRANT ALL ON TABLE catdd_owner.fdbk_file_info TO catdd_owner;
+		GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.fdbk_file_info TO catdd_datafix_role;
+		GRANT SELECT ON TABLE catdd_owner.fdbk_file_info TO catdd_read_role;
+	*Sometimes we add the constraints like foreign key later after creating tables instead of while creating is to make sure all the tables are created first.
+   
+2. To try in local, download flyway. Place the required jar for databases into jars folder. In the flyway.conf inside conf folder, we can set the flyway-username,
+	flyway-password, flyway-url and flyway-driver as follows:
+  flyway.driver=org.postgresql.Driver
+  flyway.url=jdbc:postgresql://localhost:5432/
+  flyway.user=postgres
+  flyway.password=postgres
+3. Install postgreSql. Install PgAdmin. Create a database. Use those details in the flyway.config
+4. If we get java.lang.IllegalStateException: Failed to execute CommandLineRunner while deploying to an environment from jenkins, 
+	we can troubleshoot by going to cloudformation in aws, then to events. The stack can be found in the console: CATDD-provision-target-CATDD-api-ews-DEV-01
+5. We put logger for implemtion class, not he extending interface. Like ......getLogger(ServiceImpl.class) instead of extending interface
+-------------------------------------------------------------------------------------------------------------
+11-18-2019
+1. Use QueryDsl instead of CriteriaBuilder.
+2. In aws lambda page, there is a Concurrency tab where we can reserve concurreny. Maximum number of concurent execution of lambda can be set from there.
+	Since the lambda we have is just java code where there is no way to set the maximum concurreny like Spring. In spring. we can set the properties in 
+	application.yml, spring datasource.tomcat.max-active=200. which will initially set 200 concurrent connections in connection pool. 
+3. The lambda function is deployed in a specefic environment in jenkins, which will create a lambda function in aws. We could go to the lambda in aws, and	
+	create an event to test. We could test the lambda.
+	{
+    "Records": [
+        {
+            "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+            "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
+            "body": "{\n          \"Type\" : \"Notification\",\n          \"MessageId\" : \"3d9c82bc-227b-5e0f-81e1-d4ad8ee1f8d8\",\n          \"TopicArn\" : \"arn:aws:sns:us-east-1:474848416659:ESMP-X-I-CATDM-HERD-NOTIFICATIONS\",\n          \"Message\" : \"{\\n \\\"eventDate\\\" : \\\"2019-10-04T16:23:54.818-04:00\\\",\\n \\\"businessObjectDataKey\\\" : {\\n \\\"namespace\\\" : \\\"IndustryMember\\\",\\n \\\"businessObjectDefinitionName\\\" : \\\"ORDER_EVENTS\\\",\\n \\\"businessObjectFormatUsage\\\" : \\\"INT\\\",\\n \\\"businessObjectFormatFileType\\\" : \\\"TXT\\\",\\n \\\"businessObjectFormatVersion\\\" : 0,\\n \\\"partitionValue\\\" : \\\"9_OAKF_20190925_testFilePair_OrderEvents_441378\\\" \\n },\\n \\\"newBusinessObjectDataStatus\\\" : \\\"VALID\\\"\\n }\\n\",\n          \"Timestamp\" : \"2019-10-04T20:23:54.979Z\",\n          \"SignatureVersion\" : \"1\",\n          \"Signature\" : \"klkYdNHkOZRlMyBY/yukz/O9RJ9VxCtJSPV5EFSMUAcJKt9m+RBrnTLBbOqVpZYi4l0/Lcsnx/BJglM/PRYfbh566KkjETl+wm1thetQaLx1kgMBZdHIY5oT9AUhMXehzk4bQZeVv0L+lb5qwhI44UER8pUd+2qfNEyszoBEjDau/Vx75FMrtQSnPUXGhJu7PnQAeqMgMGlfxNGviunf1nNktm4Uex6UfHppCkh6zysAgf9CEowZzLvjKGwi5pRNDY3hjN90JRmHxhGnBG5MQQT2MyqgqB/TTKg6z15JX6QgVbilqylWCcilHOYPZxwiBGUZFpv/SimFFc95VRz3EA==\",\n          \"SigningCertURL\" : \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-6aad65c2f9911b05cd53efda11f913f9.pem\",\n          \"UnsubscribeURL\" : \"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:474848416659:ESMP-X-I-CATDM-HERD-NOTIFICATIONS:3e32ad9f-a2e6-4a7e-90ac-7019daf10d4f\"\n          \n      }",
+            "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "1545082649183",
+                "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+                "ApproximateFirstReceiveTimestamp": "1545082649185"
+            },
+            "messageAttributes": {},
+            "md5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+            "eventSource": "aws:sqs",
+            "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+            "awsRegion": "us-east-2"
+        }
+        
+        ]
+	}
+	We only need to update the body with stuff like namespace, businessObjectDefinitionName, formatUsage, fileType,businessObjectFormatVersion, partitionValue.	
+	Remember not to provide businessObjectDataVersion, as this is retrieved from herd, the latest one.
+4. HikariCP vs TomcatCP
+5. Assert.hasText(perspectives, "The perspective value can not be empty.");
+6.  long diffInMillies = Math.abs(endDate.getTime() - startDate.getTime());
+        long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+7. file name validation regex: for file upload
+	^[0-9]+_[a-zA-Z0-9]{0,7}_([12]\d{3}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01]))(_[a-zA-Z0-9]{0,20})?_[a-zA-Z0-9]{0,20}_[0-9]{6}(\.[a-zA-Z]{3,4})?\.[a-zA-Z]{3,4}\.[a-zA-Z0-9]{3,4}$
+	-> ([12]\d{3}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])) -> Date regex. First part year _ _ _ _ could be starting with 1 or 2 and any other two.
+		Then for Month _ _ could be 01,02.....09 OR 10,11,12
+		Then for Date _ _ could be 01, 02....09 OR 11,12....,21....29 OR 30,31
+	-> a{0,7} -> a could repeat 0 to 7 times
+	-> a+ -> a could appear one or more times
+	-> a* -> a could appear zero or more times
+	-> a? -> a could repeat zero or one time
+----------------------------------------------------------------------------------------------------
+11-13-2019
+1. Deploy ECS-EWS.......
+	Verification: 1. Login to AWS using MFA with  Account: finra-catct (327598677452) -> Go to ECS ->  Filter list as "catdd" ->  Select CATDD-INTERNAL-EWS
+		 -> Select tab ECS-Instances -> Select an EC2 instance from ec2 column -> Verify the AMI id.   New AMI id = ami-05495984236abcc35, old=ami-0676b362a8f8e5829
+2. Deploy API-EWS job.....
+	Verification: 1. Run health check 
+				  2. Run the Build info. Build info should have version as SNAPSHOT 0.2.0, old was 0.1.0
+3. Deploy UI job.....
+	Verification: 1. Run health check
+				  2. Login to AWS using MFA with  Account: finra-catct (327598677452) -> Go to ECS ->  Filter list as "catdd" ->  Select CATDD-INTERNAL-EWS
+				  -> Select the service name catdd-svc-ui-ews-c-01 -> Go to Events tab -> See something like "catdd-svc-ui-ews-c-01 registered 3 targets in 
+					 target-group tg-catdd-ui-ews-ct-01"
+4. Deploy Bastion/External stack......
+	For ext_ecs: Check the ec2 ami as below:
+	Verification: 1. Login to AWS using MFA with  Account: finra-catct (327598677452) -> Go to ECS ->  Filter list as "catdd" ->  Select CATDD-EXT
+		 -> Select tab ECS-Instances -> Select an EC2 instance from ec2 column -> Verify the AMI id.   New AMI id = ami-05495984236abcc35, old=ami-0676b362a8f8e5829
+				  2. Verify by logging in to reporterPortal for UI AND by hitting currentUser endpoint for API
+	For bastion: let CM verify		 
+--------------------------------------------------------------------------------------------------
+11-12-2019
+
+	catdd-api-ews		release 0.2.0 -> dev-int, qa, qa-int, qa-stress
+						develop -> dev
+
+	catdd-api-isso		release 0.2.0 -> dev-int, qa, qa-int, qa-stress
+						develop -> dev
+
+	catdd-ui-ews		release 0.2.0 -> dev-int, qa, qa-int, qa-stress
+						develop -> dev
+
+	ecs-ews				develop -> dev
+
+	catdd-external -> bastion	develop -> dev
+
+	Deploy isso-dev-int and isso-qa-int later after letting CAT-DC team know since they are using it.
+------------------------------------------------------------------------------------------
+11-11-2019
+1. findbugs: EI_EXPOSE_REP ....Usually happens when returning reference to a mutable object. Return a clone instead.
+2. Mutable vs immutable objects
+3. #Upgrade the AMI.
+4. #New Wiki will be 0.2.1
+5. #Mostly from 0.1.1
+6. group by
+7. Need a config file in .aws in root folder for s3 location and stuff:
+	[default]
+	region=us-east-1
+	output=json
+	role_arn=arn:aws:iam::474848416659:role/APP_CATDD
+8. Need to add a ignore unknown property if using Jackson in order to ignore the fields in the api payload that the other team might keep adding on.
+	objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+9. Convert a String to Timestamp with a certain format:
+	    private DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+		String time = "2019-11-05T17:47:58.995-05:00"
+		new Timestamp(formatter.parseDateTime(time).getMillis())
+10. Timestamp now = new Timestamp(new Date().getTime());
+11. ID Gateway Base Image in the docker images page is the fip image
+12. We only deploy to Dev environment features or develop branch. Release branch we deploy in all other environments.
+13. Always do Stack-update for infrastructure, and Fresh for the application, when it comes to COMMAND_ENV.
+14. NO ISSO at all in this release.....Add ews ecs....hopefully. and bastion
+15. Transaction Management. We only need one commit(). Always close resources
+16. Need to deploy ALB first, then ECS, then Bastion.
+17. Always use Optional whenever there is a list of key:value. Avoids checking for name and value seperately.
+	Instead of doing:
+	 boolean isAttributePresent =
+            businessObjectDataAttributesList.stream().anyMatch(attribute -> attribute.getName().equalsIgnoreCase(name));
+	 if (isAttributePresent)
+        {
+            String attributeValue =
+                businessObjectDataAttributesList.stream().filter(attribute -> attribute.getName().equalsIgnoreCase(name)).findAny().get().getValue();
+            if (!StringUtils.isEmpty(attributeValue))
+            {
+                return attributeValue;
+            }
+		}
+	Do the following:
+	Optional<Attribute> optionalAttribute =
+            businessObjectDataAttributesList.stream().filter(attribute -> attribute.getName().equalsIgnoreCase(name)).findFirst();
+        return optionalAttribute.isPresent() ? optionalAttribute.get().getValue() : null;
+18. Collections.EMPTY_LIST
+19. preparedStatement = connection.prepareStatement(INSERT_HERD_QUERY, preparedStatement.RETURN_GENERATED_KEYS);
+		ResultSet rs = preparedStatement.getGeneratedKeys();
+		rs.next();
+		//column index 1 returns the value of 1st column herd_info_id which is autogenerated during a record insertion
+		return rs.getLong(1);
+20. Jdbc query to insert a auto-generated id automatically:
+	"INSERT INTO herd_info_lk (herd_info_id,actn_type,strg_name,name_space,bus_objct_dfntn,usage_cd," +
+        "file_type,frmt_vrsn,prtn_key) VALUES (nextval('data_rfrsh_hs_seq'),?,?,?,?,?,?,?,?);";
+21. Forward vs reverse proxy.
+22. Do we need to close resultSet???? https://docs.oracle.com/javase/7/docs/api/java/sql/ResultSet.html	***Dont need to
+23. Objects.nonNull(sqsAtributes) -> Checking for map null and others too
+24. Never put integers like -1(C like code), or anything for a condition where something is null. Use Optional class. 
+	Optional<Integer> herdInfoId = Optional.ofNullable(null);   ->  Integer herdInfoId = null;
+	Optional.ofNullable(), Optional.of(), .get()
+25. Seperate out logic for different things. Cleaner code.
+26. Splunk will only have the Log messages. And exceptions for only 500 are logged. Meaning Logger.error(String.format("........", exception));
+27. connection.rollback(). Replace connection.commit() with this inorder to just check but not commit to the db.
+28. No-Op -> No operation
+--------------------------------------------------------------------------------------
+11-08-2019
+1. Unit testing with a 2 server:
+	@BeforeAll
+    public static void init() throws SQLException
+    {
+        h2server = Server.createPgServer("-baseDir", getBaseDir(), "-pgPort", "5535", "-pgDaemon");
+        LOGGER.info("Starting server");
+        h2server.start();
+        LOGGER.info(String.format("Server Started and is running on %s", h2server.getURL()));
+        assert getPgJdbcDriver();
+        connection = DriverManager.getConnection("jdbc:h2:~/test02", "sa", "");
+        LOGGER.debug("Creating tables in H2");
+        creatingTable(connection);
+        LOGGER.debug("Tables are created");
+
+    }
+	private static void creatingTable(Connection connection) throws SQLException
+    {
+        Statement statement = connection.createStatement();
+        String creatingFeedbackFileInfoTable =
+            "CREATE TABLE IF NOT EXISTS feedback_file_info (file_id bigint NOT NULL, file_nm character varying(300) NOT NULL," +
+                " cat_rprtr_org_id bigint, cat_sbmtr_id bigint NOT NULL, cat_thrd_prty_id bigint, gnrtd_ts timestamp NOT NULL," +
+                " prtn_vl character varying(500) NOT NULL, bckt_nm character varying(150) NOT NULL, file_key character varying(300) NOT NULL," +
+                " herd_info_id bigint NOT NULL, crtd_ts timestamp NOT NULL, crtd_by character varying(50) NOT NULL, updtd_ts timestamp NOT NULL," +
+                " updtd_by character varying(50) NOT NULL);";
+        statement.execute(creatingFeedbackFileInfoTable);
+
+        String creatingHerdInfoTable =
+            "CREATE TABLE IF NOT EXISTS herd_info_lk (herd_info_id smallint NOT NULL, actn_type character varying(50) NOT NULL," +
+                " strg_name character varying(50) NOT NULL, name_space character varying(50) NOT NULL,bus_objct_dfntn character varying(50) NOT NULL," +
+                "usage_cd character varying(50) NOT NULL, file_type character varying(50) NOT NULL, frmt_vrsn integer NOT NULL," +
+                " prtn_key character varying(50) NOT NULL);";
+        statement.execute(creatingHerdInfoTable);
+        String creatingRefreshSequence = "CREATE SEQUENCE IF NOT EXISTS DATA_RFRSH_HS_SEQ;";
+        statement.execute(creatingRefreshSequence);
+        String creatingRefreshSequence2 = "CREATE SEQUENCE IF NOT EXISTS OSO_RLTNP_HS_SEQ;";
+        statement.execute(creatingRefreshSequence2);
+        statement.close();
+    }
+	
+	@AfterAll
+    public static void closeConnection() throws SQLException
+    {
+        LOGGER.info("Stopping The Server");
+        DataBaseUtils.releaseConnection(connection);
+        if (h2server.isRunning(true))
+        {
+            h2server.stop();
+        }
+    }
+2. In order to add a custom banner in spring application startup. Add a banner.txt file in resources folder with the custom banner....Can add Ascii arts 
+     _ _ __    _____      __    ________     |\---/|                  ______   ______     __ _ _   
+    / / / /   // ___|    // \   ||_   _|     | ,_, |                   ||  _ \  ||  _ \   \ \ \ \    
+   / / / /   || |       //   \    || |        \_`_/-..----.            || | | | || | | |   \ \ \ \                 
+  ( ( ( (    || |      //  -  \   || |     ___/ `   ' ,""+ \           || | | | || | | |    ) ) ) )              
+   \ \ \ \   || |___  //  ___  \  || |    (__...'   __\    |`.___.';   || |_| | || |_| |   / / / /             
+    \_\_\_\   \\____|//__/   \__\ ||_|     (_,...'(_,.`__)/'.....+*   _||____/ _||____/   /_/_/_/
+	
+3. 	pmd:check			-> PMD
+
+	findbugs:check		-> Findbugs
+
+	clover:clean clover:instrument clover:aggregate clover:clover	-> Clover coverage
+
+	checkstyle:check	-> Checkstyle
+
+	clean install	-> Mvn clean install
+-------------------------------------------------------------------------------------------------------
+11-06-2019
+1. When using mapper from jackson ObjectMapper, setting another object in a string causes issues.
+	example: "message":"{
+				"eventDate" : " 2019-11-05T17:47:58.995-05:00 ",
+				"businessObjectDataKey" : {
+					"namespace" : "CATRD", 
+					"businessObjectDefinitionName" : "MSTR_MBR_DICT_HS",
+					} ,
+				"newBusinessObjectDataStatus" : "VALID",
+				}"
+	when mapping to a class that takes message as string. it considers "{" part as a value to the message and skips the rest of the "...."
+	Thus we can use other approaches. like Jackson library, or JSON-java.
+	Example of Jaskson: Map<String, Object> params = new HashMap<>();
+						params.put("message", "{\"eventDate\" : \"2019-11-05T17:47:58.995-05:00\"}");
+						String payload = new ObjectMapper().writeValueAsString(params);
+2. Amazon S3/4748-4841-6659-catdm-devint/catrd     /cat   /prc         /txt        /mstr-mbr-dict-hs     /schm-v0       /data-v0      /trade-dt=2017-09-18
+				BUCKET					/namespace/		 /FormatUsage /FormatType /	BusinessObjectName	/SchemaVersion / DataVersion / PartitionValue
+3. No need to provide businessObjectDataVersion, it takes the latest....And many conversions from herd to s3 like order_events to order-events happens. So always use
+	the names(namespace, formatType etc) from herd.
+4. #Come up with custom CATDD name for Spring boot application startup....
+5.  Calling the lambda handler with SQS message from a main method.
+	public static void main(String[] args) throws JsonProcessingException
+    {
+        HerdNotificationHandler herdNotificationHandler = new HerdNotificationHandler();
+        SQSEvent sqsEvent = new SQSEvent();
+        SQSEvent.SQSMessage sqsMessage = new SQSEvent.SQSMessage();
+        List<SQSEvent.SQSMessage> sqsMessageList = new ArrayList<>();
+
+        Map<String, Object> params = new HashMap<>();
+		
+        //SQS Payload for feedback metadata
+        params.put("message",
+            "{\"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"INT\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"9_OAKF_20190925_testFilePair_OrderEvents_441378\" } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+        String payload = new ObjectMapper().writeValueAsString(params);
+
+
+        //SQS Payload for masterMemberDictionary
+        params.put("message",
+            "{\"eventDate\" : \" 2019-11-05T17:47:58.995-05:00 \",\"businessObjectDataKey\" : {\"namespace\" : \"CATRD\", \"businessObjectDefinitionName\" : \"MSTR_MBR_DICT_HS\",\"businessObjectFormatUsage\" : \"PRC\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-04-20\",\"businessObjectDataVersion\" : 1 } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+        String payload = new ObjectMapper().writeValueAsString(params);
+
+        sqsMessage.setBody(payload);
+        sqsMessageList.add(sqsMessage);
+        sqsEvent.setRecords(sqsMessageList);
+
+        herdNotificationHandler.handleRequest(sqsEvent, null);
+    }
+}
+6. If the request made it to the server, it would always return JSON response
+7. #Caused by: org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint "herd_info_lk_actn_type_key"
+  Detail: Key (actn_type)=(FEEDBACK) already exists.
+8. h2server = Server.createPgServer("-baseDir", getBaseDir(), "-pgPort", "5535", "-pgDaemon");
+9. pg_dump -U postgres -s catdd_owner > C:\Users\k28172\mySchema.sql   Command for commandline to dump the schema and table create details intoa file
+10.  if(StringUtils.isEmpty(record.getFileName()))
+                {
+                    preparedStatement.setNull(++position, Types.VARCHAR);
+                }
+                else
+                {
+                    preparedStatement.setString(++position, record.getFileName());
+                }
+	Instead of doing like above for null check, do the following. setObject(index, object, type) 
+    preparedStatement.setObject(++position, feedback.getSubPartitionValue(), Types.VARCHAR);
+
+11. CATRAO -> CAT RIM and OPS team. Not a different application.
+12. MFA signin aws: https://adfs-mfa.finra.org/adfs/ls/idpinitiatedsignon.htm?loginToRp=urn:amazon:webservices
+	login id: k28172@corp.root.nasd.com
+	password: ***********************
+	Then RSA token
+13. JAMS client
+14. For something that is created and used only once, use constructor.
+	For example, the handler for Lambda function, when handler is triggered, in the AWS when the object is created, the constructor creates the object of Map<enum, sqsMessageProcessor> once and reuses it.
+15. We never provide businessObjectDataVersion. We get the latest from business object data herd dm.
+16. Start logging more often in order to track it.
+17. findById() spring data respository returns Optional.
+------------------------------------------------------------------------------------------------------------
 11-04-2019
-1. 
-----------------------------------------------------------------------------------------------------------
+1. Be mindful when changing the structure for response payload as other teams might be using the api. We can always add more field to the response but
+	not change the structure itself.
+2. Arrays.stream(ewsHeaderValueArray).parallel().anyMatch(headerEntry.getValue()::equalsIgnoreCase
+		Arrays.stream(HEADER_VALUES).parallel().anyMatch(headerEntry.getValue()::contains))
+			For Array.
+	For List, ewsHeaderValueList.parallelStream().anyMatch(valueToMatch::contains)
+	
+	In order to combine two methods for stream:
+	Arrays.stream(feedbackObjectDefinitionNameArray).anyMatch(objectDefinitionName -> objectDefinitionName.trim().equalsIgnoreCase(businessObjectDefinitionFromSqs)) 
+3.   ewsHeaderValue: use,use-read,use-read-grant,read-grant,read  .    Application.yml for array of values. Read in java, @Value("${security.ewsHeaderValue:use}")
+																														private String[] ewsHeaderValue;
+4. ArrayUtils.isEmpty(), StringUtils.isEmpty()   Apache commons lang3
+5. In order to use reflectionTestUtils for a list, set a list as 
+	    public static final List<String> ENTITLEMENT_VALUE_LIST = Arrays.asList("use", "use-read", "use-read-grant", "read-grant", "read");
+	the use that in the values. eg.   ReflectionTestUtils.setField(httpHeaderApplicationUserBuilder, "ewsHeaderValue", ENTITLEMENT_VALUE_LIST);
+6. ClassLoaders java. System ClassLoader, Extension ClassLoader and bootstrap ClassLoader:
+		private static PropertyUtility propertyUtility = new PropertyUtility();
+	            properties.load(PropertyUtility.class.getClassLoader().getResourceAsStream(env + ".properties"));
+		-> Loads properties from whatever environment it is on. example, dev.properties
+
+7. Where is import org.finra.catdd.catco.model.entity.QDataFileStatusEntity; ???? Its a autogenerated entity which will be inside of target/generated-sources/java/entity
+	Do mvn clean install to get it from the configuration in intelliJ, not the command line. DO in the specific package that is missing the import
+    Add trim maybe....
+8. Do mvn clean in /code; to get rid of the error CreateProcess error=206, The filename or extension is too long
+9. Bean method 'buildProperties' in 'ProjectInfoAutoConfiguration' not loaded because @ConditionalOnResource did not find resource
+	'${spring.info.build.location:classpath:META-INF/build-info.properties}'.
+	Solve the above by doing mvn clean install in /code
+10. when finbugs is not working, file name too long problem, do mvn clean.
+--------------------------------------------------------------------------------------
 10-30-2019
 1. The diamond problem
 2. Multiple data source spring
@@ -89,7 +582,8 @@
 10. we have a exception handler somewhere in the applicaition. If we have throws for exceptions, later at the end it gets handled from there. We could add
 	more exceptions to it.
 11. #Add the Timestamp, add the junit test for helper
-12. DateTimeFormatter patternFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+12. Joda time:
+	DateTimeFormatter patternFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
 	String dateWithCertainFormat = patternFormat.print(new DateTime());
 13. DateTimeFormat is thread-safe and immutable
 14. Good practise to put the private static final Logger LOGGER = LogManager.getLogger(FileUploadHelper.class); first thing inside the class.
@@ -452,7 +946,7 @@ http://math.hws.edu/javanotes/c5/s1.html
 4. Default value for @Value
 	@Value("${some.key:my default value}")
 	private String stringWithDefaultValue;
-5. entries on heap meaning????   The maxEntriesLocalHeap enforcement is only going to count the number of key/value pairs you store in the cache ****
+5. entries on heap meaning????   The maxEntriesLocalHeap enforcement is only going to count the number of key/value pairs(number of cache) you store in the cache ****
 6. timeToLiveExpiry = creationTimeOfCache + timeToLive
 	timeToIdleExpiry = mostRecentTimeCacheWasUsed + timeToIdle
 7. We dont need to unit test configuration. (cross-cutting concerns)
@@ -808,7 +1302,7 @@ MQ,KAFKA, DLQ PCI data MPI data
 7. #Case sensitive query paramter..... Himanshu 
 8. #Use entity for the query parameters
 9. #Null bug bix for post ATS/OSO ***
-10. Mavne surefire
+10. Maven surefire
 
 OsoRelationshipServiceImpl.java
 /OsoRelationshipRepositoryCustomImplTest.java

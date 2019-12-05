@@ -105,6 +105,16 @@ https://stackoverflow.com/questions/3762047/throw-checked-exceptions-from-mocks-
 https://www.mkyong.com/spring-boot/mockito-how-to-mock-repository-findbyid-thenreturn-optional/
 https://github.com/analogweb/commons-fileupload-plugin/blob/master/src/test/java/org/analogweb/acf/FileItemStreamMultipartParametersTest.java
 https://www.baeldung.com/java-filter-collection-by-list
+https://examples.javacodegeeks.com/core-java/java-8-parallel-streams-example/
+https://www.baeldung.com/java-json-escaping
+https://www.programcreek.com/java-api-examples/?class=org.h2.tools.Server&method=createPgServer
+https://stackoverflow.com/questions/1732789/malicious-code-ei-expose-rep-medium
+https://www.ibm.com/support/knowledgecenter/en/SSEPGG_11.1.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_t0057053.html
+https://www.baeldung.com/spring-boot-tomcat-connection-pool
+http://www.masterspringboot.com/configuration/web-server/configuring-tomcat-connection-pool-on-spring-boot
+https://www.baeldung.com/ehcache
+https://www.baeldung.com/hibernate-criteria-queries-metamodel
+https://www.mkyong.com/java/java-convert-date-and-time-between-timezone/
 ------------------------------------------------------------------------------------------------------
 Finra:
 https://wiki.finra.org/display/RAS/Splunk+Sidecar

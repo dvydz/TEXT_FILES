@@ -1,0 +1,147 @@
+
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Test scenarios for Feedback files download.
+
+1. --------0--------No role. 302 MOVED  ** !!!																								-----verify
+
+2. --------0--------No param, bad request 400 ***
+
+3. --------0--------Only Perspective param, FORBIDDEN 403 message *** 
+
+4. --------0--------Only CatorganizationId param, bad request 400  ***
+
+5. -------0---------with catOrganizationId and perspective param, get endDate as today, startDate as today-9, 200 ***	ManualSet ------ verify Today-9, how 10 days?
+
+6. -------0---------With catOrganizationId, perspective and startDate more than 10 days back from today, 400 Bad request message ***
+
+7. -------0---------With catOrganizationId, perspective and startDate less than 10 days back from today, 200 ****		ManualSet	-----verify Today-9, how 10 days?
+
+8. -------0---------With catOrganizationId, perspective and endDate(any date), 200  ** !!!
+
+9. -------0---------With catOrganizationId, perspective and endDate, for which no record present, 404 NOT FOUND  ***			
+
+10. -------0---------With All params, less than 10 days apart, 200	***
+
+11. -------0---------With All params, more than 10 days apart, 400 Bad request. message	***
+
+12. -------0---------With All params, end date less than start date, Bad request 400 message  ***
+
+13. -------0---------With all params, With Roles 200*** 																				-----	Verify Sort ?
+
+14. -------0---------With Wrong perspective, 400 bad Request, message ***																------ Message verify?
+
+15. -------0---------with wrong start date format, 400 Bad request, message ***															
+
+16. -------0---------with wrong end date format, 400 Bad request, message ***															------Verify
+
+17. -------0---------with ThirdParty perspective, 400 bad request, message  ***	
+
+18. -------0---------with wrong catOrganizationId, 403 unauthorized, message ***
+	
+
+Notes: 
+
+1. verify startDate, endDate, catReporterOrganizationid, perspective in every request *** Comparing the entire response
+
+2. Add jira ticket to coverage.	***
+
+3. Parametrize perspective for All param test		****
+
+4. NOTE: As of 12/03/2019 the api has startDate Inclusive and endDate Exclusive
+
+5. Business requirement: CurrentDate (endDate): 12-04-2019 Inclusive
+	    						  (startDate) : 11-25-2019 Inclusive
+	Querying from database table: generatedTimestamp < 12-05-2019  (endDate)        Calendar.Date, -10
+								  generatedTimestamp >= 11-25-2019 (startDate)
+								  
+6. If end date passes, does it check as date+1 during query? Ask himanshu
+
+------------------------------------------------------------------------------------------------
+
+File upload test scenarios:
+Examples:
+Logged in user : 2022
+
+DATA FILE:
+
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2     	PASS																			***0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.json.bz2		PASS																			***0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dav.bz2		FAIL -> File Format incorrect													***0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.csv.xx3		FAIL -> Compression type incorrect												***0
+2022_MYID_20170101_OrderEvents_000123.csv.bz2					PASS									(Optional group)						***0
+2022_MYID_20170101_OrderEvents_000123.json.bz2					PASS									(Optional group)						***0
+2022_MYID_20170101_OrderEvents_000123.dav.bz2					FAIL -> File Format incorrect													***0
+2022_MYID_20170101_OrderEvents_000123.csv.xx3					FAIL -> Compression type incorrect												***0
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2		FAIL -> Unauthorized user														***0
+1111_MYID_20170101_OrderEvents_000123.csv.bz2					FAIL -> Unauthorized user				(Optional group)						***0
+2022_MYID_20170101_FileGroup1_000123.csv.bz2					FAIL -> File name format incorrect			(missing fileKind)					???
+2022_MYID_20170101_FileGroup1_OrderEvents.csv.bz2				FAIL -> File name format incorrect			(missing fileNumber)				***0
+2022_MYID_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing file generation date)		***0
+2222_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing imid)						***0
+MYID_20170101_FileGroup1_OrderEvents_000123.csv.bz2				FAIL -> File name format incorrect			(missing orgid)						***0
+20170101_FileGroup1_OrderEvents_000123.csv.bz2					FAIL -> File name format incorrect			(missing orgid and imid)			***
+2222_20170101_OrderEvents_000123.csv.bz2						FAIL -> File name format incorrect			(missing imid and group)			***0
+2222_20170101_FileGroup1_000123.csv.bz2							FAIL -> File name format incorrect			(missing imid and fileKind)			***		
+
+META FILE:
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv     	PASS																												****0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.json		PASS																												****0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.meta.dav		FAIL -> File Format incorrect																						****0
+2022_MYID_20170101_FileGroup1_OrderEvents_000123.dell.csv		FAIL ->	**Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+2022_MYID_20170101_OrderEvents_000123.meta.csv					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.json					PASS									(Optional group)															****
+2022_MYID_20170101_OrderEvents_000123.meta.dav					FAIL -> File Format incorrect																							****
+2022_MYID_20170101_OrderEvents_000123.dell.csv					FAIL -> **Tricky part.If no meta. It is like data file with dell format...file format incorrect						****
+1111_MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv		FAIL -> Unauthorized user               																			****0
+1111_MYID_20170101_OrderEvents_000123.meta.csv					FAIL -> Unauthorized user				(Optional group)															****
+2022_MYID_20170101_FileGroup1_000123.meta.csv					FAIL -> File name format incorrect			(missing fileKind)														????
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing fileNumber)													****
+2022_MYID_20170101_FileGroup1_OrderEvents.meta.csv				FAIL -> File name format incorrect			(missing file generation date)											****
+2222_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing imid)															****
+MYID_20170101_FileGroup1_OrderEvents_000123.meta.csv			FAIL -> File name format incorrect			(missing orgid)															****
+20170101_FileGroup1_OrderEvents_000123.meta.csv					FAIL -> File name format incorrect			(missing orgid and imid)												****
+2222_20170101_OrderEvents_000123.meta.csv						FAIL -> File name format incorrect			(missing orgid and group)												****
+2222_20170101_FileGroup1_000123.meta.csv						FAIL -> File name format incorrect			(missing imid and fileKind)		
+
+
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.api.json.bz2		FAIL -> Incorrect Del Data type		****0
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.meta.api.json		FAIL -> Incorrect Del Meta type		****0
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.del.json.bz2		PASS -> Correct Del Data type 		****0
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.meta.del.json		PASS -> Correct Del Meta type		****0
+
+
+1111_MYID_20170101_OrderEvents_000123.meta.csv										 missing group
+2022_MYID_20170101_FileGroup1_000123.meta.csv										missing fileKind
+
+meta.DEL.csv
+meta.DEL.json
+
+DEL.json.bz2
+DEL.csv.bz2
+
+(.[a-zA-Z]{3,4})?.[a-zA-Z]{3,4}\.[a-zA-Z0-9]{3,4}
+
+
+
+meta.csv
+meta.json
+
+csv.bz2
+json.bz2
+
+.[a-zA-Z]{3,4}\.[a-zA-Z0-9]{3,4}
+
+
+
+check if has 3 or 4 parts....
+	4 parts:
+		META:	[1]=meta     [2]=del      [3]=json
+		DATA: 	[1]=del 	 [2]=json	  [3]=bz2
+	
+	3 parts:
+		META:	[1]=meta     [2]=json    
+		DATA: 	[1]=json	 [2]=bz2
+
+
+

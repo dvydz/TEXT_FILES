@@ -1,0 +1,383 @@
+add to herd_info table -> returns herd_info_id....***
+feedback.setHerdInfoId(herd_info_id)	***
+add to feedback table ***
+
+1. Configure the sequence. for unit test too
+2. deploy lambda
+3. businessObjectDataKey.setNamespace(NAMESPACE_MEMBER) for ews ???? why ????
+4. change the rollbacks to commit
+5. In case of no messageType match, Ignore message what should the message be. A generic one for all???
+6. properties file namespaces add.    catrd or catdd
+
+
+
+----------------------------------------------------------------------------------------------------------
+Questions:
+1. Caused by: org.postgresql.util.PSQLException: ERROR: duplicate key value violates unique constraint "herd_info_lk_actn_type_key"
+	Detail: Key (actn_type)=(FEEDBACK) already exists.
+	
+	Can't have another record with same actn_type??? ***Drop the unique constraint from db table
+	
+2. #Verify the targetOrgIds is submitterId and derivedCrd is reporterOrgId		****
+3. #What field do I set null check for?	*** thirdparty and catReporterOrgId
+5. #Is one Sqs event gonna have multiple records, and each record has one key? meaning one feedback file? Also the key can be just one *** Just one
+6. #Add foreign key. ****
+7. How many storage units can it have, and which one to take from? storage name	*** In reality it is gonna be only One.
+8. #Unit tests	****
+9. #Can attributes like derivedCrd be present and have a value null ? or if it has to be null, the attribute is absent? *** Could be both. check for both
+10. Update the generated timestamp as eventdate and submitter and org id. ****
+11. Log message before commit ????? its ok
+12. Do we need to close resultSet???? https://docs.oracle.com/javase/7/docs/api/java/sql/ResultSet.html	***Dont need to
+
+------------------------------------------------------------------------------------------------
+File feedback download lambda....
+1. Filter SQS based on Namespace. Cat_rd and cat_ews_data is already there. Need to add IM.   
+2. Then Further filter based on the attribute uploadSource:"web"...
+3. Then Populate the db table.
+
+1. HerdNotificationHandler is the entry point for lambda which will get triggered by the SQS.
+2. Get HerdBusinessObjectDataStatusChangeEvent which is a dto...check if status is "available"....
+3. Based on the properties file, get the herd url, username and password....
+4. Get the BusinessObjectDataKey from HerdBusinesssObjectDataStatusChangeEvent dto.
+5. Based on BusinessObjectDatakey, get the businessObjectName, fileFormat, formatUsage....
+6. Get the fileFormat, reqdOvjectName, formatUsage
+7. If(fileformatFromSqs equals fileFormat)....then if(businessObjectName equals reqdObjectName AND formatUsage equal formatUsage)......Get the businessObjectData....
+8. call the service method to process the file with parameters as s3Bucket, and s3Keys.
+
+
+
+Question:
+1. Insert all records into the db table at once. Next time...clean it up, and insert again? NO ***
+2. Where do we add the listen to IM namespace? AWS console??? No ***. Need to go to CATDD-infrastructure/resources/deployment_files/create_dd_processor_queue_payload.json
+3. How does the s3 object look like for feedback file. Is it just a fileName? We dont care*** because we are not reading anything from the file.
+4. We don't open the file itself. We just get the details from sqs and herd and populate the db table right??? YES ***
+------------------------------------------------------------------------------------------------
+ews organization list......... has ews org name for certain org id.....
+
+based on the list retrieved from the database, we convert it into the dto and return to the user.
+Now we need to add firm names to the dto which we get from another list of a dto class.
+
+so we need to osoRelationshipResponse.setCatReporterOrgName(Find from the list based on the orgId)
+
+------------------------------------------------------------------------------------------------
+File Metadata : file name, file size, audit info, 
+--------------------------------------------------------------------------------------------------------
+Can a different firm has same imid
+
+Remove the orgId as a part of unique combination *****
+
+Dont need 3099-01-01 as expiration date	
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+1. Create entity from object	*****
+2. validateExistingAtsOrderTypeEntity(isActive, isExpired) *****
+3. validateNewAtsOrderTypeEntity(emptyList->Create???? , existing expiration date not today *****, updated effective date not tomorrow*****)
+4. validateUpdatedAtsOrderTypeEntity(If no changes were made ***, if already effective record and updating other than expirationAndDesc(3things)*****, if listEmpty ????, 
+	ifListSize>1****, ifUpdatingFuture&ExpiringToday&NewEffectiveTomorrow(3things)****, ifFutureEffective Existing***
+5. validate Effective date				*****
+6. validateAtsCreateOrUpdateRequest DIfferent scenarios    *****
+--------------------------------------------------------------------------------------------------------------------------------------------------
+//        if(null == updateRequest.getOsoRelationship().getExpirationDate())
+//        {
+//            updateRequest.getOsoRelationship().setExpirationDate(CatddConstants.NULL_EXPIRATION_DATE);
+//        }
+
+---------------------------------
+ if (atsOrderTypeEntityToUpdate.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime()) && existingAtsOrderTypeEntity != null)
+        {
+            /* If list of non expired ats Order Types > 1, throw AlreadyExistException -> To prevent duplicates while updating an order that is expiring today,
+               and updated order starts tomorrow. To prevent duplicates if updated multiple times      */
+            if (atsOrderListNonExpired.size() > 1)
+            {
+                throw new AlreadyExistsException(String
+                    .format("A non expired ATS order type already exists for the IMID %s and order type %s",
+                        atsOrderListNonExpired.get(0).getCatReporterIndustryMemberId(),
+                        existingAtsOrderTypeEntity.getAtsOrderType()));
+            }
+            /* What we want the order to update to, if that order is past effective, and expiring today, and the updated order start from tomorrow -> Succesful update,
+               Otherwise throw AlreadyExistException. */
+            if (!(existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime())) &&
+                        ((!existingAtsOrderTypeEntity.getExpirationDate().equals(CatddDateUtils.getCalendarDate().getTime())) ||
+                                (!updatedAtsOrderTypeEntity.getEffectiveDate().equals(calendarNextDay.getTime()))))
+            {
+                throw new AlreadyExistsException(String
+                    .format("A non expired ATS order type already exists for the IMID %s and order type %s",
+                        atsOrderListNonExpired.get(0).getCatReporterIndustryMemberId(),
+                        existingAtsOrderTypeEntity.getAtsOrderType()));
+            }
+            /* What we want the order to update to, if that order is future effective, throw AlreadyExistException */
+            if(existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime()))
+            {
+                throw new AlreadyExistsException(String
+                    .format("A non expired ATS order type already exists for the IMID %s and order type %s",
+                        atsOrderListNonExpired.get(0).getCatReporterIndustryMemberId(),
+                        existingAtsOrderTypeEntity.getAtsOrderType()));
+            }
+        }
+        /*
+          1. If list of non expired ats Order Types > 1, throw AlreadyExistException -> To prevent duplicates while updating an order that is expiring today,
+                and updated order starts tomorrow. To prevent duplicates if updated multiple times
+          2. What we want the order to update to, if that order is past effective, and expiring today, and the updated order start from tomorrow -> Succesful update,
+                 Otherwise throw AlreadyExistException.
+          3. What we want the order to update to, if that order is future effective, throw AlreadyExistException
+         */
+//        if ((atsOrderTypeEntityToUpdate.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime()) &&
+//            ((atsOrderListNonExpired.size() > 1) ||
+//                (existingAtsOrderTypeEntity != null &&
+//                    (!(existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime())) &&
+//                        ((!existingAtsOrderTypeEntity.getExpirationDate().equals(CatddDateUtils.getCalendarDate().getTime())) ||
+//                            (!updatedAtsOrderTypeEntity.getEffectiveDate().equals(calendarNextDay.getTime()))))) ||
+//                existingAtsOrderTypeEntity.getEffectiveDate().after(CatddDateUtils.getCalendarDate().getTime()))))
+//        {
+//            throw new AlreadyExistsException(String
+//                .format("A non expired ATS order type already exists for the IMID %s and order type %s",
+//                    atsOrderListNonExpired.get(0).getCatReporterIndustryMemberId(),
+//                    existingAtsOrderTypeEntity.getAtsOrderType()));
+//        }
+			
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+  *	007						LENOVO			This is a description			08-05-2019			08-20-2019
+  
+  
+  
+			*	007						DELL			This is a description			08-22-2019			08-30-2019
+
+			*	007						LENOVO			This is a description			08-21-2019			08-30-2019			
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    public static void queryParamCheck(Integer catReporterOrganizationId, String catReporterIndustryMemberId, Integer catSubmitterId, Integer thirdPartyId,
+        String processingDate)
+    {
+        List<Object> params = new ArrayList<>();
+        params.add(catReporterOrganizationId);
+        params.add(catReporterIndustryMemberId);
+        params.add(catSubmitterId);
+        params.add(thirdPartyId);
+        params.add(processingDate);
+        List<String> string = new ArrayList<>();
+        string.add(null);
+        params.removeAll(string);
+        if (params.size() < 1)
+        {
+            throw new IllegalArgumentException(CatddConstants.MORE_THAN_ONE_QUERY_PARAM);
+        }
+    }
+	
+	---------------------------------------
+	
+	public interface OsoRelationshipRepositoryCustom
+{
+    List<OsoRelationshipEntity> findBySearchCriteria(Integer catReporterOrganizationId, String catReporterIndustryMemberId, Integer catSubmitterId,
+        Integer thirdPartyId, String processingDate);
+}
+
+	------------------------------------------
+	
+	    @Override
+    public List<OsoRelationshipEntity> findBySearchCriteria(Integer catReporterOrganizationId, String catReporterIndustryMemberId, Integer catSubmitterId,
+        Integer thirdPartyId, String processingDate)
+    {
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<OsoRelationshipEntity> criteriaQuery = criteriaBuilder.createQuery(OsoRelationshipEntity.class);
+        Root<OsoRelationshipEntity> osoRelationshipEntityRoot = criteriaQuery.from(OsoRelationshipEntity.class);
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (catReporterOrganizationId != null)
+        {
+            predicates.add(criteriaBuilder.equal(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.catReporterOrganizationId), catReporterOrganizationId));
+        }
+
+        if (catReporterIndustryMemberId != null)
+        {
+            predicates
+                .add(criteriaBuilder.equal(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.catReporterIndustryMemberId), catReporterIndustryMemberId));
+        }
+
+        if (catSubmitterId != null)
+        {
+            predicates.add(criteriaBuilder.equal(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.catSubmitterId), catSubmitterId));
+        }
+
+        if (thirdPartyId != null)
+        {
+            predicates.add(criteriaBuilder.equal(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.thirdParty), thirdPartyId));
+        }
+
+        if (processingDate != null)
+        {
+            predicates.add(criteriaBuilder.lessThanOrEqualTo(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.effectiveDate),
+                CatddDateUtils.getDateFromStringYYYYMMDD(processingDate)));
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.expirationDate),
+                CatddDateUtils.getDateFromStringYYYYMMDD(processingDate)));
+        }
+        else
+        {
+            predicates.add(criteriaBuilder
+                .greaterThanOrEqualTo(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.expirationDate), CatddDateUtils.getCalendarDate().getTime()));
+        }
+        predicates.add(criteriaBuilder.equal(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.activeFlag), true));
+        criteriaQuery.where(predicates.toArray(new Predicate[predicates.size()]));
+        criteriaQuery.orderBy(criteriaBuilder.desc(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.createdOn)),
+            criteriaBuilder.desc(osoRelationshipEntityRoot.get(OsoRelationshipEntity_.updatedOn)));
+        return entityManager.createQuery(criteriaQuery).getResultList();
+    }
+	
+	-------------------------------------------------------------------------------------------------------
+	
+	    private String processingDate = CatddDateUtils.getDateAsStringYYYYMMDD(CatddDateUtils.getCalendarDate().getTime());
+
+	  @Test
+    public void testRetrieveOsoRelationshipGivenProcessingDateOnly()
+    {
+        List<OsoRelationshipEntity> osoRelationshipEntityList = osoRelationshipRepositoryCustom.findBySearchCriteria(null, null, null, null, processingDate);
+    }
+	
+	-------------------------------------------------------------------------------------
+
+	    @GetMapping(value = "/osoRelationships")
+    @ResponseStatus(code = HttpStatus.OK)
+    @PreAuthorize("hasAuthority('" + SecurityFunctions.FN_OSO_RELATIONSHIP_GET + "')")
+    public OsoRelationshipDetails retrieveOsoRelationships(
+        @RequestParam(name = "catReporterOrganizationId", required = false) Integer catReporterOrganizationId,
+        @RequestParam(name = "catReporterIndustryMemberId", required = false) String catReporterIndustryMemberId,
+        @RequestParam(name = "catSubmitterId", required = false) Integer catSubmitterId,
+        @RequestParam(name = "thirdPartyId", required = false) Integer thirdPartyId,
+        @RequestParam(name = "processingDate", required = false) String processingDate)
+    {
+        return osoRelationshipService
+            .retrieveOsoRelationships(catReporterOrganizationId, catReporterIndustryMemberId, catSubmitterId, thirdPartyId, processingDate);
+    }
+	
+	--------------------------------------------------------------------------------------------------
+	
+	 @Test
+    public void testGetRequestHappyPath() throws Exception
+    {
+        OsoRelationshipDetails osoRelationshipDetails = new OsoRelationshipDetails();
+        when(osoRelationshipService.retrieveOsoRelationships(7059, null, null, null, null)).thenReturn(osoRelationshipDetails);
+        mockMvc.perform(get("/api/v1/osoRelationships").param("catReporterOrganizationId", "7059")).andExpect(status().isOk()).andReturn();
+        verify(osoRelationshipService).retrieveOsoRelationships(7059, null, null, null, null);
+    }
+	
+	--------------------------------------------------------------------------------------------------
+		public interface OsoRelationshipService
+
+	 OsoRelationshipDetails retrieveOsoRelationships(Integer catReporterOrganizationId, String catReporterIndustryMemberId, Integer catSubmitterId,
+        Integer thirdPartyId, String processingDate);
+		
+	-------------------------------------------------------------------------------------
+	    private static final String PROCESSING_DATE = CatddDateUtils.getDateAsStringYYYYMMDD(CatddDateUtils.getCalendarDate().getTime());
+
+	    @DisplayName("Test get with only catReporterIMID")
+    @Test
+    public void retrieveOsoRelationship()
+    {
+        List<OsoRelationshipEntity> existingOsoRelationship = listWrap(generateOsoRelationshipEntity(EXPIRED));
+        when(osoRelationshipRepositoryCustom.findBySearchCriteria(ORG_ID, REPORTER_IMID, null, null, null)).thenReturn(existingOsoRelationship);
+        osoRelationshipService.retrieveOsoRelationships(ORG_ID, REPORTER_IMID, null, null, null);
+    }
+
+    @DisplayName("Test get with only processingDate")
+    @Test
+    public void retrieveOsoRelationshipWithOnlyProcessingDate()
+    {
+        OsoRelationshipEntity osoRelationshipEntity1 = generateOsoRelationshipEntity(EXPIRED);
+        osoRelationshipEntity1.setExpirationDate(CatddDateUtils.getCalendarDate().getTime());
+        List<OsoRelationshipEntity> existingOsoRelationship = new ArrayList<>();
+        existingOsoRelationship.add(osoRelationshipEntity1);
+        existingOsoRelationship.add(generateOsoRelationshipEntity(FUTURE_EFFECTIVE));
+        when(osoRelationshipRepositoryCustom.findBySearchCriteria(ORG_ID, null, null, null, PROCESSING_DATE)).thenReturn(existingOsoRelationship);
+        OsoRelationshipDetails actual = osoRelationshipService.retrieveOsoRelationships(ORG_ID, null, null, null, PROCESSING_DATE);
+        assertEquals(2, actual.getOsoRelationshipDetails().size());
+    }
+
+    @Test
+    public void retrieveOsoRelationshipsNoParam()
+    {
+        Exception thrown = assertThrows(IllegalArgumentException.class, () -> osoRelationshipService.retrieveOsoRelationships(null, null, null, null, null));
+        assertEquals(CatddConstants.MORE_THAN_ONE_QUERY_PARAM, thrown.getMessage());
+    }
+
+    @Test
+    public void testretrieveOsoRelationshipsNoParam_ForIncorrectCrdId_ThrowObjectNotFoundException()
+    {
+        when(osoRelationshipRepositoryCustom.findBySearchCriteria(ORG_ID, REPORTER_IMID, null, null, null)).thenReturn(null);
+        assertThrows(ObjectNotFoundException.class, () -> osoRelationshipService.retrieveOsoRelationships(WRONG_ORG_ID, null, null, null, null));
+    }
+
+	
+    @Test
+    public void createOsoRelationship_happyPath_allow()
+    {
+        // assuming nothing is in the database
+        when(currentUserService.getCurrentUserInfo()).thenReturn(currentUserInfoMocked);
+        when(currentUserInfoMocked.getUser()).thenReturn(userMocked);
+        when(userMocked.getUserId()).thenReturn(CREATED_BY);
+        when(osoRelationshipRepositoryCustom.findBySearchCriteria(ORG_ID, REPORTER_IMID, SUBMITTER_ID, null, null)).thenReturn(Collections.emptyList());
+        OsoRelationshipEntity osoRelationshipEntity = generateOsoRelationshipEntity(FUTURE_EFFECTIVE);
+        osoRelationshipEntity.setId(RECORD_ID);
+        when(osoRelationshipRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        OsoCreateOrUpdateRequest osoCreateOrUpdateRequest = generateOsoRelationshipRequest(FUTURE_EFFECTIVE);
+        when(osoRelationshipHelper.createEntityFromObject(osoCreateOrUpdateRequest.getOsoRelationship())).thenReturn(osoRelationshipEntity);
+        // --- The Call
+        OsoRelationshipDetail osoRelationshipDetail = osoRelationshipService.createOsoRelationship(osoCreateOrUpdateRequest);
+        assertEquals(Integer.valueOf(RECORD_ID), osoRelationshipDetail.getId());
+        assertEquals(REPORTER_IMID, osoRelationshipDetail.getOsoRelationship().getCatReporterIndustryMemberId());
+        assertEquals(SUBMITTER_ID, osoRelationshipDetail.getOsoRelationship().getCatSubmitterId());
+        assertEquals(FUTURE_DT, osoRelationshipDetail.getOsoRelationship().getEffectiveDate());
+        assertEquals(CREATED_BY, osoRelationshipDetail.getAuditInformation().getCreatedBy());
+        assertEquals(CREATED_BY, osoRelationshipDetail.getAuditInformation().getUpdatedBy());
+    }
+	
+	--------------------------------------------------------
+	
+	
+
+//    @Test
+//    @DisplayName("Test to check if the AtsOrderType that we are updating to is past effective, and updated not effective tomorrow, false branch test")
+//    public void testValidateUpdatedAtsOrderTypeEntity_pastEffectiveAndUpdatedNotEffectiveTomorrow_throwAlreadyExistsException()
+//    {
+//        Calendar calendarNextDay = CatddDateUtils.getCalendarDate();
+//        calendarNextDay.add(Calendar.DATE, 1);
+//
+//        AtsOrderTypeEntity updatedAtsOrderTypeEntity = getNewAtsOrderTypeEntityObject(DummyData.FUTURE_EFFECTIVE_AND_EXPIRE.valueInt);
+//        updatedAtsOrderTypeEntity.setEffectiveDate(calendarNextDay.getTime());
+//
+//        AtsOrderTypeEntity existingAtsOrderTypeEntity = getNewAtsOrderTypeEntityObject(DummyData.PAST_EFFECTIVE.valueInt);
+//        existingAtsOrderTypeEntity.setExpirationDate(CatddDateUtils.getCalendarDate().getTime());
+//
+//        List<AtsOrderTypeEntity> atsOrderTypeEntityList = new ArrayList();
+//        atsOrderTypeEntityList.add(existingAtsOrderTypeEntity);
+//
+//        atsOrderTypeHelper.validateUpdatedAtsOrderTypeEntity(updatedAtsOrderTypeEntity, atsOrderTypeEntityFutureEffectiveAndExpire, atsOrderTypeEntityList);
+//        String message = assertDoesNotThrow(() -> DummyData.DOES_NOT_THROW_EXCEPTION.valueString);
+//        assertEquals(DummyData.DOES_NOT_THROW_EXCEPTION.valueString, message);
+//    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
