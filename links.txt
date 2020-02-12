@@ -115,6 +115,17 @@ http://www.masterspringboot.com/configuration/web-server/configuring-tomcat-conn
 https://www.baeldung.com/ehcache
 https://www.baeldung.com/hibernate-criteria-queries-metamodel
 https://www.mkyong.com/java/java-convert-date-and-time-between-timezone/
+https://myadventuresincoding.wordpress.com/2014/07/30/java-creating-a-simple-retry-command-with-function-passing-in-java-8/
+json Validator:     https://jsonlint.com/
+https://dzone.com/articles/how-get-jpqlsql-string
+https://www.baeldung.com/spring-classpath-file-access
+https://www.moreofless.co.uk/spring-mvc-java-autowired-component-null-repository-service/
+https://codeahoy.com/2016/04/18/10-git-pull-vs-git-fetch-(and-stashing)/
+http://www.sql-join.com/sql-join-types
+https://mgrafl.wordpress.com/2016/10/18/testabilty-of-enum-switch-statements/
+https://dzone.com/articles/bountyspring-transactional-management
+https://www.codejava.net/java-core/collections/sorting-a-list-by-multiple-attributes-example
+https://stackoverflow.com/questions/47926382/how-to-configure-shorten-command-line-method-for-whole-project-in-intellij
 ------------------------------------------------------------------------------------------------------
 Finra:
 https://wiki.finra.org/display/RAS/Splunk+Sidecar

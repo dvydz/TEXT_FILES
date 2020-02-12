@@ -1,0 +1,8 @@
+1. Ctrl + Shift + Alt + j, find and replace in intelliJ
+2. Ctrl + r -> open a find and replace dialogue
+3. Ctrl + Alt + Shift + V -> paste in intelliJ as is without escaping
+4. Ctrl + Shift + U -> Convert to uppercase
+5. Ctrl + Shift + N -> search for classes
+6. Ctrl + Q for method param view
+7. Ctrl + Shift + backspace -> to go back to last location of edit
+8. Ctrl + P -> brings up a list of valid parameters if the cursor is between the parentheses of a method call 

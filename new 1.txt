@@ -1,0 +1,828 @@
+-----------------------------------------------------
+
+-----------------------------------------------------------------------------------------------------------------------------------
+//        credPassword = retry.run(() -> {
+//            try
+//            {
+//                return jCredStashFX
+//                    .getCredential(credentialName, propertyUtility.getProperty(AGS_PROPERTY_NAME), propertyUtility.getProperty(ENVIRONMENT_PROPERTY_NAME), null,
+//                        null);
+//            }
+//            catch (Exception e)
+//            {
+//                LOGGER.error(String.format("Cannot load the password for the credential %s", credentialName));
+//                throw new CatddRuntimeException(e);
+//            }
+//        });
+
+
+            businessObjectDataAttributesList.remove(12); //TEMPORARY CHECK
+
+                resultAttribute.get().setValue("DUMMY_VALUE");  //Temporary check
+				
+				
+			
+			
+{
+"status": "success",
+"returnBody": {
+"data": [
+  {
+	"organizationId": 7059,
+	"perspective": "ALL",
+	"productType": "Equities",
+	"catReporterIndustryMemberId": "AUTO",
+	"date": "2019-10-25", 
+	"errors": [
+	   {
+		 "id": 1,
+		 "catSubmitterId": 96278,
+		  "errorType": "Rejection",
+		 "repairedStatus": "U",
+		 "repairType": "Deleted",
+		 "errorCode": 2015,
+		 "errorReason": "Missing or invalid capacity",
+		 "groupRepairEligible": "Y",
+		 "errorValue": "BOX",
+		 "errorCount": 808
+	 },
+	{
+		  "id": 2,
+		  "catSubmitterId": 91110,
+		   "errorType": "Warning",
+		  "repairedStatus": "R",
+		  "repairType": "Corrected",
+		  "errorCode": 8007,
+		  "errorReason": "Destination did not match",
+		 "groupRepairEligible": "N",
+			"errorValue": "Opt",
+		 "errorCount": 401
+	}
+	]
+  }
+],
+"lastRow": 30,
+"secondaryColumnFields": null
+}
+}		
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+79_GEBJ_20191120_catweb_OrderEvents_000011.DEL.meta.csv         ASSUMED BUG!
+
+
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.del.json.bz2			Data
+
+
+2222_Imid_20170101_FileGroup1_OrderEvents_000123.meta.del.json			Meta
+
+
+
+
+Error: File format incorrect OR 
+	   File Name format incorrect
+	   
+	   
+--------------------------------------------------------------------------------------------------------------------------	
+
+package org.finra.catdd.feedback;
+
+import static org.finra.catdd.aws.AwsServices.downloadFile;
+import static org.finra.catdd.feedback.FeedbackRequestResponseHelper.convertFeedbackFileInformationEntityToFeedbackFileDetailOutput;
+import static org.finra.catdd.util.DateUtil.formatter;
+import static org.finra.catdd.util.FileUtil.fileComparision;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import catdd.dao.FeedBackDao;
+import catdd.entity.FeedbackFileInformationEntity;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import org.finra.cat.datacollection.automation.jira.JiraTestRunner;
+import org.finra.cat.datacollection.automation.jira.Publish;
+import org.finra.catdd.core.TestBase;
+import org.finra.catdd.enums.FileType;
+import org.finra.catdd.enums.Perspective;
+import org.finra.catdd.enums.QueryParams;
+import org.finra.catdd.enums.Role;
+import org.finra.catdd.exception.DDServiceException;
+import org.finra.catdd.feedback.functions.out.FeedbackFileDetailOutput;
+import org.finra.catdd.feedback.functions.out.FeedbackFileDetailsOutput;
+import org.finra.catdd.util.DataProviders;
+import org.finra.catdd.util.DateUtil;
+import org.finra.catdd.util.PerspectiveProvider;
+
+/*
+##### README #####
+	# Set following environment variables before running tests in your laptop
+	# runOn=Local
+	# user=<<your network id (k12345)>>
+	# pass=<<network password>>
+##### END README #####
+*/
+@ExtendWith(JiraTestRunner.class)
+public class GetFeedbackFilesDetailsTest extends TestBase {
+
+	String downloadPath = "src\\test\\resources\\downloadfiles\\feedback";
+	String s3DownloadPath = "src\\test\\resources\\downloadfiles\\feedback\\s3\\";
+	FeedBackDao feedBackDao = new FeedBackDao();
+
+	public static Stream<Role> usersRoles() {
+		return DataProviders.ewsAccountUsersRole();
+	}
+
+	public static Stream<Perspective> userPerspectives(){
+		return PerspectiveProvider.userPerspectives();
+	}
+
+	public static Stream<FileType> fileTypes() {
+		return Stream.of(FileType.INTEGRITY,
+				FileType.ACKNOWLEDGEMENT,
+				FileType.ACKNOWLEDGEMENT_META,
+				FileType.ACKNOWLEDGEMENT_ERROR,
+				FileType.INTEGRITY_META,
+				FileType.INTEGRITY_META_ERROR,
+				FileType.INTEGRITY_DELETE,
+				FileType.INTEGRITY_META_DELETE,
+				FileType.INTEGRITY_ERROR,
+				FileType.INGESTION,
+				FileType.REJECTION);
+	}
+
+//	@ParameterizedTest
+//	@MethodSource("fileTypes")
+//	@Tag("api")
+//	@Tag("feedback")
+//	@Publish(name = "Verify downloading feedback file for different file types as Submitter",
+//			description = "User and Reasdonly roles should able to get feedback file details.",
+//			coverage = "CATDD-889"
+//	)
+//	public void testDownloadFileAsSubmitterForDiffFileType(FileType fileType) {
+//		Role role = Role.CAT_PRIV_CATDD_IM_USER;
+//		testDownloadFile(role, Perspective.SUBMITTER, fileType);
+//	}
+//
+//	@ParameterizedTest
+//	@MethodSource("fileTypes")
+//	@Tag("api")
+//	@Tag("feedback")
+//	@Publish(name = "Verify downloading feedback file for different file types as Submitter",
+//			description = "User and Reasdonly roles should able to get feedback file details.",
+//			coverage = "CATDD-889"
+//	)
+//	public void testDownloadFileAsReporterForDiffFileType(FileType fileType) {
+//		Role role = Role.CAT_PRIV_CATDD_IM_USER;
+//		testDownloadFile(role, Perspective.REPORTER, fileType);
+//	}
+//
+//	@ParameterizedTest
+//	@MethodSource("fileTypes")
+//	@Tag("api")
+//	@Tag("feedback")
+//	@Publish(name = "Verify downloading feedback file for different file types as Submitter",
+//			description = "User and Reasdonly roles should able to get feedback file details.",
+//			coverage = "CATDD-889"
+//	)
+//	public void testDownloadFileAsThirdPartyForDiffFileType(FileType fileType) {
+//		Role role = Role.CAT_PRIV_CATDD_IM_USER;
+//		testDownloadFile(role, Perspective.THIRD_PARTY, fileType);
+//	}
+//
+//	private void testDownloadFile(Role role, Perspective perspective, FileType fileType) {
+//		List<FeedbackFileInformationEntity> feedbackFileInformationEntities =
+//				feedBackDao.getByOrgIdFileType(perspective, role.getOrgId(), fileType);
+//		if (feedbackFileInformationEntities == null || feedbackFileInformationEntities.isEmpty()) {
+//			throw new DDServiceException(
+//					"Org Id " + role.getOrgId() + " as " + perspective + " , Download file is not available for type : "
+//							+ fileType.getUsageCode());
+//		}
+//		FeedbackFileInformationEntity feedbackFileInformationEntity =
+//				feedbackFileInformationEntities.get(new Random().nextInt(feedbackFileInformationEntities.size()));
+//		FeedbackBuilder.build().DownloadFeedbackFile(feedbackFileInformationEntity.getFeedbackFileId(), downloadPath,
+//				role.getRole());
+//		try {
+//			downloadFile(feedbackFileInformationEntity.getBucketName(), feedbackFileInformationEntity.getFileKey(),
+//					s3DownloadPath);
+//			assertTrue(fileComparision(downloadPath + "\\" + feedbackFileInformationEntity.getFeedbackFileName(),
+//					s3DownloadPath + feedbackFileInformationEntity.getFeedbackFileName()), "Files content "
+//					+ "is mismatching");
+//		} catch (IOException e) {
+//			throw new RuntimeException(
+//					"Could not download file " + feedbackFileInformationEntity.getFeedbackFileName() + " into " + downloadPath
+//							+ "\n");
+//		}
+//	}
+
+	@ParameterizedTest
+	@MethodSource("usersRoles")
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify individual roles to get Feedback Files",
+		description = "All the user roles should be able to see the feedback files",
+		coverage = "CATDD-405"
+	)
+	public void testRolesFeedbackFilesDetailsWithAllParams(Role role)
+	{
+		try
+		{
+			String endDate = DateUtil.now();
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, 1);
+			String endDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+			calendar.add(Calendar.DATE, -6);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), endDate);
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			assertTrue(Arrays.asList(Role.CAT_PRIV_CATDD_IM_READ_ONLY, Role.CAT_PRIV_CATDD_IM_USER, Role.CAT_PRIV_CATDD_IM_USER_ADMIN,
+				Role.CAT_PRIV_CATDD_IM_ADMIN, Role.CAT_PRIV_CATDD_IM_PRIV).contains(role),
+				"Check Role");
+			FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+			queryParam.put(QueryParams.END_DATE.getValue(), endDateForQuery);
+			List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+			queryParam.put(QueryParams.END_DATE.getValue(), endDate);
+			FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+
+			assertEquals(expectedFeedbackFileDetails.getFeedbackFileDetailOutputs().length, actualFeedbackFileDetails.getFeedbackFileDetailOutputs().length,
+				"Results count should match");
+			assertEquals(expectedFeedbackFileDetails, actualFeedbackFileDetails,"Feedback file details are mismatching");
+		}
+		catch (DDServiceException ex){
+			if (role == Role.CAT_PRIV_CATDD_IM_ADMIN || role == Role.CAT_PRIV_CATDD_IM_PRIV) {
+				assertEquals(ex.getStatusCode(), HttpStatus.SC_FORBIDDEN, "Expecting Forbidden Role");
+			} else {
+				fail("The role: " + role + " should be able to get feedback files" + ex.getMessage());
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@MethodSource("userPerspectives")
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with all the params(catOrganizationId, perspective, startDate, endDate)." +
+		" Start and end date less than 10 days apart)",
+		description = "User should get Feedback files with all params as long as start and end date is less than 10 days apart. " +
+			"Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithAllParams(Perspective perspective)
+	{
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			String endDate = DateUtil.now();
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, 1);
+			String endDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+			calendar.add(Calendar.DATE, -6);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), endDate);
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), perspective);
+
+			FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+			queryParam.put(QueryParams.END_DATE.getValue(), endDateForQuery);
+			List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+			queryParam.put(QueryParams.END_DATE.getValue(), endDate);
+			FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+
+			assertEquals(expectedFeedbackFileDetails.getFeedbackFileDetailOutputs().length, actualFeedbackFileDetails.getFeedbackFileDetailOutputs().length);
+			assertEquals(expectedFeedbackFileDetails, actualFeedbackFileDetails, "Feedback file details are mismatching");
+		}
+		catch (DDServiceException ex) {
+			fail("Something wrong in GET call: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with only required params(catOrganizationId, perspective)",
+		description = "User should get Feedback files with only required params. By default, end date is today, and start is today-9 days.",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithOnlyRequiredParams()
+	{
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			Calendar calendar = Calendar.getInstance();
+			// added one day so that less than that day would include all the data from earlier day
+			calendar.add(Calendar.DATE, 1);
+			String endDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+			// subtracted 10 days from one-day-added-calendar so that the start date is exactly (today-9) days
+			calendar.add(Calendar.DATE, -10);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+			queryParam.put(QueryParams.END_DATE.getValue(), endDateForQuery);
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+
+			assertEquals(expectedFeedbackFileDetails.getFeedbackFileDetailOutputs().length, actualFeedbackFileDetails.getFeedbackFileDetailOutputs().length);
+			assertEquals(actualFeedbackFileDetails, expectedFeedbackFileDetails, "Feedback file details are mismatching");
+		}
+		catch (DDServiceException ex) {
+			fail("Something wrong in GET call: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with required params and start date which is less than 10 days back from today",
+		description = "User should get Feedback files as long as start date is less than 10 days back from today because if no endDate is passed," +
+			" the end date by default is today",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithRequiredParam_AndStartDateLessThan10DaysBack()
+	{
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			Calendar calendar = DateUtil.getCalendar();
+			// added one day so that less than that day would include all the data from earlier day
+			calendar.add(Calendar.DATE, 1);
+			String endDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+			// subtracted 5 days from calendar so that the start date is less than 10 days back from current date
+			calendar.add(Calendar.DATE, -5);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+			queryParam.put(QueryParams.END_DATE.getValue(), endDateForQuery);
+			List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+
+			assertEquals(expectedFeedbackFileDetails.getFeedbackFileDetailOutputs().length, actualFeedbackFileDetails.getFeedbackFileDetailOutputs().length);
+			assertEquals(actualFeedbackFileDetails, expectedFeedbackFileDetails, "Feedback file details are mismatching");
+		}
+		catch (DDServiceException ex) {
+			fail("Something wrong in GET call: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with required params and start date which is more than 10 days back from today",
+		description = "User should NOT get Feedback files as start date is more than 10 days back from today because if no endDate is passed," +
+			" the end date by default is today and difference is more than 10 days",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithRequiredParam_AndStartDateMoreThan10DaysBack()
+	{
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, -20);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("GET call should fail");
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains(String.format("The startDate \\\"%s\\\" cannot be before \\\"%s\\\" days of endDate \\\"%s\\\"",
+				queryParam.get(QueryParams.START_DATE.getValue()), "10", DateUtil.now())),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with required params and end date",
+		description = "User should get Feedback files with any given end date because the start date is calculated based on end date ",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithRequiredParamAndEndDate()
+	{
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			// added one day so that less than that day would include all the data from earlier day
+			calendar.add(Calendar.DATE, 1);
+			String endDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+			// subtracted 10 days from one-day-added-calendar so that the start date is exactly (today-9) days
+			calendar.add(Calendar.DATE, -10);
+			String startDateForQuery = DateUtil.convertDateToString(calendar.getTime());
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder builder = FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			FeedbackFileDetailsOutput actualFeedbackFileDetails = builder.getFeedbackFileDetailsOutput();
+
+			queryParam.put(QueryParams.START_DATE.getValue(), startDateForQuery);
+			queryParam.put(QueryParams.END_DATE.getValue(), endDateForQuery);
+			List<FeedbackFileInformationEntity> feedbackFileInformationEntities = feedBackDao.getByQueryParams(queryParam);
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			FeedbackFileDetailsOutput expectedFeedbackFileDetails = buildFeedbackFileOutput(feedbackFileInformationEntities, queryParam);
+
+			assertEquals(expectedFeedbackFileDetails.getFeedbackFileDetailOutputs().length, actualFeedbackFileDetails.getFeedbackFileDetailOutputs().length);
+			assertEquals(actualFeedbackFileDetails, expectedFeedbackFileDetails, "Feedback file details are mismatching");
+		}
+		catch (DDServiceException ex) {
+			fail("Something wrong in GET call: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files for non exising records",
+		description = "The api should throw 404 exception if there are no records in the database ",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsForNonExistingRecords()
+	{
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), "1001-01-01");
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("GET call should fail");
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_NOT_FOUND, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains("No feedback files Found"), "Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with a invalid perspective",
+		description = "The api should throw 400 bad request exception if valid perspective is not provided",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsInvalidPerspective()
+	{
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), "DummyPerspective");
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("GET call should fail");
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains(String.format("No enum constant org.finra.catdd.common.enums.PerspectiveEnum.%s",
+				queryParam.get(QueryParams.PERSPECTIVE.getValue()))), "Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with third party perspective",
+		description = "The api should throw 400 bad request exception perspective is THIRD_PARTY, Third party perspective is not supported",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsThirdPartyPerspective()
+	{
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.THIRD_PARTY);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("GET call should fail");
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains("The perspective THIRD_PARTY is not supported."),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with an invalid end date",
+		description = "The api should throw 400 bad request exception if valid end date is not provided",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsInvalidEndDate()
+	{
+		final String invalidEndDate = "2019-01-45";
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), invalidEndDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("GET call should fail");
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains(String.format("Cannot parse the string %s into a date using format yyyy-MM-dd",
+				invalidEndDate)), "Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with an invalid start date",
+		description = "The api should throw 400 bad request exception if valid start date is not provided",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsInvalidStartDate()
+	{
+		final String invalidStartDate = "2019-01-45";
+		Map<String, Object> queryParam = new HashMap<>();
+		try
+		{
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.START_DATE.getValue(), invalidStartDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+		}
+		catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
+			assertTrue(ex.getMessage().contains(String.format("Cannot parse the string %s into a date using format yyyy-MM-dd",
+				invalidStartDate)), "Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Disabled
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files without user Authentication.",
+		description = "User should get Authenticated to get Feedback files. Else we should get 302 as failure status "
+			+ "code.",
+		coverage = "CATDD-405"
+	)
+	public void testGetFeedbackFilesDetailsWithoutAuthentication() {
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, -6);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, null);
+			fail("Expecting failure in GET call");
+
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_FORBIDDEN, ex.getStatusCode(),
+				"Expecting Moved Temporarily status message: " + ex.getMessage());
+			assertTrue(ex.getMessage().contains("Access is denied"),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with no params(not even required ones)",
+		description = "User should only get Feedback files with required params. Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithNoParams() {
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			FeedbackBuilder.build().getFeedbackFiles(null, role.getRole());
+			fail("Check with no params");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode(), "Expecting Bad request");
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with only one required param catOrganizationId)",
+		description = "User should only get Feedback files with required params. Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithOnlyOneRequiredParam_catOrganizationId() {
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("Check with only one required param");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode(), "Expecting Bad request");
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with only one required param perspective)",
+		description = "User should only get Feedback files with required params. Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithOnlyOneRequiredParam_perspective() {
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Map<String, Object> queryParam = new HashMap<>();
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.REPORTER);
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("Check with only one required param");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_FORBIDDEN, ex.getStatusCode(), "Expecting Forbidden");
+			assertTrue(ex.getMessage().contains("User does not have permission to access the resources"),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with Start and End date more than 10 days apart)",
+		description = "User should only get Feedback files if Start and End date is less than 10 days apart. Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithStartAndEndDateApartMoreThan10Days() {
+		Map<String, Object> queryParam = new HashMap<>();
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, -15);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("Check with start and end date param more than 10 days apart");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode(), "Expecting Bad request");
+			assertTrue(ex.getMessage().contains(String.format("The startDate \\\"%s\\\" cannot be before \\\"%s\\\" days of endDate \\\"%s\\\"",
+				queryParam.get(QueryParams.START_DATE.getValue()), "10", queryParam.get(QueryParams.END_DATE.getValue()) )),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with End date param before Start date param)",
+		description = "User should only get Feedback files if End date param is after Start date. Else we should get 400 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithEndDateParamBeforeStartDate() {
+		Map<String, Object> queryParam = new HashMap<>();
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, 5);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), role.getOrgId());
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("Check with end date param before start date");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode(), "Expecting Bad request");
+			assertTrue(ex.getMessage().contains(String.format("The processingEndDate \\\"%s\\\" cannot be before the processingStartDate \\\"%s\\\"",
+				queryParam.get(QueryParams.END_DATE.getValue()), queryParam.get(QueryParams.START_DATE.getValue()) )),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	@Test
+	@Tag("api")
+	@Tag("feedback")
+	@Publish(name = "Verify get Feedback files with unauthorized catOrganizationId)",
+		description = "User should only get Feedback files if logged in user access its own data. Else we should get 403 as failure status code.",
+		coverage = "CATDD-405"
+	)
+	public void testFeedbackFilesDetailsWithUnauthorizedCatOrganizationId() {
+		Map<String, Object> queryParam = new HashMap<>();
+		String unauthorizedCatOrganizationId = "1111111";
+		try {
+			Role role = Role.CAT_PRIV_CATDD_IM_READ_ONLY;
+			Calendar calendar = DateUtil.getCalendar();
+			calendar.add(Calendar.DATE, -5);
+			String startDate = DateUtil.convertDateToString(calendar.getTime());
+
+			queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), unauthorizedCatOrganizationId);
+			queryParam.put(QueryParams.END_DATE.getValue(), DateUtil.now());
+			queryParam.put(QueryParams.START_DATE.getValue(), startDate);
+			queryParam.put(QueryParams.PERSPECTIVE.getValue(), Perspective.SUBMITTER);
+
+			FeedbackBuilder.build().getFeedbackFiles(queryParam, role.getRole());
+			fail("Check with unauthorized catOrganizationId");
+		} catch (DDServiceException ex) {
+			assertEquals(HttpStatus.SC_FORBIDDEN, ex.getStatusCode(), "Expecting Bad request");
+			assertTrue(ex.getMessage().contains("User does not have permission to access the resources"),
+				"Error message is not matching: " + ex.getMessage());
+		}
+	}
+
+	private FeedbackFileDetailsOutput buildFeedbackFileOutput(List<FeedbackFileInformationEntity> feedbackFileInformationEntityList, Map<String, Object> queryParams)
+	{
+		List<FeedbackFileDetailOutput> feedbackFileDetailOutputList = feedbackFileInformationEntityList.stream()
+			.map((feedbackFileInformationEntity -> convertFeedbackFileInformationEntityToFeedbackFileDetailOutput(feedbackFileInformationEntity)))
+			.collect(Collectors.toList());
+
+		FeedbackFileDetailOutput[] feedbackFileDetailOutputs = new FeedbackFileDetailOutput[feedbackFileDetailOutputList.size()];
+		feedbackFileDetailOutputs = feedbackFileDetailOutputList.toArray(feedbackFileDetailOutputs);
+
+		FeedbackFileDetailsOutput feedbackFileDetailsOutput = FeedbackFileDetailsOutput.builder().catOrganizationId((Integer) queryParams.get(QueryParams.CAT_RPRTR_ORG_ID.getValue()))
+			.catOrganizationId( (Integer) queryParams.get(QueryParams.CAT_ORGANIZATION_ID.getValue()))
+			.startDate((String) queryParams.get(QueryParams.START_DATE.getValue()))
+			.endDate((String) queryParams.get(QueryParams.END_DATE.getValue()))
+			.perspective(queryParams.get(QueryParams.PERSPECTIVE.getValue()).toString())
+			.feedbackFileDetailOutputs(feedbackFileDetailOutputs)
+			.build();
+
+		return feedbackFileDetailsOutput;
+	}
+}

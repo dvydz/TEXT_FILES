@@ -1,0 +1,129 @@
+package org.finra.catdd.lambda.retry;
+
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Retry<T>
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(Retry.class);
+
+    private int maxRetries;
+
+    private int retryCounter;
+
+    public Retry(int maxRetries)
+    {
+        this.maxRetries = maxRetries;
+    }
+
+    // Takes a function and executes it, if fails, passes the function to the retry command
+    public T run(Supplier<T> function)
+    {
+        try
+        {
+            return function.get();
+        }
+        catch (Exception e)
+        {
+            return retry(function);
+        }
+    }
+
+    public int getRetryCounter()
+    {
+        return retryCounter;
+    }
+
+    private T retry(Supplier<T> function) throws RuntimeException
+    {
+        LOGGER.error("FAILED - call failed, will be retried " + maxRetries + " times.");
+        retryCounter = 1;
+        while (retryCounter <= maxRetries)
+        {
+            try
+            {
+                Thread.sleep(2000 * retryCounter);
+                return function.get();
+            }
+            catch (Exception ex)
+            {
+                LOGGER.error("FAILED - failed on retry " + retryCounter + " of " + maxRetries + ", error: " + ex);
+                if (retryCounter >= maxRetries)
+                {
+                    LOGGER.error("Max retries exceeded.");
+                    break;
+                }
+                retryCounter++;
+            }
+        }
+        throw new RuntimeException("Call failed on all of " + maxRetries + " retries");
+    }
+}
+---------------------------------------------------------------------------------------------------------
+
+package org.finra.catdd.lambda.utils;
+
+import static org.finra.catdd.lambda.Constants.AGS_PROPERTY_NAME;
+import static org.finra.catdd.lambda.Constants.ENVIRONMENT_PROPERTY_NAME;
+import static org.finra.catdd.lambda.Constants.MAX_RETRIES;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.finra.catdd.lambda.CatddRuntimeException;
+import org.finra.catdd.lambda.retry.Retry;
+import org.finra.pet.JCredStashFX;
+
+/**
+ * The utility class that knows how to load the password from credStash
+ */
+public class CredStashUtils
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(CredStashUtils.class);
+
+    private static PropertyUtility propertyUtility = PropertyUtility.getInstance();
+
+    private static Retry<String> retry = new Retry<>(Integer.valueOf(propertyUtility.getProperty(MAX_RETRIES)));
+
+    /**
+     * Load the secret from CredStash
+     *
+     * @param credentialName - the key
+     *
+     * @return the secret(password)
+     */
+    public static String getSecret(String credentialName)
+    {
+        String credPassword;
+
+        JCredStashFX jCredStashFX = new JCredStashFX();
+
+        credPassword = retry.run(() -> {
+            try
+            {
+                return jCredStashFX
+                    .getCredential(credentialName, propertyUtility.getProperty(AGS_PROPERTY_NAME), propertyUtility.getProperty(ENVIRONMENT_PROPERTY_NAME), null,
+                        null);
+            }
+            catch (Exception e)
+            {
+                LOGGER.error(String.format("Cannot load the password for the credential %s", credentialName));
+                throw new CatddRuntimeException(e);
+            }
+        });
+
+        if (StringUtils.isEmpty(credPassword))
+        {
+            String errorMessage = String.format("Cannot load the password for the credential %s", credentialName);
+            LOGGER.error(errorMessage);
+            throw new CatddRuntimeException(errorMessage);
+        }
+
+        return credPassword;
+    }
+
+}
+--------------------------------------------------------------------------------------------------------------------

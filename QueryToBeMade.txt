@@ -1,0 +1,282 @@
+
+
+--------------------------
+      "value": "select distinct date, info.err_roe_id, erd.firm_roe_id, info.err_list as err_cd, info.err_type, L2.err_ds as err_rsn, info.rprd_smry, info.cat_rprtr_id, info.cat_rprtr_imid,
+	  info.cat_sbmtr_id,  erd.sym, erd.event_ts,  erd.seq_nb,  erd.qty,  erd.sndr_imid, erd.odr_id, erd.odr_key_dt, erd.trd_id , erd.trd_key_dt , erd.flmnt_id , erd.fill_key_dt , erd.quote_id ,
+	  erd.quote_key_dt , erd.optn_id , erd.msg_type , erd.rcvr_imid , erd.dstnt_type , erd.rtd_odr_id , erd.sssn , erd.tape_trd_id , erd.prnt_odr_id , erd.prnt_odr_key_dt , erd.prior_odr_id 
+	  , erd.prior_odr_key_dt , erd.prior_flmnt_id , erd.prior_fill_key_dt , erd.prior_quote_id , erd.prior_quote_key_dt, info.rpr_ts , info.rpr_user_id , info.rpr_type_cd , info.crctn_due_ts,
+	  info.file_nm, info.grp_rpr_fl from (SELECT %s, eri.err_roe_id err_roe_id, eri.cat_rprtr_id cat_rprtr_id, eri.cat_rprtr_imid cat_rprtr_imid, eri.cat_sbmtr_id cat_sbmtr_id,
+	  eri.prdct_type prdct_type, eri.rpr_ts rpr_ts, eri.rpr_user_id rpr_user_id, eri.rpr_type_cd rpr_type_cd, eri.crctn_due_ts crctn_due_ts, eri.file_nm file_nm, case when eri.rprd_st = 'R'
+	  then 'R' when eri.rprd_st = 'U' and pnd.err_roe_id is null then 'U' else pnd.rprd_st end as rprd_smry, case when eri.rprd_st = 'R' then 'N' when eri.rprd_st = 'U' and L1.err_cd is not null
+	  and position(',' in eri.err_list) = 0 and pnd.err_roe_id is null then 'Y' else 'N'  end  as grp_rpr_fl,  eri.err_type err_type, eri.err_list err_list FROM catco_owner.err_rec_info eri
+	  JOIN catco_owner.err_rec_cd erc ON (eri.err_roe_id = erc.err_roe_id AND %s) LEFT JOIN catdd_owner.err_cd_lk L1 ON (L1.err_cd = erc.err_cd and L1.grp_rpr_elgbl = 'Y')
+	  LEFT JOIN (select err_roe_id, max(rprd_st) as rprd_st from catdd_owner.pndng_rec where err_roe_id is not null group by err_roe_id) pnd    ON ( eri.err_roe_id = pnd.err_roe_id )
+	  WHERE %s )info JOIN catco_owner.err_rec_dtl erd ON (info.err_roe_id = erd.err_roe_id) LEFT JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd::text = info.err_list) %s %s"
+
+-----------------------
+select date, info.err_roe_id, firm_roe_id, info.err_list as err_cd, info.err_type, L2.err_ds as err_rsn, info.rprd_smry,
+ info.cat_rprtr_id, info.cat_rprtr_imid, info.cat_sbmtr_id,  erd.sym, erd.event_ts,  erd.seq_nb,  erd.qty,  erd.sndr_imid, erd.odr_id, erd.odr_key_dt, 
+ erd.trd_id , erd.trd_key_dt , erd.flmnt_id , erd.prior_fill_key_dt , erd.quote_id , erd.quote_key_dt , erd.optn_id , erd.msg_type , erd.rcvr_imid ,
+ erd.dstnt_type , erd.rtd_odr_id , erd.sssn , erd.tape_trd_id , erd.prnt_odr_id , erd.prnt_odr_key_dt , erd.prior_odr_id , erd.prior_odr_key_dt , erd.prior_flmnt_id ,
+ erd.prior_fill_key_dt , erd.prior_quote_id , erd.prior_quote_key_dt , eri.file_nm , eri.rpr_ts , eri.rpr_user_id , eri.rpr_type_cd , eri.crctn_due_ts 
+
+------------------------
+
+SELECT date, abc.cat_rprtr_imid catImid, abc.cat_sbmtr_id catSubmitterId, abc.prdct_type, abc.rprd_smry repairedStatus, abc.grp_rpr_fl groupRepairFlag, abc.err_type errorType, abc.err_cd errorCode,
+
+ l2.err_ds errorReason, COUNT(*) errorCount FROM (
+ 
+ 
+	SELECT %s, eri.err_roe_id err_roe_id, eri.cat_rprtr_id cat_rprtr_id, eri.cat_rprtr_imid cat_rprtr_imid, eri.cat_sbmtr_id cat_sbmtr_id,
+
+	 eri.prdct_type prdct_type, case when eri.rprd_st = 'R' then 'R' when eri.rprd_st = 'U' and pnd.err_roe_id is null then 'U' else pnd.rprd_st end as rprd_smry, case when eri.rprd_st = 'R'
+
+	 then 'N' when eri.rprd_st = 'U' and L1.err_cd is not null and coalesce(Q1.cnt1,0) = 1 and pnd.err_roe_id is null then 'Y' else 'N'  end  as grp_rpr_fl, eri.err_type err_type, eri.rpr_type_cd, erc.err_cd
+
+	 err_cd FROM catco_owner.err_rec_info eri JOIN catco_owner.err_rec_cd erc ON (eri.err_roe_id = erc.err_roe_id AND %s ) LEFT JOIN 
+		
+		(SELECT eri.err_roe_id roeid, count(1) cnt1
+
+		FROM catco_owner.err_rec_info eri JOIN catco_owner.err_rec_cd erc ON (eri.err_roe_id = erc.err_roe_id AND %s and eri.rprd_st = 'U') group by eri.err_roe_id)
+
+		Q1 ON (Q1.roeid = eri.err_roe_id )
+
+	 LEFT JOIN catdd_owner.err_cd_lk L1 ON (L1.err_cd = erc.err_cd and L1.grp_rpr_elgbl = 'Y') LEFT JOIN (select err_roe_id, max(rprd_st) as rprd_st from catdd_owner.pndng_rec
+
+	 where err_roe_id is not null group by err_roe_id) pnd ON ( eri.err_roe_id = pnd.err_roe_id ))
+
+
+ ABC JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd) %s 
+ 
+ GROUP BY date, abc.cat_rprtr_imid, abc.cat_sbmtr_id, abc.prdct_type, abc.rprd_smry, abc.grp_rpr_fl, abc.err_type, abc.err_cd, L2.err_ds %s %s"
+
+-----------------------------
+select date, info.err_roe_id, erd.firm_roe_id, info.err_list as err_cd, info.err_type,  info.rprd_smry,
+
+
+info.cat_rprtr_id, info.cat_rprtr_imid, info.cat_sbmtr_id,  erd.sym, erd.event_ts,  erd.seq_nb,  erd.qty,  erd.sndr_imid,
+
+
+erd.odr_id, erd.odr_key_dt, erd.trd_id , erd.trd_key_dt , erd.flmnt_id , erd.prior_fill_key_dt , erd.quote_id , erd.quote_key_dt ,
+
+
+erd.optn_id , erd.msg_type , erd.rcvr_imid , erd.dstnt_type , erd.rtd_odr_id , erd.sssn , erd.tape_trd_id , erd.prnt_odr_id ,
+
+
+erd.prnt_odr_key_dt , erd.prior_odr_id , erd.prior_odr_key_dt , erd.prior_flmnt_id , erd.prior_fill_key_dt , erd.prior_quote_id ,
+
+
+erd.prior_quote_key_dt, info.rpr_ts , info.rpr_user_id , info.rpr_type_cd , info.crctn_due_ts, info.file_nm from 
+
+
+
+
+(
+
+	SELECT eri.prcsg_dt date, eri.err_roe_id err_roe_id, eri.cat_rprtr_id cat_rprtr_id, eri.cat_rprtr_imid cat_rprtr_imid,
+	
+	eri.cat_sbmtr_id cat_sbmtr_id, eri.prdct_type prdct_type, eri.rpr_ts rpr_ts, eri.rpr_user_id rpr_user_id,
+	
+	eri.rpr_type_cd rpr_type_cd, eri.crctn_due_ts crctn_due_ts, eri.file_nm file_nm, case when eri.rprd_st = 'R' then 'R'
+	
+	when eri.rprd_st = 'U' and pnd.err_roe_id is null then 'U' else pnd.rprd_st end as rprd_smry, eri.err_type err_type,
+	
+	eri.err_list err_list FROM catco_owner.err_rec_info eri LEFT JOIN (select err_roe_id, max(rprd_st) as rprd_st 
+	
+	from catdd_owner.pndng_rec where err_roe_id is not null group by err_roe_id) pnd ON ( eri.err_roe_id = pnd.err_roe_id )
+	
+	WHERE  (eri.cat_rprtr_id=44 OR eri.cat_sbmtr_id=44)) info JOIN  catco_owner.err_rec_dtl erd ON ( info.err_roe_id = erd.err_roe_id)
+	
+LEFT JOIN catdd_owner.err_cd_lk  ON (L2.err_cd::text = info.err_list)  LIMIT 20 OFFSET 0
+------------------------------
+actiontype	actn_type
+errorroeid	err_roe_id
+firmroeid	firm_roe_id
+type	msg_type
+catreporterimid	cat_rprtr_imid
+orderkeydate	odr_key_dt
+orderid	odr_id
+symbol	sym
+parentorderkeydate	prnt_odr_key_dt
+parentorderid	prnt_odr_id
+originatingimid	orgng_imid
+eventtimestamp	event_ts
+side	side
+price	pr
+quantity	qty
+minqty	min_qty
+ordertype	odr_type
+timeinforce	tif
+tradingsession	trdg_sssn
+handlinginstructions	hndlg_instr
+seqnum	seq_nb
+atsdisplayind	ats_dsply_ind
+displayprice	dsply_pr
+workingprice	wrkng_pr
+displayqty	dsply_qty
+nbbprice	nbb_pr
+nbbqty	nbb_qty
+nboprice	nbo_pr
+nboqty	nbo_qty
+nbbosource	nbbo_src
+nbbotimestamp	nbbo_ts
+cancelqty	cncl_qty
+leavesqty	lvs_qty
+reservedforfutureuse	rsrvd_for_fut_use
+priororderkeydate	prior_odr_key_dt
+priororderid	prior_odr_id
+fillkeydate	fill_key_dt
+fulfillmentid	flmnt_id
+priorfillkeydate	prior_fill_key_dt
+priorfulfillmentid	prior_flmnt_id
+manualflag	mnl_fl
+electronictimestamp	elctc_ts
+capacity	cpcty
+fulfillmentlinktype	flmnt_link_type
+clientdetails	clnt_dtl
+firmdetails	firm_dtl
+depttype	dept_type
+receivingdesktype	rcvng_desk_type
+infobarrierid	info_barr_id
+electronicdupflag	elctc_dplct_fl
+manualorderkeydate	mnl_odr_key_dt
+manualorderid	mnl_odr_id
+custdspintrflag	cstmr_dsply_ind_fl
+firmdesignatedid	firm_dsgnt_id
+accountholdertype	accnt_hldr_type
+affiliateflag	afflt_fl
+aggregatedorders	agrtd_odrs
+negotiatedtradeflag	ngttd_trd_fl
+representativeind	rep_ind
+atsordertype	ats_odr_type
+quotekeydate	quote_key_dt
+quoteid	quote_id
+priorquotekeydate	prior_quote_key_dt
+priorquoteid	prior_quote_id
+senderimid	sndr_imid
+destination	dstnt
+routedquoteid	rtd_quote_id
+onlyonequoteflag	only_one_quote_fl
+bidprice	bid_pr
+bidqty	bid_qty
+askprice	ask_pr
+askqty	ask_qty
+unsolicitedind	usltd_ind
+mpstatuscode	mp_stts_cd
+quoterejectedflag	quote_rjctd_fl
+receiverimid	rcvr_imid
+sendertype	sndr_type
+routedorderid	rtd_odr_id
+isoind	iso_ind
+initiator	inttr
+cancelflag	cncl_fl
+canceltimestamp	cncl_ts
+destinationtype	dstnt_type
+session	sssn
+routerejectedflag	route_rjctd_fl
+duproidcond	dup_roid_cond
+tradekeydate	trd_key_dt
+tradeid	trd_id
+tapetradeid	tape_trd_id
+marketcenterid	mkt_cntr_id
+sidedetailsind	side_dtl_ind
+buydetails	buy_dtl
+selldetails	sll_dtl
+reportingexceptioncode	rptg_xcptn_cd
+receivedquoteid	rcvd_quote_id
+quotewantedind	quote_wntd_ind
+optionid	optn_id
+opencloseindicator	opn_cls_ind
+priorunlinked	prior_unlkd
+nextunlinked	next_unlkd
+exchorigincode	exch_orgn_cd
+atsordertypeelement	ats_odr_type_elmnt
+rawdata	raw_data
+	
+createdtimestamp	crtd_ts
+-----------------------------
+    private BigInteger errorRoeId;	
+
+    private String firmRoeId;
+
+    private String errorCode;
+	
+	private String errorReason;
+
+    private String errorType;
+
+    private String repairedStatus;
+
+    private Integer catOrganizationId;
+
+    private String catReporterIndustryMemberId;
+
+    private Integer catSubmitterId;	
+
+    private String orderId;
+
+    private String orderKeyDate;
+
+    private String tradeId;
+
+    private String tradekeyDate;
+
+    private String fulfillmentId;
+
+    private String fulfillmentKeyDate;
+
+    private String quoteId;
+
+    private String quoteKeyDate;
+
+    private String symbol;
+
+    private String optionId;
+
+    private String eventType;
+
+    private String eventTimestamp;
+
+    private String seqNum;
+
+    private String quantity;
+
+    private String senderImid;
+
+    private String receiverImid;
+
+    private String destination;
+
+    private String routedOrderId;
+
+    private String session;
+
+    private String tapeTradeId;
+
+    private String parentOrderId;
+
+    private String parentOrderKeyDate;
+
+    private String priorOrderId;
+
+    private String priorOrderKeyDate;
+
+    private String priorFulfillmentId;
+
+    private String priorFillKeyDate;
+
+    private String priorQuoteId;
+
+    private String priorQuoteKeyDate;
+
+    private String repairedTimestamp;
+
+    private String repairedBy;
+
+    private String repairedType;
+
+    private String correctionDue;
+
+    private String fileName;
+	
+	

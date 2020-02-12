@@ -1,0 +1,51 @@
+1. SELECT DISTINCT column1, column2 FROM table_name;
+
+2. SELECT Count(*) AS DistinctCountries FROM (SELECT DISTINCT Country FROM Customers);
+
+3. <>	or  !=   -> Not equal.
+
+4. SELECT * FROM Customers WHERE City LIKE 's%';
+
+5. SELECT * FROM Products WHERE Price BETWEEN 50 AND 60;
+
+6. SELECT * FROM Customers WHERE City IN ('Paris','London');
+
+7. SELECT * FROM Customers WHERE NOT Country='Germany';
+
+8. SELECT * FROM Customers WHERE Country='Germany' AND (City='Berlin' OR City='München');
+
+9. SELECT * FROM Customers ORDER BY Country, CustomerName;
+   SELECT * FROM Customers ORDER BY Country ASC, CustomerName DESC;
+
+10. INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country) 
+			VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');
+	INSERT INTO Customers VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');
+	INSERT INTO Customers (CustomerName, City, Country) VALUES ('Cardinal', 'Stavanger', 'Norway');
+	
+11. SELECT CustomerName, ContactName, Address FROM Customers WHERE Address IS NULL;
+    SELECT CustomerName, ContactName, Address FROM Customers WHERE Address IS NOT NULL;
+
+12. UPDATE Customers SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' WHERE CustomerID = 1;
+
+13. SELECT count(*) from information_schema.columns where table_name='pndng_rec'; -> get total columns
+
+14. SELECT column_name from information_schema.columns where table_name='pndng_rec' order by column_name asc; -> list of column in desc order
+
+15. The CAST() function converts a value (of any type) into the specified datatype.
+
+16. SELECT nextval('catdd_owner.sbmsn_id_seq')
+
+17. SELECT City FROM Customers
+	UNION
+	SELECT City FROM Suppliers
+
+18. SELECT * FROM FOO WHERE MY_DATE_FIELD >= NOW() - INTERVAL 1 DAY
+
+19. WITH ABC as (
+				select * from im_owner.file_status_data where process_date = date '2019-10-23'
+				)
+20. ORDER BY UPLOAD_TIMESTAMP DESC NULLS FIRST
+
+21. NULLIF(expr1, expr2)
+	The NULLIF() function returns NULL if two expressions are equal, otherwise it returns the first expression.
+

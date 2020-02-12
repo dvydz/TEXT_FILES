@@ -1,4 +1,568 @@
+API automation for event type counts:
+1. Tuples ? what are the indexes? what column does it refer to?
+2. wiki page update productType case sensitive, and default
+3. Query for processedRejected, processedAccepted and processedDeleted
+-----------------------------------------------------------------
+API automation for fileStatus:
+1. why not equals for error message comparision. **** because we are appending some other message to what we got.
+2. equals actual vs expected. ***
+3. test data for 79 
+4. Should be Sorted by upload timestamp . And what if they are same ???? Currently I am doing by name next
+5. For latest ProcessingDate, the results for 79 is usually empty list
+6. Remove env=dev from check in
 
+//API currently only sorts by upload timestamp descending, So to compare the results we are implementing our own comparator
+Collections.sort(actualFileStatusInfo.getFileStatusDetailOutputs(), new FileStatusDetailOutputComparator());
+7. Update submitterId to uploadOrgId -> Comprehensive stats too.
+
+-------------------------------------------------------------------------------------------------------
+REPORTER:
+	1. Get memberDictionaryList for last 90 days
+	2. Get IMIDs from that
+
+SUBMITTER:
+	1.  Get memberDictionaryList for last 90 days
+	2.  Get OSO realationship for last 90 days for submitterId=LoggedInUser
+	3. For every relationship, and memberDictionaryList, if(imidFromOso=ImidFromMember AND reporterOrgForOso=CrdFromMember ) -> add to imids
+
+
+Relationship gives Reporters whose IMID we need to lookup in memberDictionary table.....
+
+SELECT distinct imid FROM catdd_owner.mstr_mbr_dict_hs where firm_crd_nb=79
+Union 
+Select distinct cat_rprtr_imid from catdd_owner.oso_rltnp_hs where cat_sbmtr_id=79 AND actv_fl=true
+order by imid asc;
+
+
+------------------------------------------------------------------------------------------------------------
+72.7
+
+//    @Test
+//    public void testBuildWhereClauseForDerivedColumns_NotNullRepairedStatus_NotNullGroupRepairEligibility()
+//    {
+//        assertEquals(" WHERE  info.rprd_smry = :repairedStatus2 AND  grp_rpr_fl = :groupRepairEligible",
+//            eventDao.buildWhereClauseForDerivedColumns(RepairedStatusEnum.PENDING, true));
+//    }
+
+    @Test
+    public void testBuildWhereClauseForDerivedColumns_NullRepairedStatus_NotNullGroupRepairEligibility()
+    {
+        assertEquals(" WHERE  grp_rpr_fl = :groupRepairEligible", eventDao.buildWhereClauseForDerivedColumns(null, true));
+    }
+
+    @Test
+    public void testGetTotalCountErrorSummaryDetails()
+    {
+        Long mock = mock(Long.class);
+        ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Map<String, Object>> parameterMapCaptor = ArgumentCaptor.forClass(Map.class);
+        when(eventQueries.getQueryValues(anyString())).thenReturn("%s|%s|%s|%s");
+        when(namedParameterJdbcTemplate.queryForObject(anyString(), anyMap(), mock)).thenReturn(1200L);
+        Long totalCount = errorSummaryDao
+            .getTotalCountErrorSummaryDetails(ORG_ID, CAT_REPORTER_IMID, DateTypeEnum.PROCESSING_DATE, DATE, ProductTypeEnum.ALL, PerspectiveEnum.SUBMITTER,
+                COLUMN_NAME_ENUM_LIST, FILTER_TYPE_ENUM_LIST, COMPARE_TYPE_ENUM_LIST, FILTER_VALUE_LIST);
+        assertEquals(Long.valueOf(1200), totalCount);
+        assertEquals(QUERY_GET_TOTAL_COUNT, queryCaptor.getValue());
+//        verify(namedParameterJdbcTemplate).query(anyString(), anyMap(), Long.class);
+    }
+-----------------------------------
+PendingEvents:																									86.7
+
+ "sortModel": [
+    {
+      "colId": "catReporterIndustryMemberId",
+      "sort": "desc"
+    },
+     {
+      "colId": "errorCount",
+      "sort": "asc"
+    }
+   ],
+   
+   
+   "type": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "NEW"
+       },
+        "errorRoeId": {
+           "filterType": "number",
+           "type": "equals",
+           "filter": 10004
+       },
+        "quoteId": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "54"
+       },
+        "orderId": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "OrderID_4"
+       }
+-----------------------------------
+ErrorSearch:
+    
+	"catReporterIndustryMemberId": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "D"
+       },
+          "errorRoeId": {
+           "filterType": "number",
+           "type": "equals",
+           "filter": 500004
+       },
+          "firmRoeId": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "60004"
+       },
+          "errorCode": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "2041"
+       },
+          "errorReason": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "Missing or Invalid manualFlag"
+       },
+          "errorType": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "Rejection"
+       },
+          "repairedStatus": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "R"
+       },
+          "quoteKeyDate": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "2020-05-04"
+       }
+	   
+  },
+    "sortModel": [
+    {
+      "colId": "quoteKeyDate",
+      "sort": "desc"
+    },
+     {
+      "colId": "errorType",
+      "sort": "asc"
+    }
+   ],
+----------------------------------------------------------------------------------------
+Things need to do:(2020-01-13)
+Unit tests 
+COlumn sort filter,,multiple ***
+Add security
+Validations 
+ERROR SUMMARY:
+
+  "filterModel": {
+      "errorCount": {
+           "filterType": "number",
+           "type": "equals",
+           "filter": 1
+       },
+      "catReporterIndustryMemberId": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "A"
+       },
+      "date": {
+           "filterType": "date",
+           "type": "equals",
+           "filter": "2019-12-10"
+       },
+  
+      "errorType": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "Rejection"
+       },
+      "repairedStatus": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "U"
+       },
+	  "catSubmitterId": {
+           "filterType": "number",
+           "type": "equals",
+           "filter": 13
+       },
+	  "groupRepairEligible": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "Y"
+       },
+	  "errorReason": {
+           "filterType": "text",
+           "type": "equals",
+           "filter": "Missing or Invalid fulfillmentLinkType"
+       },
+	  "errorCode": {
+           "filterType": "number",
+           "type": "equals",
+           "filter": 2041
+       }
+	   
+  },
+    "sortModel": [
+    {
+      "colId": "errorType",
+      "sort": "desc"
+    },
+     {
+      "colId": "catSubmitterId",
+      "sort": "asc"
+    }
+   ],
+  
+  -------------------------------------------------------------------------- 
+           StringBuilder whereClauseOuter = new StringBuilder(256);
+        StringBuilder whereClauseOuterConditions = new StringBuilder(256);
+        String havingClause = "";
+        if (CollectionUtils.isNotEmpty(columnNameEnumFilterList) && CollectionUtils.isNotEmpty(filterTypeEnumList) && CollectionUtils.isNotEmpty(compareTypeEnumList)
+            && CollectionUtils.isNotEmpty(filterValueList))
+        {
+            for(int i=0; i<columnNameEnumFilterList.size(); i++)
+            {
+                if (StringUtils.equals(columnNameEnumFilterList.get(i).getValue(), ColumnNameEnum.ERROR_COUNT.getValue()))
+                {
+                    havingClause = buildHavingClause(columnNameEnumFilterList.get(i));
+                }
+                else
+                {
+                    whereClauseOuterConditions.append(buildWhereClauseOuter(columnNameEnumFilterList.get(i)));
+                    if(i < (columnNameEnumFilterList.size()-1) && !Objects.equals(columnNameEnumFilterList.get(i).getValue(), ColumnNameEnum.ERROR_COUNT))
+                    {
+                        whereClauseOuterConditions.append(" AND");
+                    }
+                    if(i == (columnNameEnumFilterList.size()-1))
+                    {
+                        whereClauseOuter.append(" WHERE").append(whereClauseOuterConditions);
+                    }
+                }
+            }
+        }
+		
+		    protected Pair<String, String> buildWhereAndHavingClauseOuter(List<ColumnNameEnum> columnNameEnumFilterList, List<FilterTypeEnum> filterTypeEnumList,
+        List<CompareTypeEnum> compareTypeEnumList, List<Object> filterValueList)
+    {
+        StringBuilder whereClauseOuter = new StringBuilder(256);
+        StringBuilder whereClauseOuterConditions = new StringBuilder(256);
+        String havingClause = "";
+
+        if (CollectionUtils.isNotEmpty(columnNameEnumFilterList) && CollectionUtils.isNotEmpty(filterTypeEnumList) &&
+            CollectionUtils.isNotEmpty(compareTypeEnumList) && CollectionUtils.isNotEmpty(filterValueList))
+        {
+            Boolean isWhereRequired = false;
+            for (int i = 0; i < columnNameEnumFilterList.size(); i++)
+            {
+                if (StringUtils.equals(columnNameEnumFilterList.get(i).getValue(), ColumnNameEnum.ERROR_COUNT.getValue()))
+                {
+                    havingClause = buildHavingClause(columnNameEnumFilterList.get(i));
+                }
+                else
+                {
+                    whereClauseOuterConditions.append(buildWhereClauseOuterConditions(columnNameEnumFilterList.get(i)));
+                    //never reaches array out of bound
+                    if (i < (columnNameEnumFilterList.size() - 1) &&
+                        !StringUtils.equals(columnNameEnumFilterList.get(i + 1).getValue(), ColumnNameEnum.ERROR_COUNT.getValue()))
+                    {
+                        whereClauseOuterConditions.append(" AND");
+                    }
+                    isWhereRequired = true;
+                }
+            }
+            if (isWhereRequired)
+            {
+                whereClauseOuter.append(" WHERE").append(whereClauseOuterConditions);
+            }
+        }
+        return new Pair<>(havingClause, whereClauseOuter.toString());
+    }
+	
+------------------------------------------------------------------------------------------
+
+	INSERT INTO catco_owner.err_rec_dtl(
+	err_roe_id, cat_rprtr_imid, actn_type, firm_roe_id, msg_type, odr_key_dt, odr_id, sym, prnt_odr_key_dt, prnt_odr_id, orgng_imid, event_ts, side, pr, qty, min_qty, odr_type, tif, trdg_sssn, hndlg_instr, seq_nb, ats_dsply_ind, dsply_pr, wrkng_pr, dsply_qty, nbb_pr, nbb_qty, nbo_pr, nbo_qty, nbbo_src, nbbo_ts, cncl_qty, lvs_qty, rsrvd_for_fut_use, prior_odr_key_dt, prior_odr_id, fill_key_dt, flmnt_id, prior_fill_key_dt, prior_flmnt_id, mnl_fl, elctc_ts, cpcty, flmnt_link_type, clnt_dtl, firm_dtl, dept_type, rcvng_desk_type, info_barr_id, elctc_dplct_fl, mnl_odr_key_dt, mnl_odr_id, cstmr_dsply_ind_fl, firm_dsgnt_id, accnt_hldr_type, afflt_fl, agrtd_odrs, ngttd_trd_fl, rep_ind, ats_odr_type, quote_key_dt, quote_id, prior_quote_key_dt, prior_quote_id, sndr_imid, dstnt, rtd_quote_id, only_one_quote_fl, bid_pr, bid_qty, ask_pr, ask_qty, usltd_ind, mp_stts_cd, quote_rjctd_fl, rcvr_imid, sndr_type, rtd_odr_id, iso_ind, inttr, cncl_fl, cncl_ts, dstnt_type, sssn, route_rjctd_fl, dup_roid_cond, trd_key_dt, trd_id, tape_trd_id, mkt_cntr_id, side_dtl_ind, buy_dtl, sll_dtl, rptg_xcptn_cd, rcvd_quote_id, quote_wntd_ind, optn_id, opn_cls_ind, prior_unlkd, next_unlkd, exch_orgn_cd, ats_odr_type_elmnt, raw_data, crtd_ts)
+	VALUES (500001, 'A', 'action1', '60001', 'type1', '2020-02-21', 'order1', 'symbol1', 'parentOrderKey1', 'parentOrderId1', 'orgImid1', '2020-08-21 07:36:44', 'side1', 'pr1', '1', '1', 'orderTyp1', 'tif1', 'session1', 'handling1', 'seq1', 'atsD1', 'dsp1', 'w1', '1', 'nbb1', '1', 'nbo1', 1, 'src1', '2020-08-21 06:36:44', '1', '1', '1', '2020-07-01', 'priorOrdId1', '2020-05-01', 'flmn1', '2020-03-01', 'priorFlm1', 'mnl1', '2020-08-21 08:36:44', '1', 'link1', 'clnt1', 'firmDtl1', 'dept1', 'rvbng1', 'infoBar1', 'elctc1', '2020-08-01', 'mnl1', 'fl1', 'firmDsg1', 'accHldr1', 'aff1', 'agrOrd1', 'ngtdd1', 'rep1', 'atsOdr1', '2020-05-01', 'quote1', '2020-05-01', 'prrQo1', 'sndr1', 'dstnt1', 'rtd1', 'only1', 'bid1', '1', 'ask1', '1', 'usltd1', 'mp1', 'quote1', 'rcvr1', 'sndrTy1', 'rtdOdr1', 'iso1', 'int1', 'cnclFl1', '2020-08-21 08:36:44', 'dstnType1', 'sesson1', 'route1', 'dup1', '2020-04-01', 'trd1', 'tape1', 'mktCnt1', 'side1', 'buy1', 'sll1', 'rptg1', 'rcvd1', 'quoteWind1', 'optnId1', 'opnCls1', 'prUnl1', 'nxtUnl1', 'exch1', 'atsElem1', 'raw1', '2020-08-21 07:36:44');
+			
+
+------------------------------------------------------------------------------------------
+
+INSERT INTO catco_owner.err_rec_info(
+	err_roe_id, cat_rprtr_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, file_nm, file_frmt, prcsg_dt, trd_dt, event_type, prdct_type, rprd_st, err_type, actn_type, firm_roe_id, err_list, msg_type, crtd_ts, crtd_by, updtd_ts, updtd_by, rpr_type_cd, rpr_ts, rpr_user_id, crctn_due_ts)
+	VALUES ('500001', 22, 'A', 22, 123, 'fileName', 'fileformat', '2019-01-01', '2019-01-01', 'MENO', 'Options', 'R', 'Rejection', 'aaaa', '20191218_101-MONO-No-Error', 'errList', 'messag', '2019-08-22 11:36:44', 'user1', '2019-08-22 11:36:44', 'user2', 'Corrected1', '2019-11-11', 'dummyRepair1', '2019-12-22 11:36:44');
+	
+
+-------------------------------------------------------------------------------------------
+SELECT err_cd, err_ds, grp_rpr_elgbl, rec_fld, crtd_ts, crtd_by, updtd_ts, updtd_by
+	FROM catdd_owner.err_cd_lk;
+	
+INSERT INTO catdd_owner.err_cd_lk(
+	err_cd, err_ds, grp_rpr_elgbl, rec_fld, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES (1011, 'Some error message', true, 'aaaa', '2019-04-04', 'user1', '2019-04-04', 'user2');
+	
+-------------------------------------------------------------------------------------------
+SELECT err_roe_id, err_cd, err_value, crtd_ts, crtd_by, updtd_ts, updtd_by
+	FROM catdd_owner.err_rec_cd;
+	
+INSERT INTO catdd_owner.err_rec_cd(
+	err_roe_id, err_cd, err_value, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES ('15300', 2001, 'Missing or Invalid accountHolderType', '2019-04-04', 'user1', '2019-04-04', 'user2');
+	
+delete from catdd_owner.err_rec_cd where err_roe_id='12353';
+-------------------------------------------------------------------------------------------
+
+SELECT err_roe_id, cat_rprtr_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, file_nm, file_frmt, prcsg_dt, trd_dt, event_type, prdct_type, rprd_st, err_type, actn_type, firm_roe_id, err_list, msg_type, crtd_ts, crtd_by, updtd_ts, updtd_by
+	FROM catdd_owner.err_rec_info;
+
+Delete from catdd_owner.err_rec_info where err_roe_id='12353';
+
+INSERT INTO catdd_owner.err_rec_info(
+	err_roe_id, cat_rprtr_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, file_nm, file_frmt, prcsg_dt, trd_dt, event_type, prdct_type, rprd_st, err_type, actn_type, firm_roe_id, err_list, msg_type, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES ('15300', 79, 'SUNNY', 79, 123, 'fileName', 'fileformat', '2019-01-01', '2019-01-01', 'MENO', 'Options', 'P', 'Rejection', 'aaaa', '20191205_101-MONO-No-Error', 'errList', 'messag', '2019-08-22 11:36:44', 'user1', '2019-08-22 11:36:44', 'user2');
+-------------------------------------------------------------------------------------------
+SELECT pndng_rec_id, cat_rprtr_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, actn_type, err_roe_id, firm_roe_id, msg_type, odr_key_dt, odr_id, sym, prnt_odr_key_dt, prnt_odr_id, orgng_imid, event_ts, side, pr, qty, min_qty, odr_type, tif, trdg_sssn, hndlg_instr, seq_nb, ats_dsply_ind, dsply_pr, wrkng_pr, dsply_qty, nbb_pr, nbb_qty, nbo_pr, nbo_qty, nbbo_src, nbbo_ts, cncl_qty, lvs_qty, rsrvd_for_fut_use, prior_odr_key_dt, prior_odr_id, fill_key_dt, flmnt_id, prior_fill_key_dt, prior_flmnt_id, mnl_fl, elctc_ts, cpcty, flmnt_link_type, clnt_dtl, firm_dtl, dept_type, rcvng_desk_type, info_barr_id, elctc_dplct_fl, mnl_odr_key_dt, mnl_odr_id, cstmr_dsply_ind_fl, firm_dsgnt_id, accnt_hldr_type, afflt_fl, agrtd_odrs, ngttd_trd_fl, rep_ind, ats_odr_type, quote_key_dt, quote_id, prior_quote_key_dt, prior_quote_id, sndr_imid, dstnt, rtd_quote_id, only_one_quote_fl, bid_pr, bid_qty, ask_pr, ask_qty, usltd_ind, mp_stts_cd, quote_rjctd_fl, rcvr_imid, sndr_type, rtd_odr_id, iso_ind, inttr, cncl_fl, cncl_ts, dstnt_type, sssn, route_rjctd_fl, dup_roid_cond, trd_key_dt, trd_id, tape_trd_id, mkt_cntr_id, side_dtl_ind, buy_dtl, sll_dtl, rptg_xcptn_cd, rcvd_quote_id, quote_wntd_ind, optn_id, opn_cls_ind, prior_unlkd, next_unlkd, exch_orgn_cd, ats_odr_type_elmnt, rprd_st, crtd_by, crtd_ts, updtd_by, updtd_ts, rec_rprtr_imid
+	FROM catdd_owner.pndng_rec;
+	
+SELECT count(*) from information_schema.columns where table_name='pndng_rec';
+
+SELECT column_name from information_schema.columns where table_name='pndng_rec' order by column_name asc;
+
+delete from catdd_owner.pndng_rec where pndng_rec_id=33
+
+update catdd_owner.pndng_rec set err_roe_id=15200 where pndng_rec_id=35
+
+
+-------------------------------------------------------------------------------------------
+package org.finra.catdd.service.impl;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import org.finra.catdd.common.enums.DateTypeEnum;
+import org.finra.catdd.common.enums.PerspectiveEnum;
+import org.finra.catdd.common.enums.ProductTypeEnum;
+import org.finra.catdd.common.helper.PerspectiveHelper;
+import org.finra.catdd.common.utils.CatddDateUtils;
+import org.finra.catdd.dao.ErrorSummaryDao;
+import org.finra.catdd.dao.HerdDao;
+import org.finra.catdd.dao.helper.DateHelper;
+import org.finra.catdd.model.dto.ErrorSummaryDetail;
+import org.finra.catdd.model.dto.ErrorSummaryDetails;
+import org.finra.catdd.model.dto.ErrorSummaryPostRequest;
+import org.finra.catdd.model.dto.ErrorSummaryRequest;
+import org.finra.catdd.model.dto.ErrorSummaryResponse;
+import org.finra.catdd.service.ErrorSummaryService;
+
+/**
+ * The implementation class for {@link ErrorSummaryService}
+ */
+@Service
+public class ErrorSummaryServiceImpl implements ErrorSummaryService
+{
+    @Autowired
+    private ErrorSummaryDao errorSummaryDao;
+
+    @Autowired
+    private PerspectiveHelper perspectiveHelper;
+
+    @Autowired
+    private HerdDao herdDao;
+
+    @Autowired
+    private DateHelper dateHelper;
+
+    @Value("${processingDate.cutOff.hour}")
+    private Integer processingDateCutOffHour;
+
+    @Value("${processingDate.cutOff.minute}")
+    private Integer processingDateCutOffMinute;
+
+    @Value("${processingDate.cutOff.second}")
+    private Integer processingDateCutOffSecond;
+
+    @Value("${processingDate.cutOff.nanoOfSecond}")
+    private Integer processingDateCutOffNanoOfSecond;
+
+    @Override
+    public ErrorSummaryResponse getErrorSummary(ErrorSummaryPostRequest errorSummaryPostRequest)
+    {
+        Assert.notNull(errorSummaryPostRequest, "The error summary request must not be null.");
+        Assert.notNull(errorSummaryPostRequest.getStartRow(), "The error summary parameter \"startRow\" must be specified.");
+        Assert.notNull(errorSummaryPostRequest.getEndRow(), "The error summary parameter \"endRow\" must be specified.");
+        Assert.notNull(errorSummaryPostRequest.getErrorSummary(), "The error summary filter parameters must not be null.");
+        ErrorSummaryRequest errorSummaryRequest = errorSummaryPostRequest.getErrorSummary();
+        Assert.notNull(errorSummaryRequest.getCatOrganizationId(), "The parameter \"catOrganizationId\" must be specified.");
+
+        DateTypeEnum dateTypeEnum =
+            StringUtils.isEmpty(errorSummaryRequest.getDateType()) ? DateTypeEnum.PROCESSING_DATE : DateTypeEnum.find(errorSummaryRequest.getDateType());
+
+        ProductTypeEnum productTypeEnum =
+            StringUtils.isEmpty(errorSummaryRequest.getProductType()) ? ProductTypeEnum.ALL : ProductTypeEnum.find(errorSummaryRequest.getProductType());
+
+        PerspectiveEnum perspectiveEnum = perspectiveHelper.getPerspectiveEnum(errorSummaryRequest.getPerspective());
+
+        validateDate(errorSummaryRequest.getDate());
+        String date = errorSummaryRequest.getDate();
+
+        if (StringUtils.isEmpty(date))
+        {
+            date = dateHelper.getDate(dateTypeEnum, LocalDate.now(), LocalTime.now(),
+                LocalTime.of(processingDateCutOffHour, processingDateCutOffMinute, processingDateCutOffSecond, processingDateCutOffNanoOfSecond));
+        }
+
+        ErrorSummaryResponse errorSummaryResponse = new ErrorSummaryResponse();
+        ErrorSummaryDetails errorSummaryDetails = new ErrorSummaryDetails();
+        errorSummaryResponse.setErrorSummaryDetails(errorSummaryDetails);
+        errorSummaryDetails.setCatOrganizationId(errorSummaryRequest.getCatOrganizationId());
+        errorSummaryDetails.setProductType(productTypeEnum.getValue());
+        errorSummaryDetails.setPerspective(perspectiveEnum.name());
+        errorSummaryDetails.setDateType(dateTypeEnum.getValue());
+        errorSummaryDetails.setDate(date);
+
+        List<ErrorSummaryDetail> errorSummaryDetailList = errorSummaryDao
+            .getErrorSummaryDetails(errorSummaryRequest.getCatOrganizationId(), dateTypeEnum, date, productTypeEnum, perspectiveEnum,
+                errorSummaryPostRequest.getStartRow(), errorSummaryPostRequest.getEndRow());
+        errorSummaryDetails.setErrorSummaryDetails(errorSummaryDetailList);
+
+        errorSummaryResponse.setLastRow(errorSummaryDetailList.size());
+        return errorSummaryResponse;
+    }
+
+    /**
+     * Validate the date
+     *
+     * @param dateValue the date value
+     */
+    protected void validateDate(String dateValue)
+    {
+        CatddDateUtils.getDateFromStringYYYYMMDD(dateValue);
+    }
+
+//    /**
+//     * Method that returns date for processing or trade date based on the login time and date of the user
+//     *
+//     * @param currentTime current time when the user is requesting the error summary
+//     * @param cutOffTime cutoff time to decide the processing date for the error summary
+//     *
+//     * @return the date to be used to get error summary
+//     */
+//    protected String getDate(DateTypeEnum dateTypeEnum, LocalDate currentDate, LocalTime currentTime, LocalTime cutOffTime)
+//    {
+//        Instant currentDateInstant = currentDate.atStartOfDay(ZoneId.of(JSON_TIMESTAMP_TIMEZONE)).toInstant();
+//
+//        String startExpectedPartitionValue = CatddDateUtils
+//            .getDateAsStringYYYYMMDD(Date.from(currentDate.minusDays(DAYS_FOR_PARTITION_VALUE).atStartOfDay(ZoneId.of(JSON_TIMESTAMP_TIMEZONE)).toInstant()));
+//
+//        String endExpectedPartitionValue = CatddDateUtils.getDateAsStringYYYYMMDD(Date.from(currentDateInstant));
+//
+//        ExpectedPartitionValuesInformation expectedPartitionValuesInformation =
+//            herdDao.getExpectedPartitionValues(startExpectedPartitionValue, endExpectedPartitionValue);
+//
+//        // This list is expected to have more than 3 dates as the date range we are giving is 10 days
+//        List<String> list = expectedPartitionValuesInformation.getExpectedPartitionValues();
+//
+//        return Objects.equals(dateTypeEnum, DateTypeEnum.PROCESSING_DATE) ? getProcessingDate(currentDateInstant, currentTime, cutOffTime, list) :
+//            getTradeDate(currentDateInstant, list);
+//    }
+//
+//    /**
+//     * Method that returns the processing date as per the business requirement
+//     *
+//     * @param currentDateInstant current date instant with Eastern timezone
+//     * @param currentTime current time when the user is requesting the error summary
+//     * @param cutOffTime cutoff time to decide the processing date for the error summary
+//     * @param list the list of trade dates from today-10 days till today
+//     *
+//     * @return the processing date
+//     */
+//    protected String getProcessingDate(Instant currentDateInstant, LocalTime currentTime, LocalTime cutOffTime, List<String> list)
+//    {
+//        String processingDate;
+//
+//        if (CatddDateUtils.getDateFromStringYYYYMMDD(list.get(list.size() - 1)).before(Date.from(currentDateInstant)))
+//        {
+//            processingDate = list.get(list.size() - 2);
+//        }
+//        else
+//        {
+//            processingDate = currentTime.isBefore(cutOffTime) ? list.get(list.size() - 3) : list.get(list.size() - 2);
+//        }
+//
+//        return processingDate;
+//    }
+//
+//    /**
+//     * Method that returns the trade date as per the business requirement
+//     *
+//     * @param currentDateInstant current date instant with Eastern timezone
+//     * @param list the list of trade dates from today-10 days till today
+//     *
+//     * @return the processing date
+//     */
+//    protected String getTradeDate(Instant currentDateInstant, List<String> list)
+//    {
+//        return CatddDateUtils.getDateFromStringYYYYMMDD(list.get(list.size() - 1)).before(Date.from(currentDateInstant)) ? list.get(list.size() - 1) :
+//            list.get(list.size() - 2);
+//    }
+}
+
+--------------------------------------------------------------------------
+
+
+SELECT date, cat_rprtr_imid catImid, cat_sbmtr_id catSubmitterId, rprd_st repairedStatus, err_type errorType, err_cd errorCode, err_ds errorReason,
+ COUNT(*) errorCount FROM (SELECT erd.trd_dt date, cat_rprtr_imid, cat_sbmtr_id, rprd_st, err_type, erc.err_cd, ecl.err_ds FROM catdd_owner.err_rec_info eri,
+ catdd_owner.err_rec_cd erc, catdd_owner.err_cd_lk ecl WHERE  eri.prdct_type=:productType AND (eri.cat_rprtr_id=:orgId OR eri.cat_sbmtr_id=:orgId) AND
+ (eri.trd_dt <= :endDate AND eri.trd_dt >= :startDate) AND eri.err_rec_info_id = erc.err_rec_info_id AND ecl.err_cd= erc.err_cd AND eri.rprd_st='R'
+ AND NOT EXISTS (SELECT err_roe_id FROM catdd_owner.pndng_rec_info pri WHERE pri.err_roe_id=eri.err_roe_id) UNION ALL SELECT erd.trd_dt date,
+ eri.cat_rprtr_imid, eri.cat_sbmtr_id, eri.rprd_st, eri.err_type, erc.err_cd, ecl.err_ds FROM catdd_owner.err_rec_info eri, catdd_owner.err_rec_cd erc,
+ catdd_owner.err_cd_lk ecl, catdd_owner.pndng_rec_info pri WHERE  eri.prdct_type=:productType AND (eri.cat_rprtr_id=:orgId OR eri.cat_sbmtr_id=:orgId)
+ AND (eri.trd_dt <= :endDate AND eri.trd_dt >= :startDate) AND eri.err_rec_info_id = erc.err_rec_info_id AND ecl.err_cd= erc.err_cd AND
+ eri.err_roe_id = pri.err_roe_id AND eri.rprd_st='R' AND pri.rprd_st='S' UNION ALL SELECT erd.trd_dt date, pri.cat_rprtr_imid, pri.cat_sbmtr_id,
+ pri.rprd_st, pri.err_type, erc.err_cd, ecl.err_ds FROM catdd_owner.err_rec_info eri, catdd_owner.err_rec_cd erc, catdd_owner.pndng_rec_info pri,
+ catdd_owner.err_cd_lk ecl WHERE  eri.prdct_type=:productType AND (eri.cat_rprtr_id=:orgId OR eri.cat_sbmtr_id=:orgId) AND (eri.trd_dt <= :endDate AND eri.trd_dt >= :startDate) AND
+ eri.err_rec_info_id = erc.err_rec_info_id AND (eri.rprd_st='U' OR (eri.rprd_st='R' AND pri.rprd_st='P'))  AND eri.err_roe_id = pri.err_roe_id AND
+ ecl.err_cd= erc.err_cd UNION ALL SELECT erd.trd_dt date, cat_rprtr_imid, cat_sbmtr_id, rprd_st, err_type, erc.err_cd, ecl.err_ds
+ FROM catdd_owner.err_rec_info eri, catdd_owner.err_rec_cd erc, catdd_owner.err_cd_lk ecl      WHERE  eri.prdct_type=:productType AND
+ (eri.cat_rprtr_id=:orgId OR eri.cat_sbmtr_id=:orgId) AND (eri.trd_dt <= :endDate AND eri.trd_dt >= :startDate) AND eri.err_rec_info_id = erc.err_rec_info_id AND eri.rprd_st='U'
+ AND ecl.err_cd= erc.err_cd AND NOT EXISTS (SELECT err_roe_id FROM catdd_owner.pndng_rec_info pri WHERE pri.err_roe_id=eri.err_roe_id))
+ esr GROUP BY date, cat_rprtr_imid, cat_sbmtr_id, err_type, rprd_st, err_cd, err_ds ORDER BY date, cat_rprtr_imid, cat_sbmtr_id, err_type, rprd_st, err_cd LIMIT 20 OFFSET 1
+ 
+ 
+ --------------------------------------------------------------------------
+
+
+Add a logger in Credstash and GetBusinessObjectData
+
+so that retires message would make sense
+
+
+
+
+if the attribute is Not thirdParty or reporterOrgId, and attibute is not present, throw Exception("no value found for required attribute")
+
+if the attribute is Not thirdParty or reporterOrgId, but targetFileName and formatUsage="INT_META", check for resultAttribute.
+		If result attibute is Failure, file name should have been present,so throw Exception("no value found for required attribute")
+		Else if result attribute is Not Failure, set fileName as null ? 
+
+
+---------------------------------------------------------------------------------
 INSERT INTO catdd_owner.herd_info_lk(
 	herd_info_id, actn_type, strg_name, name_space, bus_objct_dfntn, usage_cd, file_type, frmt_vrsn, prtn_key)
 	VALUES (2, 'FDBK_DWNLD', 'S3_MANAGED', 'IndustryMember', 'ORDER_EVENTS', 'INT', 'TXT', 0, ?);

@@ -134,11 +134,13 @@ Extras:
 	To revert back to a certain commit in the repository
 18. <git stash>, then <git pull>, then <git stash apply>	
 	If you made local changes and still want to git pull from remote.
+
+	Another way: git stash, then git stash pop
 19. <git rm --cached file.txt>
 	To remove file from repo. If need to remove files from pull request. this command + commit + push again
 20. <git grep <String>>
 	to search for a string in the branch you are on
-21. <git branch -d feature/CATDD-01
+21. <git branch -D feature/CATDD-01
 	to delete a branch. You must to checked out to some other branch before doing itg
 22. <git fetch>
     <git checkout test>
@@ -146,6 +148,10 @@ Extras:
 33. <git add -A>
     <git reset --  src/main/java/org/finra/catdd/lambda/handler/HandlerTest.java>
 	to add all to staging except for one.
+34. <git branch -a>
+	to see a list of all the remote branches
+35. <git remote get-url origin>
+	to see the remote origin url
 ===================================================================================================================
 
 

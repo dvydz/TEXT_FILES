@@ -1,3 +1,428 @@
+02-11-2020
+1. Assert.isTrue(ListA.containsAll(listB)
+	and Assert.isTrue(ListB.containsAll(listA). Then two lists are equal.
+	Can use for assert in automation where no sort is fixed and cannot compare equality for two objects directly.
+---------------------------------------------------------------------
+02-05-2020
+1. When writing API automation, need to think not only about the user perspective but also through data perspective. Like Database if it has null rows,
+	how does api handle it.
+2.  Creating an object like this: 
+	private static final FileSubmissionInformationEntity DATA_FILE_SUBMISSION_INFORMATION_ENTITY = new FileSubmissionInformationEntity()
+    {{
+        setId(10001);
+        setFileName("dataFileName");
+        setAssociatedMetadataFileSubmissionId(META_FILE_SUBMISSION_ID);
+        setEventSubmissionId(EVENT_SUBMISSION_ID);
+        setCreatedBy(USER_ID);
+    }};
+	
+	  Map<FileTypeEnum, String> integrityResult = new HashMap<FileTypeEnum, String>()
+	{{
+		put(FileTypeEnum.DATA, " AND D.INTEGRITY_RESULT IS NULL ");
+		put(FileTypeEnum.META, " AND M.INTEGRITY_RESULT IS NULL ");
+	}};
+3. SSH public key error while pushing to repo? Maybe the private key is not setup for ssh.
+	Easy way: Change the remote origin to HTTPs instead of SSH.
+	command:	git remote set-url origin https://github.com/USERNAME/REPOSITORY.git
+4. QueryDsl Tuple:
+	Since Querydsl 3.0 the default type for multi-column results is com.mysema.query.Tuple.
+	Tuple provides provides a typesafe Map like interface to access column data from a Tuple row object.
+5. SQL query :
+	NULLIF(expr1, expr2)
+	The NULLIF() function returns NULL if two expressions are equal, otherwise it returns the first expression.
+	example : "COALESCE(NULLIF(EVENT_TYPE_CD,''),'N/A')";
+6. Number comes first, then Uppercase, then lower case in Ascii order
+7. Fix file name too long problem for git in windows:
+	run command : 'git config --system core.longpaths true' -> as an admin
+8. For positive scenarios, we need to make db call then find the date or imid and stuff that we want to use for our call. DO NOT HARDCODE as the data
+	might be deleted. For negative scenarios, we can give any dates or any query params value.
+9. Fix file name too long problem while running applications and tests in intelliJ,
+	Go to the .idea folder for intelliJ, and update the Workspace.xml:
+	Add 
+	<property name="dynamic.classpath" value="true" /> to
+	  <component name="PropertiesComponent">
+	.
+	.
+	.
+	  </component>
+10. Never blindly convert the SQL query to uppercase, the sql query itself is okay to convert to uppercase as long as the value for the column is not. Values are case sensitive.
+	SQL commands itself arent
+------------------------------------------------------------------------------------
+01-30-2020
+1. Query does not have any params that is why we use (Map<String, ?>) null. And supress warning
+	@Override
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NONNULL_PARAM_VIOLATION")
+    public Long getNextAvailableEventSubmissionId()
+    {
+        return namedParameterJdbcTemplate.queryForObject(eventQueries.getQueryValues(GET_EVENT_SUBMISSION_ID), (Map<String, ?>) null, Long.class);
+    }
+2. RowMapper to map sql columns to  dto, and 
+	MapSqlParameterSource sqlParameterSource = new MapSqlParameterSource(); to set value in query for namedParameterJdbcTemplate
+3.  Convert list to string using stream.
+	eventIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+4. EqualsBuilder().append(catSubmitterId, that.catSubmitterId).append(catReporterIndustryMemberId, that.catReporterIndustryMemberId).isEquals();
+	HashCodeBuilder(17, 37).append(catSubmitterId).append(catReporterIndustryMemberId).toHashCode();
+	--> Build equals and hashcode method for any class;
+5. ‘this’ is a reference variable that refers to the current object.
+6. BuilderPattern
+7. StringUtil.SPACE, StringUtil.COMMA from package io.netty.util.internal;
+8.	public static Stream<Role> usersRoles()
+    {
+        return DataProviders.ewsAccountUsersRole();
+    }
+
+	@ParameterizedTest
+    @MethodSource("usersRoles")
+    @Tag("api")
+    @Tag("file status")
+    @Publish(name = "Verify individual roles to get File status", description = "All the user roles should be able to see the File status", coverage = "CATDD-1374")
+    public void testRolesFileStatusWithAllParams(Role role)
+    {
+        try
+        {
+            Map<String, Object> queryParam = new HashMap<>();
+            queryParam.put(QueryParams.CAT_ORGANIZATION_ID.getValue(), String.valueOf(role.getOrgId()));
+			.....
+		}
+	}
+	@MethodSource repeates the value for provided parameters to check for all the possibilities.
+------------------------------------------------------------------------------
+01-27-2020
+1. When need to mock.
+	when(currentUserService.getCurrentUserInfo.getUser.getUserId).thenReturn("abc") does not work.
+	Need to mock individually. Mock CurrentUserService, then mock CurrentUserInfo, then mock User.
+2. By default no argument constructor.if parametrized constructor added, need to explicitly add default constructor.
+3. BigInteger is capable of holding far bigger numbers than Long.
+4. SELECT nextval('catdd_owner.sbmsn_id_seq')
+5. PlatformTransactionManager :
+		 @Autowired
+	     private PlatformTransactionManager transactionManager;
+	  TransactionDefinition def = new DefaultTransactionDefinition();
+      TransactionStatus status = transactionManager.getTransaction(def);
+6.  when(memberDictionaryRepositoryCustom.findBySearchCriteria(any(), any(), any(), any(), any())).thenReturn(memberDictionaryEntityList);
+	-> if the argument is null, then when mocking, we cant use anyString because it gives "", use any() which can be null.
+7. Findbugs supress:
+	    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "Need to capture all exceptions during parsing")
+8. LinkedHashSet preserves the insertion order. Other Set does not preserve order.
+9. Remove the duplicates from a list -> List<String> newList = myList.stream().distinct().collect(Collectors.toList())
+10. Sort online tool:
+	https://www.online-utility.org/text/sort.jsp
+11. natural sorting order.
+12. Collections.sort().....Collections.reverse()
+13. List<Integer> newSortedList = list.stream().sorted().collect(Collectors.toList());
+	List<Integer> newSortedList = list.stream().sorted(Comparator.reverseOrder().collect(Collectors.toList());
+14. List<String> newList = myList.stream().distinct().sorted().collect(Collectors.toList())  -> Remove duplicate and sort
+15. TreeSet will sort elements (Strings) alphabetically. you can eliminate stream().distinct().sorted().collect(Collectors.toList());
+	ex: List<String> list = Arrays.asList("image0", "image8", "image15", "image9", "image21");
+        System.out.println("Stream --->"+list.stream().sorted().collect(Collectors.toList()));
+        System.out.println("Treeset --->"+new TreeSet<>(list));
+16. We can actually check for what commit the ci build in jenkins ran, we can compare the log(Jenkins)'s commit number with the
+	commitnumber(bitbucket). Bitbucket->Commit
+17.     // create SQS message with submissionId and send to SQS url
+        AmazonSQS sqsClient = AmazonSQSClientBuilder.defaultClient();
+        SendMessageRequest sendMessageRequest = new SendMessageRequest()
+                .withQueueUrl(sqsUrl)
+                .withMessageBody(submissionId.toString());
+        sqsClient.sendMessage(sendMessageRequest);
+18. combinedList.sort(Comparator.comparing(FileStatusDto::getUploadTimestamp, Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
+19. In sql query,  ORDER BY UPLOAD_TIMESTAMP DESC NULLS FIRST
+20. HH:mm:ss -> 24 hour format, hh:mm:ss -> 12 hour format
+21. Java.util	
+	eventTypeStatisticsList.sort(
+            Comparator.comparing(EventTypeStatistics::getCatReporterIndustryMemberId).thenComparing(EventTypeStatistics::getCatSubmitterId)
+                .thenComparing(EventTypeStatistics::getEventType,Comparator.nullsLast(Comparator.naturalOrder())));
+22. Using comparator:
+     Collections.sort(actualFileStatusInfo.getFileStatusDetailOutputs(), new FileStatusDetailOutputComparator());
+public class FileStatusDetailOutputComparator implements Comparator<FileStatusDetailOutput>
+{
+    @Override
+    public int compare(FileStatusDetailOutput o1, FileStatusDetailOutput o2)
+    {
+        return new CompareToBuilder()
+            .append(o2.getUpload().getTimestamp(), o1.getUpload().getTimestamp())
+            .append(o1.getUploadedFileName(), o2.getUploadedFileName())
+            .toComparison();
+    }
+}
+    @Override
+    public int compare(FileStatusDetailOutput o1, FileStatusDetailOutput o2)
+    {
+        int compareUploadTimestamp = o1.getUpload().getTimestamp().compareTo(o2.getUpload().getTimestamp());
+        int compareFileName = o1.getUploadedFileName().compareTo(o2.getUploadedFileName());
+
+        if(compareUploadTimestamp == 0)
+        {
+            return compareFileName;
+        }
+        else
+        {
+            return compareUploadTimestamp;
+        }
+    }
+----------------------------------------------------------------------
+01-21-2020
+1. a String is immutable, meaning you cannot change a String in Java. concat() returns a new concatenated string.
+	s = s.concat("ING"); works but s.concat("ING") wont cut it
+2. /**
+	 * The base integration test for java application. Test Classes extends this class
+	 */
+	@ExtendWith(SpringExtension.class)
+	@SpringBootTest
+	@ActiveProfiles("test")
+	abstract public class BaseIntegrationTest
+	{
+	}
+
+3. java -jar -Dspring.profiles.active=Application catdd-portal-api-app-0.4.0-SNAPSHOT.jar -> To run with a profile using command line
+   To set it up in intelliJ. Run -> Edit Confugurations -> VM Options -> Set as -Dspring.profiles.active=Application
+4. java.sql.date, Date.valueOf("2019-01-01") instead of new Date(). new Date() requires a long(milliSeconds)
+5. There is a subtle difference between null and blank(“”). Null means we are not pulling the data from the database, while “” means we are pulling the data from DB but its value in DB is empty
+6. When we use argument matchers, then all the arguments should use matchers. If we want to use a specific value for an argument, then we can use eq() method.
+	For example:  when(namedParameterJdbcTemplate.queryForObject(queryCaptor.capture(), parameterMapCaptor.capture(), eq(Long.class))).thenReturn(1200L);
+	If the method arguments has Class, for example : we can still use it
+	namedParameterJdbcTemplate.queryForObject(errorSummaryQueryBuilder.toString(), parameterMap, Long.class)
+7.  String eventIdListInString = eventIds.stream().map(eventId -> String.valueOf(eventId)).collect(Collectors.joining(","));
+8. "CAST(info.crctn_due_ts as TEXT)" = '2019-11-13 00:00:00'.........casting in query
+9. To setup artifactory....Go to .m2 folder in the users folder. then go to artifactory:
+	https://artifactory.finra.org/artifactory/webapp/#/home
+	Go to the profile. Get the passkey and update the settings.xml
+10. To setup the aws location, go to the .aws folder
+--------------------------------------------------------------------------------------------------------
+01-15-2019
+1. When declaring static final variable for Map and list need to make it immutable:
+	    public static final Map<String, String> SORT_TYPE_MAP =
+        ImmutableMap.<String, String>builder()
+            .put(SortTypeEnum.ASCENDING.getValue(), "asc")
+            .put(SortTypeEnum.DESCENDING.getValue(), "desc")
+            .build();
+		
+		ImmutableSet.of(Arrays.asList(1,2))
+2. Insead of this:             for (String key : filterModel.keySet()), where you have to do filterModel.get(key).getFilterType()
+	Do this: 				   Map.Entry<String, ColumnFilter> entry : filterModel.entrySet()
+								 String key = entry.getKey();
+								 ColumnFilter value = entry.getValue();
+								where we can use : value.getFilterType()
+3. String manipulation plugin for intellij to switch camelCase to snake-underscore(Alt + m. Then 4, 2) and others too
+4. KeyHolder holder = new GeneratedKeyHolder();
+5. @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "Need to capture all exceptions during parsing")
+6. @JsonIgnore properties to ignore fields both when reading JSON into Java objects, and when writing Java objects into JSON.
+	@JsonIgnoreProperties({"firstName", "lastName"}) -> Class Level
+	@JsonIgnore -> Method level
+7. @Bean loaded during application start up.
+8. EventTypes eventTypes = JsonUtils.unmarshal(fileHelper.readFileFromClassPath(EVENT_TYPES_RESOURCE_NAME), EventTypes.class);
+	JsonUtils.unmarshal uses ObjectMapper internally to map. Json Utils is custom class in Catdd application. 
+	JsonUtils is a catdd application util class.
+	ObjectMapper uses column name to map the columns. So name should match
+
+--------------------------------------------------------------------------------------------------------------
+01-09-2020
+1. JsonUtils.unmarshal(fileHelper.readFileFromClassPath(EVENT_QUERY_RESOURCE_NAME), EventQueries.class)
+	EventQueries.class should have a variable with name matching that of the json fileName that we are reading from. Thats how its mapped
+2. pndng_rec, err_rec_info, err_rec_cd, err_cd_lk should all have the matching data to get anything from errorSummary endpoint. matching errorRoeId, reporter, imid etc
+3. Sql:
+	case when .... then.... else... -> like if else.... 
+	Coalesce -> return the first non null value
+	SELECT min(rec_rprtr_imid) as imid from catdd_owner.pndng_rec; -> min of string (alphabetical)
+4. Make method protected so that we can unit test instead of private.
+5. Run two list at the same time for one result combining both:
+	    Iterator<Object> filterValueIterator = filterValue.iterator();
+        Iterator<ColumnNameEnum> columnNameEnumIterator = columnNameEnumFilterList.iterator();
+        while(columnNameEnumIterator.hasNext() && filterValueIterator.hasNext())
+        {
+            parameterMap.put(columnNameEnumIterator.next().getValue(), filterValueIterator.next());
+        }
+6. Pair<String, String> to return two values. A work around
+7. CollectionUtils, MapUtils, StringUtils, Objects that has isNull and stuff? Prefer Spring CollectionUtils not ApacheCommons.
+--------------------------------------------------------------------------------------------------------------
+12-31-2019
+1. If no access modifier is specified for the constructor of a normal class, the constructor has default access.
+   If no access modifier is specified for the constructor of an enum type, the constructor is private.
+   It is a compile-time error if the constructor of an enum type (§8.9) is declared public or protected.
+2. SELECT strt_dt startDate, cat_rprtr_id catReporterId ........................... Aliases   
+3. Stream.of("abc", "def").collect(Collectors.toSet()) 
+4. 	   ErrorSummaryResponse errorSummaryResponse = new ErrorSummaryResponse();
+        ErrorSummaryDetails errorSummaryDetails = new ErrorSummaryDetails();
+        errorSummaryResponse.setErrorSummaryDetails(errorSummaryDetails);
+        errorSummaryDetails.setCatOrganizationId(errorSummaryRequest.getCatOrganizationId());
+        errorSummaryDetails.setDate(date);
+	ErrorSummaryDetails value is set before it has anything. This works. how?
+5. restrictedCharacterList.stream().anyMatch(name::contains)
+6. Collections.sort(list);
+7. @Autowired
+    private ResourceLoader resourceLoader;
+8. ArgumentCaptor Mockito:
+	 ArgumentCaptor<Integer> catOrganizationIdCaptor = ArgumentCaptor.forClass(Integer.class);
+     ArgumentCaptor<DateTypeEnum> dateTypeEnumCaptor = ArgumentCaptor.forClass(DateTypeEnum.class);
+	 when(errorSummaryDao.getErrorSummaryDetails(catOrganizationIdCaptor.capture(), dateTypeEnumCaptor.capture())).thenReturn(Arrays.asList(errorSummaryDetail));
+	-> Whenever it is called when running the test, the value passed at those positions are captured which could later be used to assert.
+9. verify(herdDao, never()).getExpectedPartitionValues(any(), any());
+10. Instant currentDateInstant = currentDate.atStartOfDay(ZoneId.of(JSON_TIMESTAMP_TIMEZONE)).toInstant();
+	currentDateInstant = currentDateInstant.minus(1, ChronoUnit.DAYS);
+11. @Autowire any classes that are defined as @components, like helper classes. = new HelperClass() does not work
+12.  public final static List<String> ORGANIZATION_TYPES = Collections.unmodifiableList(Arrays.asList("FIRM", "OTHER"));
+13. StoredProcedure, views in database
+14. ctrl + shift + alt + j, find and replace in intelliJ
+	ctrl + r -> open a find and replace dialogue
+	Ctrl + Alt + Shift + V -> paste in intelliJ as is without escaping
+15. Can't create filename starting with . for example .properties. Create a file. Then from cmd line do ren oldfilename .newfilename
+16. ImmutableSet.of().........	
+	Collections.unmodifiableList()............
+---------------------------------------------------------------------------------------------------------
+12-27-2019
+1.    mockMvc.perform(post("/api/v1/errorSummary/").contentType(MediaType.APPLICATION_JSON).content(JsonUtils.marshal(errorSummaryPostRequest)))
+            .andExpect(status().isInternalServerError()).andExpect(jsonPath("$.message").value("Invalid productType")).
+        andReturn();
+   ->	.message is a field in the response:
+	{
+		"statusCode": 500,
+		"statusDescription": "Internal Server Error",
+		"message": "Invalid productType",
+		"messageDetails": []
+	}
+2. Complex sql queries, better to use JDBC template instead of JPA. NamedParameterJdbcTemplate
+3. EWS users are users with login Id and password. They are associated with a CRD.
+	ISSO are internal users using single-sign-on. Catdc team for example. Only add security access for services that they request for
+--------------------------------------------------------------------------------------------
+12-20-2019
+Questions for Balaji about POST API to get errorSummary:
+1. What are rowGroupCols, groupKeys and pivotMode? *** we aren't using pivotMode. Others are for grouping
+2. How do multiple values for sortModel work?
+3. Same way, how do multiple values for searchAfter work?
+4. In response, Where should the columns that fit our use case go?  Inside data? ***yep
+5. What is status with failures? ***Failure, Talk to allen about it
+6. secondaryColumnFields ? **** Not using it yet
+
+pre-canned- dynamic report template?? DeveloperToolds
+----------------------------------------------------------------------------------------------
+12-16-2019
+1. Kill a port: From the commandline
+	netstat -ano | findstr 8080
+	taskkill /pid 21424 /F
+2. URI encoding, decoding. 
+	2019-11-27T00:09:09.985-05:00, when this date is sent as String to the backand and if it has +05:00 instead, Timestamp format incorrect.
+	Need to encode the the "+", which would be "%2B"
+-----------------------------------------------------------------------------------------------------------------
+12-12-2019
+1. Reporter is the main firm that has a bunch of IMIDS. Reporter can create oso relationships with other firms.
+	They can have those other firms act as a submitter in which they submit in behalf of the reporter.
+	Next, submitter can give another thirdParty access to just view the orders submitted.
+2. CRD vs ORGID. Firms has CRD, people have orgId. For example, JPMS lets say has CRD : 1234, any person working for JPMS will have orgId : 1234
+3. Perspective Submitter meaning records where the logged in user is acting as submitter. 
+----------------------------------------------------------------------------------------------------------
+12-11-2019
+1. json Validator:     https://jsonlint.com/
+2. Using ObjectMapper to convert java object to String. Then to escape or unescape the string, use 	StringEscapeUtils.escapeJava(message);
+3. Sql COALESCE function.
+	example:     JPAQuery<Tuple> jpaQuery = new JPAQuery<DataFileStatusEntity>(entityManager)
+					.select(dataFileStatusEntity.catReporterIndustryMemberId.coalesce(NULL_IMID_NAME) will set NULL_IMID_NAME if the value is null
+4. When Pom.xml not found for buil-tools package, do mvn clean install in that package.
+5. When got Caused by: java.io.FileNotFoundException: ./catdd-lambdas-0.3.0-SNAPSHOT.jar (No such file or directory) in Jenkins while deploying,
+	Probably the defined line is missing somewhere in the cm files...
+--------------------------------------------------------------------------------------------------------------------
+12-10-2019
+RELEASE: 0.3.0 example
+1. Cut the release branch, and update the pom version for current development to currentRelease+1
+2. Update the fip image tag and apache tag for API(.dict and Dockerfile), UI(.dict and Dockerfile),
+	and infrastructure -> external: app.groovy(amiId, apache_image) AND
+						  internal: alb-ecs-ews(app.groovy: imageId),
+						            alb-ecs-isso(app.groovy: imageId))
+							
+-------------------------------------------------------------------------------------------
+12-09-2019
+1. Adding retry without using any frameork: Need to add a class for Retry. Like below:
+	package org.finra.catdd.lambda.retry;
+
+	import java.util.function.Supplier;
+
+	import org.slf4j.Logger;
+	import org.slf4j.LoggerFactory;
+
+	/**
+	 * Class with retry methods to external call from lambda
+	 *
+	 * @param <T>
+	 */
+	public class Retry<T>
+	{
+		private static final Logger LOGGER = LoggerFactory.getLogger(Retry.class);
+
+		private int maxRetries;
+
+		private int retryCounter;
+
+		public Retry(int maxRetries)
+		{
+			this.maxRetries = maxRetries;
+		}
+
+		// Takes a function and executes it, if fails, passes the function to the retry command
+		public T run(Supplier<T> function)
+		{
+			try
+			{
+				return function.get();
+			}
+			catch (Exception e)
+			{
+				return retry(function);
+			}
+		}
+
+		public int getRetryCounter()
+		{
+			return retryCounter;
+		}
+
+		private T retry(Supplier<T> function) throws RuntimeException
+		{
+			LOGGER.error("FAILED - call failed, will be retried " + maxRetries + " times.");
+			retryCounter = 1;
+			while (retryCounter <= maxRetries)
+			{
+				try
+				{
+					Thread.sleep(2000 * retryCounter);
+					return function.get();
+				}
+				catch (Exception ex)
+				{
+					LOGGER.error("FAILED - failed on retry " + retryCounter + " of " + maxRetries + ", error: " + ex);
+					if (retryCounter >= maxRetries)
+					{
+						LOGGER.error("Max retries exceeded.");
+						break;
+					}
+					retryCounter++;
+				}
+			}
+			throw new RuntimeException("Call failed on all of " + maxRetries + " retries");
+		}
+	}
+
+2. Then wherever we need to use it we can add for example the following:
+	        Retry<String> retryCredStash = new Retry<>(Integer.valueOf(propertyUtility.getProperty(MAX_RETRIES)));
+		    password = retryCredStash.run(() -> CredStashUtils.getSecret(username));
+3. But doing it the above way, we need to add retry to every call to the CredstashUtils. Thus by moving the retry to CredstashUtils itself, we make it more efficient. Example:
+	     credPassword = retryCredStash.run(() -> {
+            try
+            {
+                return jCredStashFX
+                    .getCredential(credentialName, propertyUtility.getProperty(AGS_PROPERTY_NAME), propertyUtility.getProperty(ENVIRONMENT_PROPERTY_NAME), null,
+                        null);
+            }
+            catch (Exception e)
+            {
+                LOGGER.error(String.format("Cannot load the password for the credential %s", credentialName));
+                throw new CatddRuntimeException(e);
+            }
+        });
+
+---------------------------------------------------------------------------------------------------------------
+12-06-2019
+1. In order to make a test where we expect a certain attibute to not be present in BusinessObjectData, we can remove it from the List<Attribute> using index.
+	And if we want to alter the value of attribute, we can always set the value fo attribute manually.
+2. Generic type <T> shouldnt be used with Objects. Instead for specific types like String, ClassName
+----------------------------------------------------------------------------------------------------------------------
 12-04-2019
 Automation:(RestAssured)
 1. 	@ParameterizedTest annotation is for tests that accepts parameters from a method using annotation @MethodSource("usersRoles").
@@ -38,7 +463,20 @@ Automation:(RestAssured)
 10. If date is received in String, we can easily use any Formatter to format into any Date. private final String feedbackTimestamp;
 11. java Clock
 12. Timestamp now = Timestamp.valueOf(LocalDateTime.now(ZoneId.of(EASTERN_TIMEZONE)));
-
+13. sort:
+	private final List<FileStatusDetailOutput> fileStatusDetailOutputs;
+	fileStatusDetailOutputs.sort(Comparator.comparing(FileStatusDetailOutput::getUploadedFileName));
+14.	public class EmployeeComparator implements Comparator<Employee> 
+	{ 
+		@Override
+		public int compare(Employee o1, Employee o2) {
+			return new CompareToBuilder()
+					.append(o1.getJobTitle(), o2.getJobTitle())
+					.append(o1.getAge(), o2.getAge())
+					.append(o1.getSalary(), o2.getSalary()).toComparison();
+		}
+	}
+	Collections.sort(listEmployees, new EmployeeComparator());
 -----------------------------------------------------------------------------------
 11-22-2019
 1. In spring, CollectionUtils.isEmpty(empList) is null safe, unlike empList.isEmpty()
@@ -240,6 +678,15 @@ Automation:(RestAssured)
 		 -> Select tab ECS-Instances -> Select an EC2 instance from ec2 column -> Verify the AMI id.   New AMI id = ami-05495984236abcc35, old=ami-0676b362a8f8e5829
 				  2. Verify by logging in to reporterPortal for UI AND by hitting currentUser endpoint for API
 	For bastion: let CM verify		 
+	
+	----------------------------------------------------------------
+ Link to:
+	
+	Docker images:
+	https://wiki.finra.org/display/CloudServices/10-October+2019+FINRA+Docker+Images
+
+	AMI:
+	https://wiki.finra.org/display/CloudServices/AMI+Releases
 --------------------------------------------------------------------------------------------------
 11-12-2019
 
@@ -493,6 +940,7 @@ Automation:(RestAssured)
 	'${spring.info.build.location:classpath:META-INF/build-info.properties}'.
 	Solve the above by doing mvn clean install in /code
 10. when finbugs is not working, file name too long problem, do mvn clean.
+
 --------------------------------------------------------------------------------------
 10-30-2019
 1. The diamond problem
@@ -570,7 +1018,9 @@ Automation:(RestAssured)
 	        ReflectionTestUtils.setField(fileUploadHelper, "fileRootFolderName", "/");
 	give only "/" to create on the root. Platform independent
 3. For return type null, use         doThrow(new Exception).when() instead of when().thenThrow();
-4. @MockitoSettings(strictness = Strictness.LENIENT)
+4. @MockitoSettings(strictness = Strictness.LENIENT) -> class level
+	    lenient().when(mockList.add("one")).thenReturn(true); -> method level
+
 5. ###Push from controller the servletFileRequest object...
 6. when we are mocking something and that is also being initialized inside the method as new Method(), the mock doesnot work.Because it always works with the new 
 	object that is created. So we can create a @Bean of it and @Autowired.

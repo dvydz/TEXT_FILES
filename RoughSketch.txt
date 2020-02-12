@@ -1,11 +1,82 @@
+----------------------------------------------------------------------------------
+Sort and filter try: Rough sketch....
+
+ CONSTANTS->
+ public static final Map<String, Object> FIELD_TO_COLUMN_NAME_FILTER_MAP = new HashMap<String, Object>()
+    {{
+        put(ColumnNameEnum.DATE.getValue(), new HashMap<String, String>()
+        {{
+            put(DateTypeEnum.PROCESSING_DATE.getValue(), "eri.prcsg_dt = :date");
+            put(DateTypeEnum.TRADE_DATE.getValue(), "eri.trd_dt = :date");
+        }});
+        put(ColumnNameEnum.IMID.getValue(), "eri.cat_rprtr_imid");  //***
+        put(ColumnNameEnum.SUBMITTER_ID.getValue(), "eri.cat_sbmtr_id");    //***
+//        put(ColumnNameEnum.ERROR_TYPE.getValue(), "eri.err_type");
+        put(ColumnNameEnum.REPAIR_TYPE.getValue(), "eri.");
+        put(ColumnNameEnum.REPAIRED_STATUS.getValue(), "eri.rprd_st");
+        put(ColumnNameEnum.ERROR_CODE.getValue(), "erc.err_cd");       //***
+//        put(ColumnNameEnum.ERROR_REASON.getValue(), "eri.");
+        put(ColumnNameEnum.GROUP_REPAIR_ELIGIBLE.getValue(), "grp_rpr_fl");
+//        put(ColumnNameEnum.ERROR_COUNT.getValue(), "eri.");
+    }};
+
+    public static final Map<String, String> FIELD_TO_COLUMN_NAME_SORT_MAP = new HashMap<String, String>()
+    {{
+        put(ColumnNameEnum.DATE.getValue(), "date");
+        put(ColumnNameEnum.IMID.getValue(), "abc.cat_rprtr_imid");//***
+        put(ColumnNameEnum.SUBMITTER_ID.getValue(), "abc.cat_sbmtr_id");//***
+        put(ColumnNameEnum.ERROR_TYPE.getValue(), "abc.err_type");//***
+//        put(ColumnNameEnum.REPAIR_TYPE.getValue(), "abc.");
+        put(ColumnNameEnum.REPAIRED_STATUS.getValue(), "abc.rprd_smry");//***
+        put(ColumnNameEnum.ERROR_CODE.getValue(), "abc.err_cd");//***
+        put(ColumnNameEnum.ERROR_REASON.getValue(), "l2.err_ds");//***
+        put(ColumnNameEnum.GROUP_REPAIR_ELIGIBLE.getValue(), "abc.grp_rpr_fl");//***
+        put(ColumnNameEnum.ERROR_COUNT.getValue(), "errorCount");//***
+    }};
+	
+DAO->	
+  String whereClause = buildWhereClause(catOrganizationId, catReporterIndustryMemberId, dateTypeEnum, date, productTypeEnum, perspectiveEnum,
+            columnNameEnum, filterTypeEnum, compareTypeEnum, filter);
+-> buildWhereClause			
+  //        if(Objects.nonNull(columnNameEnum) && Objects.nonNull(filterTypeEnum) && Objects.nonNull(compareTypeEnum) && Objects.nonNull(filter))
+//        {
+//            whereClause.append(String.format(" AND %s=:filter", FIELD_TO_COLUMN_NAME_FILTER_MAP.get(columnNameEnum.getValue())));
+//        }
+
+-----> The above is the initial try where I was putting the where clause inside the FROM[ here ], Later the final one I put the where clause outside along with
+orderby and groupby  
+			
+			
+			//            for(ColumnNameEnum columnNameEnumFilter : columnNameEnumFilterList)
+//            {
+//                if (StringUtils.equals(columnNameEnumFilter.getValue(), ColumnNameEnum.ERROR_COUNT.getValue()))
+//                {
+//                    havingClause = buildHavingClause(columnNameEnumFilter);
+//                }
+//                else
+//                {
+//                    whereClauseOuter.append(buildWhereClauseOuter(columnNameEnumFilter));
+////                    whereClauseOuter = buildWhereClauseOuter(columnNameEnumFilter);
+//                }
+//                if(columnNameEnumFilterList.)
+//                {
+//                    whereClauseOuter.append(" AND")
+//                }
+//            }
+		
+--------------------------------------------------------------------------------
+Subtasks for error summary that I need to add:
+1.New DataLayer,,,new schema in out db, like catco_owner,..... ****
+2.Aggregation within DAO layer in queryDSL
+-----------------------------------------------------------------------------------------------------
 07-16-2019
 Get rid of all weird scenarios.
 New scenarios:
-	Cur Date: 07-16-2019
+	Cur Date: 07-17-2019
 	
-	In DB, 07-13 : 09-15: Currently Efctv
+	In DB, 07-13 : 07-17: Currently Efctv
 	Add:   07-13 : 09-15	(NO) *		Invalid efctv_dt
-		   09-14 : 10-15	(NO)
+		   07-17 : 10-15	(YES)
 		   09-15 : 10-15	(YES)      After this, if tried to input the same again, it should fail
 		   09-16 : 10-15	(NO)
 	
@@ -20,20 +91,24 @@ New scenarios:
 	In DB, 07-13 : 09-15 Currently Efective	(YES, only xprtn_dt)
 		   09-15 : 09-25 
 		   
-	A A A	07-20 : 07-25			Update...... A A A	only update efctv_dt>=cur date	
+	A A A	07-20 : 07-25			UpdatePayload...... A A A	only update efctv_dt>=cur date	
 		
 	A A A	07-25 : 07-30			
 
-	A A A	07-30 : 08-15			Update.......A A A only update xprtn_dt anthing
+	A A A	07-30 : 08-15			UpdatePayload.......A A A only update xprtn_dt anthing
+	
+	--------------------------------------------------------------------------------------
 	
 	
-	
-	
-	A A A	07-20 : 07-25			Update...... A B C	create....	(cross check for A B C)
+	A A A	07-20 : 07-25			UpdatePayload...... A B C	create....	(cross check for A B C)
 		
 	A A A	07-25 : 07-30			
 
-	A A A	07-30 : 08-15			Update.......A A A only update xprtn_dt anthing
+	A A A	07-30 : 08-15			UpdatePayload.......A A A only update xprtn_dt anthing
+	
+	A B C	07-25 : 07-30		
+	A B C   07-30 : 08-15
+	A B C   08-15 : 08-25
 
 --------------------------------------------------------------------------
 		OSOUpdate:		07-16-2019
