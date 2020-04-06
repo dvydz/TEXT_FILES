@@ -1,21 +1,339 @@
+Group repair eligible query update:
+1.
+	{
+		"statusCode": 500,
+		"statusDescription": "Internal Server Error",
+		"message": "PreparedStatementCallback; SQL [SELECT date, abc.cat_rprtr_imid catImid, abc.cat_sbmtr_id catSubmitterId, abc.rprd_smry repairedStatus, abc.grp_rpr_fl groupRepairFlag, abc.err_type errorType, abc.err_cd errorCode, l2.err_ds errorReason, abc.rpr_type_cd repairedType, COUNT(*) errorCount FROM (SELECT eri.prcsg_dt date, eri.err_roe_id err_roe_id, eri.cat_rprtr_org_id cat_rprtr_org_id, eri.cat_rprtr_imid cat_rprtr_imid, eri.cat_sbmtr_id cat_sbmtr_id, eri.prdct_type prdct_type, case when eri.rprd_st = 'R' then 'R' when eri.rprd_st = 'U' and pnd.err_roe_id is null then 'U' else pnd.rprd_st end as rprd_smry, case when eri.rprd_st = 'R' then 'N' when eri.rprd_st = 'U' WHEN eri.rprd_st = 'U'  AND pnd.err_roe_id IS NULL AND eri.grp_rpr_elgbl = 'Y' THEN 'Y' else 'N'  end  as grp_rpr_fl, eri.err_type err_type, eri.rpr_type_cd rpr_type_cd, trim (unnest(regexp_split_to_array(eri.err_list, ',')))::int err_cd FROM catco_owner.err_rec_info eri LEFT JOIN (select err_roe_id, max(rprd_st) as rprd_st from catdd_owner.pndng_rec where err_roe_id is not null group by err_roe_id) pnd ON ( eri.err_roe_id = pnd.err_roe_id )  (eri.cat_rprtr_org_id=? OR eri.cat_sbmtr_id=?) AND eri.prcsg_dt = ? ) ABC JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)  GROUP BY date, abc.cat_rprtr_imid, abc.cat_sbmtr_id, abc.rprd_smry, abc.grp_rpr_fl, abc.err_type, abc.err_cd, L2.err_ds, abc.rpr_type_cd   ORDER BY date, abc.cat_rprtr_imid, abc.cat_sbmtr_id, abc.rprd_smry, abc.grp_rpr_fl, abc.err_type, abc.err_cd LIMIT 21 OFFSET 0]; This connection has been closed.; nested exception is org.postgresql.util.PSQLException: This connection has been closed.",
+		"messageDetails": [
+			"This connection has been closed."
+		]
+	}
+2. For Error records date: 2019-02-11, 2019-02-12
+-----------------------------------------------------
+Automation: Error search export : 
+-> 2008-08-27 = Half million records; 2010-08-27 = 100K records, 2016-08-27 = Some records
+0. Why Integer? for symbol *** Updated
+1. What if folder already has some file?	***Taken care of
+2. If multiple error codes, should we send null as request for error code or comma separated?
+3. shouldn't export and error search have same data? ***Yes
+	{
+	  "startRow": 1,
+	  "endRow": 20,
+	   "filterModel": {
+		"errorCode": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   }
+	  },
+	  "sortModel": [
+	   ],
+	  "errorSearch" : {
+			"date": "2019-12-10",
+			"dateType": null,
+			"productType": null,
+			"catOrganizationId": 79,
+			"catSubmitterId": null,
+			"catReporterIndustryMemberId": null,
+			"perspective": "ALL",
+			"errorCode": null,
+			"groupRepairEligible": null,
+			"repairedStatus": null,
+			"errorType": null
+	  }
+	}
+4. Filters hasnt been done in error search.....???? Doesn't look like
+5. Sort 2nd column.
+6. Audit information date format ? *** Fixed
+7. String firmRoeId = String.format("XOXO_FirmROE_%d", i);
+	String orderId = String.format("XOXO_OrderID_%d", i);
+
+	{
+	  "queryList": [
+		{
+		  "name": "insertErrorRecordInfo",
+		  "value": "INSERT INTO catco_owner.err_rec_info(err_roe_id,file_unq_id, cat_rprtr_org_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, file_nm, file_frmt, prcsg_dt, trd_dt, prdct_type, rprd_st, err_type, actn_type,  firm_roe_id, err_list, msg_type, crtd_ts, crtd_by, updtd_ts, updtd_by)  VALUES(:errorRoeId, 10, :orgId, :catReporterImid,:orgId, null, '79_X0X0_20200101_CatWeb_OrderEvents_000001.json', 'TXT','2010-08-27', '2010-08-27', :productType, :repairedStatus, :errorType, 'RPR', :firmRoeId, :errorCodes, 'MONO', current_timestamp, 'k28172@nasdcorp', current_timestamp, 'k28172@nasdcorp')"
+		},
+		{
+		  "name": "insertErrorRecordDetail",
+		  "value": "INSERT INTO catco_owner.ERR_REC_DTL(actn_type, err_roe_id, firm_roe_id, msg_type, cat_rprtr_imid, odr_key_dt, odr_id, optn_id, event_ts, mnl_fl, mnl_odr_key_dt, mnl_odr_id, elctc_dplct_fl, elctc_ts, dept_type, side, pr, qty, min_qty, odr_type, tif, trdg_sssn, hndlg_instr, firm_dsgnt_id, accnt_hldr_type, afflt_fl, agrtd_odrs, opn_cls_ind, rep_ind, next_unlkd, crtd_ts, crtd_by, updtd_ts, updtd_by) VALUES('RPR', :errorRoeId, :firmRoeId, 'MONO', :catReporterImid, '20191203T123456.000501', :orderId, 'XTEC', '20200101T123456.000501', 'false', null, null, 'false', null, 'DMA', 'SS', '111.00', '200', '50', 'LMT', 'DAY=20191208', 'POST', 'DISQ=1234|STOP=90.91', 'Firm-DID-102', 'F', 'true', 'ORD101@20191204T101534.000101@209@|ORD101@20191203T101234.000102@202@', null, 'Y', null, current_timestamp, 'k28172@nasdcorp', current_timestamp, 'k28172@nasdcorp')"
+		},
+		{
+		  "name": "insertErrorRecordCode",
+		  "value": "insert into catco_owner.ERR_REC_CD(err_roe_id, err_cd, crtd_ts, crtd_by, updtd_ts, updtd_by) values(:errorRoeId, :errorCode, current_timestamp, 'k28172@nasdcorp', current_timestamp, 'k28172@nasdcorp');"
+		},
+		{
+		  "name": "insertPendingRecord",
+		  "value": "INSERT INTO catdd_owner.PNDNG_REC(pndng_rec_id, cat_rprtr_org_id, cat_rprtr_imid, cat_sbmtr_id, sbmtr_3rd_prty, actn_type, err_roe_id, firm_roe_id, msg_type, odr_key_dt, odr_id, optn_id, event_ts, mnl_fl, mnl_odr_key_dt, mnl_odr_id, elctc_dplct_fl, elctc_ts, dept_type, side, pr, qty, min_qty, odr_type, tif, trdg_sssn, hndlg_instr, firm_dsgnt_id, accnt_hldr_type, afflt_fl, agrtd_odrs, opn_cls_ind, rep_ind, next_unlkd, crtd_ts, crtd_by, updtd_ts, updtd_by, rprd_st) VALUES(nextval('pndng_rec_seq'), :orgId, :catReporterImid, :orgId, null, 'RPR', :errorRoeId, :firmRoeId, 'MONO', '20191203T123456.000501', :orderId, 'VIRT', '20200101T123456.000501', 'false', null, null, 'false', null, 'DMA', 'SS', '111.00', '200', '50', 'LMT', 'DAY=20191208', 'POST', 'DISQ=1234|STOP=90.91', 'Firm-DID-102', 'F', 'true', 'ORD101@20191204T101534.000101@209@|ORD101@20191203T101234.000102@202@', null, 'Y', null, current_timestamp, 'k28172@nasdcorp', current_timestamp, 'k28172@nasdcorp', 'P')"
+		}
+	  ]
+	}
+8. Jvm out of memory ????	*** Because of CsvToBean parse. Used basic java for loop and CsvReader to fix it. 
+	00:52:44.425 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter - Setting default value: 0
+	00:52:44.426 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter - Converting 'Integer' value '0' to type 'Double'
+	00:52:44.427 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter -     Converted to Double value '0.0'
+	00:52:44.426 [pool-2-thread-7] DEBUG o.a.c.b.converters.ArrayConverter - Setting default value: [Ljava.math.BigDecimal;@9b2d51d
+	00:52:44.427 [pool-2-thread-7] DEBUG o.a.c.b.converters.ArrayConverter - Converting 'BigDecimal[]' value '[Ljava.math.BigDecimal;@9b2d51d' to type 'BigDecimal[]'
+	00:52:44.427 [pool-2-thread-7] DEBUG o.a.c.b.converters.ArrayConverter -     No conversion required, value is already a BigDecimal[]
+	00:52:44.426 [pool-2-thread-1] DEBUG o.a.c.b.converters.ArrayConverter - Converting 'Short[]' value '[Ljava.lang.Short;@25ebbf34' to type 'Short[]'
+	00:52:44.427 [pool-2-thread-1] DEBUG o.a.c.b.converters.ArrayConverter -     No conversion required, value is already a Short[]
+------------------------------------------
+Customer reporting relationships API GET:
+1. Who can have access ??? *** for now just let read-only 
+2. order by ??? *** updt_ts desc, crtd_ts desc
+3. if all the query params are optional, why is the check for orgIdpermission still active. For ATS and OSO also??? *** Dont need orgIdPermission for this
+	API. For OSO and ATS, ISSO user can access without any params while ews users have to have atleast reporter, submitter or thirdparty id.
+4. Provided effective date means records effective on or before that date ??? 
+5. update tradekeyDate name ???? **** Done
+6. EventSubmissionGroupKey, AtsOrderTypeKey class never used ????? can I remove? *** YES
+7. .matches() not working for texts with multi line ????
+
+Enumeration...... User-agent
+------------------------------------------------------------------
+Announcements:
+Post:
+1. Himanshu's CSV injection tests gives errors in random order for every post call. *** 
+2. Expiration date cannot be a past date???	****
+3. created ts not eastern *** Db has time zone
+4. Timestamp .0 extra **** Removed code
+5. Rich-text characters	*** Removed restriction from body, only title size check added
+6. Default false for urgent ***
+7. Expiration date wrong error message. Use expirationTimestamp instead of expirationDate. ??? Enhancement ***
+8. Csv injection ??? Enhancement ***
+9. Trim the input ??? Enhancement ***
+10. Remove the getter for entity class ???	***
+11. AnnouncementRequest getting npe ??? ***
+12. himanshu csv injection error message update ???	***
+13. trim happens after validation. So "    +apple" passes validation and is saved as "+apple" in db ????? **** created a custom annotation
+
+1. Internal vs external users. Security model.
+2. figure a way to sort*** found
+
+INSERT INTO catdd_owner.ancmt(
+	ancmt_id, title, ancmt_ctgry_id, msg_body, ancmt_stts_id, pblsh_ts, pblsh_by, aprvl_ts, xprtn_ts, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES (NEXTVAL('catdd_owner.ancmt_seq'), 'Exchange Route Match for February 25,2020',1, 'Exchange Route Match for February 25,2020 are now available except for CBOE EDGA Exchange and CBOE BZX Exchange.<br>Exchange Route Match for February 25,2020 are now available except for CBOE EDGA Exchange and CBOE BZX Exchange.Exchange Route Match for February 25,2020 are now available except for CBOE EDGA Exchange and CBOE BZX Exchange.Exchange Route Match for February 25,2020 are now available except for CBOE EDGA Exchange and CBOE BZX Exchange.',
+			2, '2020-03-03 17:44:26.002023', 'DevTeam2', '2020-03-02 17:44:26.002023', '2022-03-02 17:44:26.002023+00', '2020-03-01 17:44:26.002023', 'DevTeam1', '2020-03-01 17:44:26.002023', 'DevTeam1');
+			
+if (!StringUtils.isEmpty(category))
+{
+	announcementCategoryEnum = AnnouncementCategoryEnum.find(category);
+	announcementCategoryEntity = announcementHelper.getAnnouncementCategoryEntity(announcementCategoryEnum);
+	categoryId = announcementCategoryEntity.getCategoryId();
+	announcementEntityPage = announcementRepository.findAllByCategoryId(categoryId, PageRequest.of(pageNumber, pageSize));
+	announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+}
+else
+{
+	announcementEntityPage = announcementRepository.findAllFinalAnnouncements(PageRequest.of(pageNumber, pageSize));
+	announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+}
+		AnnouncementCategoryEnum announcementCategoryEnum = AnnouncementCategoryEnum.find(category);
+		AnnouncementCategoryEntity announcementCategoryEntity = announcementHelper.getAnnouncementCategoryEntity(announcementCategoryEnum);
+		Integer categoryId = announcementCategoryEntity.getCategoryId();
+	Page<AnnouncementEntity> announcementEntityPage = announcementDao.findAllByCategoryId(categoryId, PageRequest.of(pageNumber, pageSize));
+	List<AnnouncementEntity> announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+	
+/**
+ * Repository interface for Announcements
+ */
+@Repository
+public interface AnnouncementRepository extends JpaRepository<AnnouncementEntity, Integer>
+{
+    @Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementCategory category " +
+        "INNER JOIN ancmt.announcementStatus status WHERE category.categoryId =?1  AND status.statusName = 'Final' order by ancmt.publishedTimestamp desc")
+    Page<AnnouncementEntity> findAllByCategoryId(Integer categoryId, Pageable pageable);
+
+    @Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementStatus status WHERE status.statusName = 'Final' order by" +
+        " ancmt.publishedTimestamp desc")
+    Page<AnnouncementEntity> findAllFinalAnnouncements(Pageable pageable);
+}
+
+    /**
+     * Retrieve the announcement category entity based on announcement category
+     *
+     * @param announcementCategoryEnum the announcement category enum {@link AnnouncementCategoryEnum}
+     *
+     * @return the announcement category entity
+     */
+    public AnnouncementCategoryEntity getAnnouncementCategoryEntity(AnnouncementCategoryEnum announcementCategoryEnum)
+    {
+        return announcementCategoryDao.findByCategoryName(announcementCategoryEnum.getValue()).orElseThrow(() -> new CatddRuntimeException(
+            String.format("Cannot find the announcement category '%s' in announcement category lookup table.", announcementCategoryEnum.getValue())));
+    }
+------------------------------------------------------------------------------------------------
+1. How is it registered in herd? without actually doing anything. Just Creating an object and then what ????
+2. How did he initially know about it? Jams call to lambda handler? Can't find in google
+3. TimeTracker
+------------------------------------------------------------------------------
+Submission Id, from s3 location.....or from staging location?.........
+
+1. 1000 files takes a long time. Sometimes the file arenot available in s3. Maybe the debug logger needs to be disabled.
+2. Submit a pending event, get the eventSubmissionId instead from querying from db. ***
+3. Rename packages lowercase	***
+4. Null pointer in get submission id ? could not reproduce
+5. Do we Need to check for different perspective? *****
+6. why some fields null for mismatch *****Tied to number 8
+7. Error message match mismatch ? Dont know the order. ******Do a manual verification
+8. In pendingSubmissionTable, after submitting....(Saravanah will look into)
+	-> ALL OK
+	orderEventsList
+           .add(Arrays.asList("MECO", "NEW", "", "2019_SM_firm_3", "ZBTS", "20200203T123456.000501", "order_9999_New", "SYM", "20200204T123456.000501"));
+        
+	-> parentOdrKeyDate and symbol missing. WHY?
+	orderEventsList
+            .add(Arrays.asList("MONO", "COR", "", "2019_SM_firm_2", "JPMS", "20200203T123456.000505", "order_1111_New", "SYM", "20200204T123456.000505"));
+    
+	-> odr_key_dt, odr_id, parentOdrKeyDate and symbol missing. WHY?
+	 orderEventsList
+            .add(Arrays.asList("MOFA", "RPR", "", "2019_SM_firm_3", "JPMX", "20200203T123456.000508", "order_2222_New", "SYM", "20200204T123456.000508"));
+9. If folder not exist, then create folder. ****
+
+
+
+actualFileSubmissionInfoRecords = fileSubmissionInfoDao.getByEventSubmissionId(new Long(eventSubmissionId));
+List<String> generatedFileNames = actualFileSubmissionInfoRecords.stream().map(o -> o.getFileName()).collect(Collectors.toList());
+
+String folderName = STAGE_BASE_PATH + "/" + eventSubmissionId;
+List<String> s3FileNames = getS3FileNames(STAGE_BUCKET, folderName);
+
+runOn=Local
+user=k28172
+pass=AlvaOklahoma0827!
+
+---------------------------------------------
+For loop time comparision for s3 file :
+
+Stream : parallelStream().forEach()   -> 3 min 20 sec download 1006 files
+Stream : Stream().forEach()   -> In 3 min 20 seconds only downloaded 106 files
+
+
+--------------------------------------------
+Comprehensive stats:
+testGetStatisticsWithProductTypeEmptyStr.
+1. API needs to add ACPTD_RJCTD_IND = 'C' for sum(RPRD_RCRDS) calculation **** Later. Bug created
+{
+    "date": "2020-02-15",
+    "dateType": "ProcessingDate",
+    "organizationId": 79,
+    "perspective": "ALL",
+    "productType": "ALL",
+    "total": {
+        "files": {
+            "validFiles": 0,
+            "invalidFiles": 0,
+            "dataFilesReceived": 0,
+            "dataFilesAccepted": 0,
+            "dataFilesRejected": 0,
+            "metadataFilesReceived": 0,
+            "metadataFilesRejected": 0
+        },
+        "events": null
+    },
+    "list": []
+}
+2. why is events null while files has it all as 0 ?????
+3. Why not found meesage for oso and ats for 90012 user	*** Bug created
+4. APi response missing the row with null imid that contains the total number of invalid files. **** Bug created. May or may not be done. BA okay with anything
+
+------------------------------------------------
 API automation for event type counts:
-1. Tuples ? what are the indexes? what column does it refer to?
+1. Tuples ? what are the indexes? what column does it refer to? -> In query whatever column comes first is the first index in tuple
 2. wiki page update productType case sensitive, and default
 3. Query for processedRejected, processedAccepted and processedDeleted
+4. different productType
+5. In statistics, trade date logic is wrong.	*** I will filx it
+6. If dateType is TradeDate and date is null. Then it still returns processing date. *** Himanshu made the fix
+7. testEventTypeCountForRecordsWhereActionTypeIsNull, reporter or submitter perspective how to choose? random?
+8. Connection created multiple times?? **** Passed for each Test
+9. FIle Status service has unused imports and unused stuffs. no violations??? **** its in test class so 
+
+
+
+check for method where :
+    @Test
+	public void nothing()
+	{
+		List<String> list = new ArrayList<>();
+		String text = null;
+		list.add(text);
+		text = "still works";
+		String check = list.get(0);
+	}
+	Check stas api automation
 -----------------------------------------------------------------
 API automation for fileStatus:
 1. why not equals for error message comparision. **** because we are appending some other message to what we got.
 2. equals actual vs expected. ***
-3. test data for 79 
-4. Should be Sorted by upload timestamp . And what if they are same ???? Currently I am doing by name next
-5. For latest ProcessingDate, the results for 79 is usually empty list
-6. Remove env=dev from check in
+3. test data for 79  ***
+4. Should be Sorted by upload timestamp . And what if they are same ???? Currently I am doing by name next **** Done. Differently
+5. For latest ProcessingDate, the results for 79 is usually empty list **** Check added
+6. Remove env=dev from check in ****
+7. Update submitterId to uploadOrgId -> Comprehensive stats too.   ****
+8. rename latestProcessingDate to latestProcessingDateWithData for most of them ***
 
-//API currently only sorts by upload timestamp descending, So to compare the results we are implementing our own comparator
-Collections.sort(actualFileStatusInfo.getFileStatusDetailOutputs(), new FileStatusDetailOutputComparator());
-7. Update submitterId to uploadOrgId -> Comprehensive stats too.
+-----------------------------------------------------------------
+
+    private String getLatestTradeDateWithData(String catOrganizationId, Perspective perspective, String dateType, String catReporterIndustryMemberId,
+        String productType)
+    {
+        List<String> tradeDates = getLatestTradeDatesList();
+        String latestTradeDate = getLatestTradeDate();
+
+        List<EventTypeCountsDaoVO> dbResultInitial = EventTypeCountsHelper
+            .getEventTypeCountsDaoVoList(catOrganizationId, perspective, latestTradeDate, dateType, catReporterIndustryMemberId, productType);
+
+        int index = tradeDates.indexOf(latestTradeDate);
+        while (dbResultInitial.isEmpty() & index > 0)
+        {
+            index = index - 1;
+            latestTradeDate = tradeDates.get(index);
+            dbResultInitial = EventTypeCountsHelper.getEventTypeCountsDaoVoList(catOrganizationId, perspective, latestTradeDate, null, null, null);
+        }
+        return latestTradeDate;
+    }
 
 -------------------------------------------------------------------------------------------------------
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName= , pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 20:13:05, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 20:13:15, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:25, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:32, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.csv, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:15, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:22, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.json.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:05, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:12, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.csv.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:48:55, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:03, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=_____.csv.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:40:08, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:40:17, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79_____.csv.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:37:37, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:37:45, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79_.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:34:11, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:34:19, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79_.meta.csv, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:34:01, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:34:09, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79_.json.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:33:51, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:33:59, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79_.csv.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:33:39, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:33:46, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 16:52:57, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 16:53:03, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79.meta.csv, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 16:52:47, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 16:52:54, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79.csv.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 16:52:34, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 16:52:40, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79.json.bz2, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 16:52:18, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 16:52:25, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+
+
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:25, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:32, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=null), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:25, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:32, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
+
+
+CASE WHEN D.ACKNOWLEDGE_RESULT = 'Success' 
+ This is false for above records which is why it does not change to Timeout or Duplicate
+
+-------------------------------------------------------------------------------------------------------
+
 REPORTER:
 	1. Get memberDictionaryList for last 90 days
 	2. Get IMIDs from that

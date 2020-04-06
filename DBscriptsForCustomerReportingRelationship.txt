@@ -1,0 +1,50 @@
+CREATE SEQUENCE if not exists catdd_owner.cstmr_rptg_rltnp_hs_seq
+    INCREMENT 1
+    START 1000
+    MINVALUE 1000
+    MAXVALUE 9223372036854775807
+    CACHE 1;
+
+ALTER SEQUENCE catdd_owner.cstmr_rptg_rltnp_hs_seq
+    OWNER TO catdd_owner;
+
+COMMENT ON SEQUENCE catdd_owner.cstmr_rptg_rltnp_hs_seq
+    IS 'cstmr_rptg_rltnp_hs_seq id for each entry in table';
+
+GRANT SELECT ON SEQUENCE catdd_owner.cstmr_rptg_rltnp_hs_seq TO catdd_read_role;
+
+GRANT ALL ON SEQUENCE catdd_owner.cstmr_rptg_rltnp_hs_seq TO catdd_datafix_role;
+
+
+CREATE TABLE  if not exists catdd_owner.cstmr_rptg_rltnp_hs
+(
+    cstmr_rptg_rltnp_hs_id bigint NOT NULL,
+	cat_rprtr_org_id bigint NOT NULL,
+	cat_sbmtr_id bigint NOT NULL,
+	efctv_dt date NOT NULL,
+    xprtn_dt date,
+	crtd_ts timestamp with time zone NOT NULL,
+    crtd_by character varying(50) NOT NULL,
+    updtd_ts timestamp with time zone NOT NULL,
+    updtd_by character varying(50) NOT NULL,	
+    CONSTRAINT cstmr_rptg_rltnp_hs_pk PRIMARY KEY (cstmr_rptg_rltnp_hs_id)
+);
+
+ALTER TABLE catdd_owner.cstmr_rptg_rltnp_hs
+    OWNER to catdd_owner;
+
+GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.cstmr_rptg_rltnp_hs TO catdd_datafix_role;
+GRANT ALL ON TABLE catdd_owner.cstmr_rptg_rltnp_hs TO catdd_owner;
+GRANT SELECT ON TABLE catdd_owner.cstmr_rptg_rltnp_hs TO catdd_read_role;
+
+
+------------------------------------------------------------------------
+
+ALTER TABLE catdd_owner.cstmr_rptg_rltnp_hs
+ADD COLUMN actv_fl boolean DEFAULT true NOT NULL,
+ADD COLUMN prev_cstmr_rptg_rltnp_hs_id bigint;
+
+
+INSERT INTO catdd_owner.cstmr_rptg_rltnp_hs(
+	cstmr_rptg_rltnp_hs_id, cat_rprtr_org_id, cat_sbmtr_id, efctv_dt, xprtn_dt, crtd_ts, crtd_by, updtd_ts, updtd_by, actv_fl, prev_cstmr_rptg_rltnp_hs_id)
+	VALUES (nextval('catdd_owner.cstmr_rptg_rltnp_hs_seq'), 79, 80, '2020-01-21', '2020-09-05', '2020-01-01 00:00:00+00', 'k28172@nasdcorp', '2020-01-02 00:00:00+00', 'k28172@nasdcorp', false, null);

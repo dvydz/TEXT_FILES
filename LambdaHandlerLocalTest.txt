@@ -1,0 +1,150 @@
+MasterMember, Ews organization and Feedback:
+
+package org.finra.catdd.lambda.handler;
+
+import java.util.ArrayList;
+import java.util.HashMap;			AtsOrderTypeLambda    AtsOrderTypeHandler
+import java.util.List;
+import java.util.Map;
+
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.finra.catdd.lambda.dto.SqsMessageDto;
+import org.finra.catdd.lambda.utils.JsonUtils;
+
+/**
+ * Main method to test the lambda from local
+ */
+public class HandlerLocalTest
+{
+    public static void main(String[] args) throws JsonProcessingException
+    {
+//        HerdNotificationHandler herdNotificationHandler = new HerdNotificationHandler();
+        HerdNotificationHandler herdNotificationHandler = new HerdNotificationHandler();
+        SQSEvent sqsEvent = new SQSEvent();
+        SQSEvent.SQSMessage sqsMessage = new SQSEvent.SQSMessage();
+        SQSEvent.SQSMessage sqsMessage2 = new SQSEvent.SQSMessage();
+        List<SQSEvent.SQSMessage> sqsMessageList = new ArrayList<>();
+
+        Map<String, Object> params = new HashMap<>();
+                Map<String, Object> params2 = new HashMap<>();
+
+
+
+        //SQS Payload for feedback metadata
+//        params.put("message",
+//            "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"INT\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"9_OAKF_20190925_testFilePair_OrderEvents_441378\" } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+//        String payload = new ObjectMapper().writeValueAsString(params);
+        //
+                params.put("message",
+                    "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"INT_META\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"10144_GATE_20190703_validMetaFile_OrderEvents_102855\" } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+                String payload = new ObjectMapper().writeValueAsString(params);
+
+//        params.put("body",
+//            "{\"message\": \"{ \"eventDate\" : \" 2019-12-10T16:24:19.795-05:00 \", \"businessObjectDataKey\" : { \"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\", \"businessObjectFormatUsage\" : \"INT\", \"businessObjectFormatFileType\" : \"TXT\", \"businessObjectFormatVersion\" : 0, \"partitionValue\" : \"9_OAKF_20190925_testFilePair_OrderEvents_872230\", \"businessObjectDataVersion\" : 0 } , \"newBusinessObjectDataStatus\" : \"VALID\" , \"oldBusinessObjectDataStatus\" : \"PROCESSING\" ,\"attributes\" : { \"uploadSource\":\"WEB\" } }\"," +
+//                "                \"type\": \"Notification\"," +
+//                "                \"signature\": \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-6aad65c2f9911b05cd53efda11f913f9.pem\"," +
+//                "                \"timestamp\": \"2019-12-10T16:24:19.795-0500\"," +
+//                "                \"signingCertURL\": \"https://sns.us-east-1.amazonaws.com/SimpleNotificationService-6aad65c2f9911b05cd53efda11f913f9.pem\"," +
+//                "                \"unsubscribeURL\": \"https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sqs:us-east-1:474848416659:ESMP-X-D-CATDD-RPRTR_PRTL-HERD_NOTIFICATIONS:3e32ad9f-a2e6-4a7e-90ac-7019daf10d4f\",\n" +
+//                "                \"signatureVersion\": \"1\"," +
+//                "                \"topicArn\": \"arn:aws:sqs:us-east-1:474848416659:ESMP-X-D-CATDD-RPRTR_PRTL-HERD_NOTIFICATIONS\"," +
+//                "                \"messageId\": \"c13b4d02-610f-5287-9e71-1b0a5578a1ab\"" + "            }");
+//        String payload = new ObjectMapper().writeValueAsString(params.get("body"));
+
+//                        params.put("message",
+//                            "{\"eventDate\" : \"2019-01-22T14:02:33.666-03:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"ACK\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"7059_IMID_20170101_RockAndRoll_OrderEvents_000123\" } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+//                        String payload = new ObjectMapper().writeValueAsString(params);
+
+        //with sub-partition value
+//        params.put("message",
+//            "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"ING\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-10-15\",\"subPartitionValues\" : [\"1331_MOTF_20191015_testFilePair_OrderEvents_144443\"] } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+//        String payload = new ObjectMapper().writeValueAsString(params);
+
+//        params.put("message",
+//            "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"INT_META\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"361_GSCO_20191125_IngestionErrWeb_OrderEvents_000010\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+//        String payload = new ObjectMapper().writeValueAsString(params);
+//
+//        params2.put("message",
+//            "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"ACK\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"10144_GATE_20190703_validDataFile_OrderEvents_101854\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+//        String payload2 = new ObjectMapper().writeValueAsString(params2);
+
+        //        params2.put("message",
+        //            "{\"eventDate\" : \"2019-01-22T01:02:33.666-04:00\", \"businessObjectDataKey\" : {\"namespace\" : \"IndustryMember\", \"businessObjectDefinitionName\" : \"ORDER_EVENTS\",\"businessObjectFormatUsage\" : \"INT\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"9_OAKF_20190925_testFilePair_OrderEvents_441378\" } ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\",\"attributes\" : {\"uploadSource\" : \"web\"}}");
+        //        String payload2 = new ObjectMapper().writeValueAsString(params2);
+
+
+        //SQS Payload for master member dictionary
+//        params.put("message",
+//            "{\"businessObjectDataKey\" : {\"namespace\" : \"CATDD\", \"businessObjectDefinitionName\" : \"MSTR_MBR_DICT_HS\",\"businessObjectFormatUsage\" : \"PRC\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-10-25\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+//        String payload = new ObjectMapper().writeValueAsString(params);
+
+        //SQS Payload for ews organizations
+//                params.put("message",
+//                    "{\"eventDate\" : \" 2019-11-05T17:47:58.995-05:00 \",\"businessObjectDataKey\" : {\"namespace\" : \"cat.ref.intrnl\", \"businessObjectDefinitionName\" : \"ews_org\",\"businessObjectFormatUsage\" : \"PRC_CAT\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-10-03\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+//                String payload = new ObjectMapper().writeValueAsString(params);
+
+        sqsMessage.setBody(payload);
+//                sqsMessage2.setBody(payload2);
+        sqsMessageList.add(sqsMessage);
+//                sqsMessageList.add(sqsMessage2);
+        sqsEvent.setRecords(sqsMessageList);
+
+        herdNotificationHandler.handleRequest(sqsEvent, null);
+    }
+}
+
+
+
+-----------------------------------------------------------------------------------
+
+For AtsOrderTypeExport Lambda:
+
+    public static void main(String[] args)
+    {
+        AtsOrderTypeHandler atsOrderTypeHandler = new AtsOrderTypeHandler();
+        LambdaRequest lambdaRequest = new LambdaRequest();
+        MessageDto messageDto = new MessageDto();
+        messageDto.setKey("/atsOrderTypes?catReporterOrganizationId=7059");
+        messageDto.setExecuting(null);
+        messageDto.setJobId(null);
+        lambdaRequest.setMessage(messageDto);
+
+        atsOrderTypeHandler.handleRequest(lambdaRequest, null);
+    }
+	
+------------------------------------------------------------------------------------
+
+For EWS Organization and Master member dictionary:
+
+    public static void main(String[] args) throws JsonProcessingException
+    {
+        //        HerdNotificationHandler herdNotificationHandler = new HerdNotificationHandler();
+        HerdNotificationHandler herdNotificationHandler = new HerdNotificationHandler();
+        SQSEvent sqsEvent = new SQSEvent();
+        SQSEvent.SQSMessage sqsMessage = new SQSEvent.SQSMessage();
+        List<SQSEvent.SQSMessage> sqsMessageList = new ArrayList<>();
+
+        Map<String, Object> params = new HashMap<>();
+
+
+        //SQS Payload for master member dictionary
+//        params.put("message",
+//            "{\"businessObjectDataKey\" : {\"namespace\" : \"CATDD\", \"businessObjectDefinitionName\" : \"MSTR_MBR_DICT_HS\",\"businessObjectFormatUsage\" : \"PRC\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-10-25\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+//        String payload = new ObjectMapper().writeValueAsString(params);
+
+        //SQS Payload for ews organizations
+        params.put("message",
+            "{\"eventDate\" : \" 2019-11-05T17:47:58.995-05:00 \",\"businessObjectDataKey\" : {\"namespace\" : \"cat.ref.intrnl\", \"businessObjectDefinitionName\" : \"ews_org\",\"businessObjectFormatUsage\" : \"PRC_CAT\",\"businessObjectFormatFileType\" : \"TXT\",\"businessObjectFormatVersion\" : 0,\"partitionValue\" : \"2019-10-03\"} ,\"newBusinessObjectDataStatus\" : \"VALID\",\"oldBusinessObjectDataStatus\" : \"PROCESSING\"}");
+        String payload = new ObjectMapper().writeValueAsString(params);
+
+        sqsMessage.setBody(payload);
+        sqsMessageList.add(sqsMessage);
+        sqsEvent.setRecords(sqsMessageList);
+
+        herdNotificationHandler.handleRequest(sqsEvent, null);
+    }
+
+------------------------------------------------------------------------------------

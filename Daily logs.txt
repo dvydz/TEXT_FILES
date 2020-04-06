@@ -1,7 +1,1215 @@
+04-01-2020
+1. PostgreSQL provides the unnest() function to expand an array to a list of rows.
+--------------------------------------------------------------------------
+03-24-2020
+1. text.matches(REGEX_VALIDATION) Vs Pattern, 
+	-> For multiple line text something like "New Line \r\t\nNew Line \r\t\nNew Line \r\t\n" if the regex is "^(?![+=@-]).*" Negative lookahead
+	The .matches() produces false, even though it should technically be true because it doesn't start with restricted character
+2. Convert csv to java objects: OpenCsv.
+	https://www.geeksforgeeks.org/mapping-csv-to-javabeans-using-opencsv/
+	https://www.baeldung.com/opencsv
+	If mapping does not work, we can always annotate the java object fields with  @CsvBindByName(column = "catReporterImid")
+
+	 private List<ErrorSearchVO> getErrorSearchVoEntityFromCsv()
+    {
+        // Hashmap to map CSV data to Bean attributes.
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put("errorRoeId", "errorRoeId");
+        mapping.put("firmRoeId", "firmRoeId");
+        mapping.put("errorCode", "errorCode");
+        mapping.put("errorReason", "errorReason");
+        mapping.put("errorType", "errorType");
+        mapping.put("repairedStatus", "repairedStatus");
+        mapping.put("catReporterOrganizationId", "catReporterOrganizationId");
+        mapping.put("catReporterIndustryMemberId", "catReporterIndustryMemberId");
+        mapping.put("catSubmitterId", "catSubmitterId");
+        mapping.put("orderId", "orderId");
+        mapping.put("orderKeyDate", "orderKeyDate");
+        mapping.put("tradeId", "tradeId");
+        mapping.put("tradeKeyDate", "tradeKeydate");
+        mapping.put("fulfillmentId", "fulfillmentId");
+        mapping.put("fulfillmentKeyDate", "fulfillmentKeyDate");
+        mapping.put("quoteId", "quoteId");
+        mapping.put("quoteKeyDate", "quoteKeyDate");
+        mapping.put("symbol", "symbol");
+        mapping.put("optionId", "optionId");
+        mapping.put("eventType", "eventType");
+        mapping.put("eventTimestamp", "20200101T123456.000501");
+        mapping.put("seqNum", "seqNum");
+        mapping.put("quantity", "quantity");
+        mapping.put("senderImid", "senderImid");
+        mapping.put("receiverImid", "receiverImid");
+        mapping.put("destination", "destination");
+        mapping.put("routedOrderId", "routedOrderId");
+        mapping.put("session", "session");
+        mapping.put("tapeTradeId", "tapeTradeId");
+        mapping.put("parentOrderId", "parentOrderId");
+        mapping.put("parentOrderKeyDate", "parentOrderKeyDate");
+        mapping.put("priorOrderId", "priorOrderId");
+        mapping.put("priorOrderKeyDate", "priorOrderKeyDate");
+        mapping.put("priorFulfillmentId", "priorFulfillmentId");
+        mapping.put("priorFillKeyDate", "priorFillKeyDate");
+        mapping.put("priorQuoteId", "priorQuoteId");
+        mapping.put("priorQuoteKeyDate", "priorQuoteKeyDate");
+        mapping.put("repairedTimestamp", "repairedTimestamp");
+        mapping.put("repairedBy", "repairedBy");
+        mapping.put("repairedType", "repairedType");
+        mapping.put("correctionDue", "correctionDue");
+        mapping.put("fileName", "fileName");
+
+        HeaderColumnNameTranslateMappingStrategy<ErrorSearchVO> strategy = new HeaderColumnNameTranslateMappingStrategy<>();
+        strategy.setType(ErrorSearchVO.class);
+        strategy.setColumnMapping(mapping);
+	}
+   private List<ErrorSearchVO> getErrorSearchVoEntityFromCsv()
+    {
+        //HeaderColumnNameTranslateMappingStrategy<ErrorSearchVO> strategy = new HeaderColumnNameTranslateMappingStrategy<>();
+        //strategy.setType(ErrorSearchVO.class);
+        List<ErrorSearchVO> list = new ArrayList<>();
+        BufferedReader reader = null;
+        try
+        {
+            File[] listOfFiles = Paths.get("src/test/resources/downloadfiles/error/api/unzipped/").toFile().listFiles();
+            if (listOfFiles.length != 1)
+            {
+                throw new RuntimeException("The extract folder(src/test/resources/downloadfiles/error/api/unzipped/) should have exactly one file");
+            }
+            File file = listOfFiles[0];
+            reader = Files.newBufferedReader(Paths.get(file.getCanonicalPath()));
+
+            CSVReader csvReader = new CSVReaderBuilder(reader).withSkipLines(10).build();
+            List<String[]> records = csvReader.readAll();
+            for(String[] record : records)
+            {
+                list.add(
+                    new ErrorSearchVO(Long.parseLong(record[0]), record[1], record[5], Integer.parseInt(record[8]), record[7], record[2], record[3], record[4],
+                        Integer.parseInt(record[6]), record[9], record[10], record[11], record[12], record[13], record[14], record[18], record[25], record[19],
+                        record[20], record[17], record[21], record[22], record[23], record[24], record[26], record[27], record[28], record[15], record[16],
+                        record[29], record[30], record[31], record[32], record[33], record[34], record[35], record[36], record[37], record[38], record[39],
+                        record[40], record[41]));
+            }
+			
+			// Used regular java code above instead of CsvToBean because For some reasons converting the csv to java bean using CsvToBean is too slow,
+			//intelliJ keeps running something like the following. And it runs out of memory at some point
+			//00:52:44.425 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter - Setting default value: 0
+			//00:52:44.426 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter - Converting 'Integer' value '0' to type 'Double'
+			//00:52:44.427 [pool-2-thread-8] DEBUG o.a.c.b.converters.DoubleConverter -     Converted to Double value '0.0'
+			//00:52:44.426 [pool-2-thread-7] DEBUG o.a.c.b.converters.ArrayConverter - Setting default value: [Ljava.math.BigDecimal;@9b2d51d
+						
+            //CsvToBean<ErrorSearchVO> csvToBean = new CsvToBeanBuilder(reader)
+            //    .withType(ErrorSearchVO.class)
+            //    .withSkipLines(7)
+            //    .withIgnoreLeadingWhiteSpace(true)
+            //    .build();
+            //list = csvToBean.parse();
+			
+            reader.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    private Map<String, String> getAuditInformationFromCsv()
+    {
+        BufferedReader reader = null;
+        Map<String, String> auditInformation = new HashMap<>();
+        try
+        {
+            File[] listOfFiles = Paths.get("src/test/resources/downloadfiles/error/api/unzipped/").toFile().listFiles();
+            if (listOfFiles.length != 1)
+            {
+                throw new RuntimeException("The extract folder(src/test/resources/downloadfiles/error/api/unzipped/) should have exactly one file");
+            }
+            File file = listOfFiles[0];
+            reader = Files.newBufferedReader(Paths.get(file.getCanonicalPath()));
+
+            for(int i = 0; i < 5; ++i)
+            {
+                String line = reader.readLine();
+                auditInformation.put(line.split(":", 2)[0].trim(), line.split(":", 2)[1].trim());
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return auditInformation;
+    }
+*NOTE : The test code deletes the downloaded files after each test. Sometimes, the even after the Files.delete() line is executed the files are
+	still there. It only gets deleted after jvm terminates. In such cases usually we might have forgotten to close the Buffer or Reader.
+	For example in above case, I had to close BufferedReader otherwise it would not work
+    @AfterEach
+    //Deletes the downloaded files from API and DB after each test
+    public void cleanup()
+    {
+        for (Path folder : Arrays.asList(Paths.get(downloadPath), Paths.get(downloadPathExtracted), Paths.get(dbDownloadPath)))
+        {
+            try
+            {
+                for (File file : folder.toFile().listFiles())
+                {
+                    Files.delete(file.toPath());
+                }
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+---------------------------------------------------------------------------
+03-19-2019
+1. When it comes to using Date, Timestamp, Calendar Java doesn't really know how to directly relate to SQL types. This is when @Temporal comes into play.
+	It's used to specify the desired SQL type.	In newer hibernate version 5.2 we probably don't need it. 
+2. From postman, in requestBody, while checking for trailing and leading spaces, if tab is pressed to give spaces, it gives BadRequest. With Spaces it works 
+3. Cross-site request forgery (also known as CSRF) is a web security vulnerability that allows an attacker to induce users to perform actions that
+	they do not intend to perform.
+	https://www.javainuse.com/spring/boot_security_csrf
+4. Application Security Configuration:
+	package org.finra.catdd.app.config;
+	import static org.finra.catdd.common.CatddConstants.REST_URL_BASE;
+	import java.util.ArrayList;
+	import java.util.Arrays;
+	import java.util.List;
+	import org.apache.logging.log4j.LogManager;
+	import org.apache.logging.log4j.Logger;
+	import org.springframework.beans.factory.annotation.Autowired;
+	import org.springframework.beans.factory.annotation.Value;
+	import org.springframework.boot.web.servlet.FilterRegistrationBean;
+	import org.springframework.context.annotation.Bean;
+	import org.springframework.context.annotation.Configuration;
+	import org.springframework.security.authentication.AuthenticationManager;
+	import org.springframework.security.authentication.AuthenticationProvider;
+	import org.springframework.security.authentication.ProviderManager;
+	import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+	import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+	import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+	import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+	import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+	import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
+	import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
+	import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+	import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+	import org.springframework.util.StringUtils;
+	import org.springframework.web.cors.CorsConfiguration;
+	import org.springframework.web.cors.CorsConfigurationSource;
+	import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+	import org.finra.catdd.app.Log4jMdcLoggingFilter;
+	import org.finra.catdd.app.RequestLoggingFilter;
+	import org.finra.catdd.app.security.HttpHeaderApplicationUserBuilder;
+	import org.finra.catdd.app.security.HttpHeaderAuthenticationFilter;
+	import org.finra.catdd.app.security.SecurityHelper;
+	import org.finra.catdd.app.security.TrustedApplicationUserBuilder;
+	import org.finra.catdd.app.security.TrustedUserAuthenticationFilter;
+	import org.finra.catdd.app.security.UserDetailsService;
+	import org.finra.catdd.service.CurrentUserService;
+
+
+	/**
+	 * This is the Spring root configuration for the web application.
+	 */
+	@Configuration
+	@EnableWebSecurity
+	@EnableGlobalMethodSecurity(prePostEnabled = true)
+	public class AppSpringModuleConfig extends WebSecurityConfigurerAdapter
+	{
+		private static final Logger LOGGER = LogManager.getLogger(AppSpringModuleConfig.class);
+
+		@Autowired
+		private UserDetailsService userDetailsService;
+
+		@Autowired
+		private SecurityHelper securityHelper;
+
+		@Autowired
+		private CurrentUserService currentUserService;
+
+		@Value("${cors.origins}")
+		private String corsOrigins;
+
+		/**
+		 * Configure CORS inside spring security
+		 *
+		 * @return the bean CorsConfigurationSource
+		 */
+		@Bean
+		public CorsConfigurationSource corsConfigurationSource()
+		{
+			CorsConfiguration configuration = new CorsConfiguration();
+
+			LOGGER.info("CorsOrigins = " + corsOrigins);
+			if (!StringUtils.isEmpty(corsOrigins))
+			{
+				// cors origins are comma separated
+				String[] originList = corsOrigins.split(",");
+				configuration.setAllowedOrigins(Arrays.asList(originList));
+			}
+
+			configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "HEAD", "PATCH", "DELETE", "OPTIONS"));
+			configuration.setAllowedHeaders(Arrays.asList("*"));
+			configuration.setAllowCredentials(true);
+			UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+			source.registerCorsConfiguration("/**", configuration);
+			return source;
+		}
+
+		/**
+		 * Config the filter Log4jMdcLoggingFilter. It should only log the API rest request
+		 *
+		 * @return the filter registration bean
+		 */
+		@Bean
+		public FilterRegistrationBean<Log4jMdcLoggingFilter> log4jMdcLoggingFilter()
+		{
+			FilterRegistrationBean<Log4jMdcLoggingFilter> registrationBean = new FilterRegistrationBean<>();
+
+			registrationBean.setFilter(new Log4jMdcLoggingFilter(currentUserService));
+			registrationBean.addUrlPatterns(REST_URL_BASE + "/*");
+			registrationBean.setOrder(1);
+
+			return registrationBean;
+		}
+
+		/**
+		 * Config the filter Log4jMdcLoggingFilter. It should only log the API rest request
+		 *
+		 * @return the filter registration bean
+		 */
+		@Bean
+		public FilterRegistrationBean<RequestLoggingFilter> requestLoggingFilter()
+		{
+			FilterRegistrationBean<RequestLoggingFilter> registrationBean = new FilterRegistrationBean<>();
+
+			registrationBean.setFilter(new RequestLoggingFilter());
+			registrationBean.addUrlPatterns(REST_URL_BASE + "/*");
+			registrationBean.setOrder(2);
+
+			return registrationBean;
+		}
+
+		@Override
+		protected void configure(HttpSecurity http) throws Exception
+		{
+			http.cors().and().csrf().requireCsrfProtectionMatcher(request ->
+			{
+				// Disable CSRF for basic auth
+				if (!StringUtils.isEmpty(request.getHeader("Authorization")) || !StringUtils.isEmpty(request.getHeader("authorization")))
+				{
+					return false;
+				}
+				else if ("GET".equalsIgnoreCase(request.getMethod()))
+				{
+					// Disable HTTP GET method
+					return false;
+				}
+				else if (StringUtils.isEmpty(request.getHeader("User-Agent")))
+				{
+					// csrf should be disabled if no User-Agent in header
+					return false;
+				}
+				else
+				{
+					// For other request CSRF will be enabled
+					return true;
+				}
+			}).csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+
+			if (securityHelper.isSecurityEnabled(null))
+			{
+				// security is enabled.
+				// We need to build the userId, roles/authorities based on user's entitlements from the request headers
+				http.addFilterAt(httpHeaderAuthenticationFilter(), AbstractPreAuthenticatedProcessingFilter.class);
+			}
+			else
+			{
+				// security is disabled so we use trusted user filter which allows any user to access any endpoints
+				http.addFilterAt(trustedUserAuthenticationFilter(), AbstractPreAuthenticatedProcessingFilter.class);
+			}
+		}
+
+		@Bean
+		public SecurityContextPersistenceFilter securityContextPersistenceFilter()
+		{
+			return new SecurityContextPersistenceFilter();
+		}
+
+		@Bean
+		public HttpHeaderAuthenticationFilter httpHeaderAuthenticationFilter()
+		{
+			return new HttpHeaderAuthenticationFilter();
+		}
+
+		@Bean
+		public HttpHeaderApplicationUserBuilder httpHeaderApplicationUserBuilder()
+		{
+			return new HttpHeaderApplicationUserBuilder();
+		}
+
+		@Bean
+		public TrustedUserAuthenticationFilter trustedUserAuthenticationFilter()
+		{
+			return new TrustedUserAuthenticationFilter();
+		}
+
+		@Bean
+		public TrustedApplicationUserBuilder trustedApplicationUserBuilder()
+		{
+			return new TrustedApplicationUserBuilder();
+		}
+
+		@Bean
+		public AnonymousAuthenticationFilter anonymousAuthenticationFilter()
+		{
+			return new AnonymousAuthenticationFilter("AnonymousFilterKey");
+		}
+
+		@Bean
+		@Override
+		public AuthenticationManager authenticationManager()
+		{
+			PreAuthenticatedAuthenticationProvider authenticationProvider = new PreAuthenticatedAuthenticationProvider();
+			authenticationProvider.setPreAuthenticatedUserDetailsService(userDetailsService);
+			List<AuthenticationProvider> providers = new ArrayList<>();
+			providers.add(authenticationProvider);
+			return new ProviderManager(providers);
+		}
+	}
+5. Order Event POST is returning 0 for third party even when provided null, because in java code we are using 
+	eventData.setThirdPartyId((resultSet.getInt(CAT_THIRTY_PARTY_ID_PARAM_NAME));
+	getInt() converts any null value in table to 0, which is why its returning as 0.
+	One solution for it is to do something like this
+	eventData.setThirdPartyId((Integer) resultSet.getObject(CAT_THIRTY_PARTY_ID_PARAM_NAME));
+	https://github.com/CraZySacX/node-jdbc/issues/94
+6. Alter a table with a Not Null column. Existing records will have so value, so we can put a default true for boolean for example which will do it.
+7. {
+    "timestamp": 1585004622068,
+    "status": 403,
+    "error": "Forbidden",
+    "message": "Forbidden",
+    "path": "/api/v1/events/errors"
+   }
+   ---> 
+-----------------------------------------------------------
+03-11-2020: PluralSight Java: Notes:
+1. cmd : java Main(ClassName) to run the .class file from commandline
+		  java -jar jarFileName to run the jar file from commandline
+2. JavaDoc:
+	This will generate documentation in a directory called doc as specified with the –d flag -> javadoc -d doc src\*
+	If we have maven plugin setup in pom.xml, we can use -> mvn javadoc:javadoc -> to generate javadoc html in target folder.
+3. Using reverse domain name to name packages. Example https:www.finra.org has unique domain name so we can name our package like org.finra.app
+4. {
+    "statusCode": 400,
+    "statusDescription": "Bad Request",
+    "message": "Format specifier '%s'",
+    "messageDetails": []
+	}
+	When String.format("------") has more %s than the value provided
+5.  Date currentDate = Date.from(LocalDateTime.now().atZone(ZoneId.of(ZONE_ID_EASTERN)).toInstant());
+6. (?!...) is a negative lookahead, which means that for the expression to match, the part within (?!...) must not match
+7. Csv injection restriction regex : "^(?![+=@-]).*"; where restricted characters are +=@-
+	Csv injection means starting with those characters. It can be after the first position
+	Custom validation annotation:
+	
+	package org.finra.catdd.common.validator;
+	import static org.finra.catdd.common.CatddConstants.CSV_INJECTION_ERROR_MSG;
+	import java.lang.annotation.Documented;
+	import java.lang.annotation.ElementType;
+	import java.lang.annotation.Retention;
+	import java.lang.annotation.RetentionPolicy;
+	import java.lang.annotation.Target;
+	import javax.validation.Constraint;
+	import javax.validation.Payload;
+
+	/**
+	 * The custom annotation that checks for csv injection.
+	 * When this annotation is used, the input is first trimmed then validated against the Regex for CSV injection
+	 */
+	@Documented
+	@Constraint(validatedBy = CsvInjectionValidator.class)
+	@Target({ElementType.FIELD})
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface CsvInjectionConstraint
+	{
+		String message() default CSV_INJECTION_ERROR_MSG;
+
+		Class<?>[] groups() default {};
+
+		Class<? extends Payload>[] payload() default {};
+	}
+	--------------------------------------------------------------
+	package org.finra.catdd.common.validator;
+	import static org.finra.catdd.common.CatddConstants.CSV_INJECTION_CHECK_REGEX;
+	import javax.validation.ConstraintValidator;
+	import javax.validation.ConstraintValidatorContext;
+	import org.apache.commons.lang3.StringUtils;
+
+	/**
+	 * This is the validator class for {@link CsvInjectionConstraint} which validates the input against the CSV injection regex
+	 */
+	public class CsvInjectionValidator implements ConstraintValidator<CsvInjectionConstraint, String>
+	{
+		@Override
+		public void initialize(CsvInjectionConstraint csvInjectionConstraint)
+		{
+		}
+
+		@Override
+		public boolean isValid(String value, ConstraintValidatorContext cxt)
+		{
+			if (StringUtils.isEmpty(value))
+			{
+				return true;
+			}
+			return value.trim().matches(CSV_INJECTION_CHECK_REGEX);
+		}
+		
+		//Sometimes when we pass a String like "New Line \r\t\nNew Line \r\t\nNew Line \r\t\n", the above method assumes it starts with a prohibited character even though the entire String does not actually start with prohibited character. It is because when we pass new line character without escaping,it becomes a multi-line character and By default, the .matches has Multi-line character enabled. Meaning it should match each individual line. We can solve the problem either by using \A instead of ^, and \Z instead of $ to consider entire String instead of each line.
+		Or we can use Pattern in java as follows. The pattern by default does not have multi-line enabled.
+		https://stackoverflow.com/questions/3570099/have-regex-ignore-new-lines-and-just-match-on-a-whole-large-string
+		    @Override
+		//	public boolean isValid(String value, ConstraintValidatorContext cxt)
+		//	{
+		//		if (StringUtils.isEmpty(value))
+		//		{
+		//			return true;
+		//		}
+		//		Pattern p = Pattern.compile( CSV_INJECTION_CHECK_REGEX, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+		//		Matcher m = p.matcher(value);
+		//		return m.find();
+		//	}
+	}
+
+8.    public static final String RESTRICTED_CHARACTERS_ERROR = "The field \"%s\" contains prohibited character";
+    @Pattern(regexp = CSV_INJECTION_CHECK_REGEX, message = RESTRICTED_CHARACTERS_ERROR)
+	Even though the %s is not substituted using String.format(), it still takes the className.propertyName as %s
+9. Using Timestamp with timezone is complicated. Internally it stores everything in UTC. Then based on the timezone that is being queried from 
+	it returns the response. It might sometimes show two different results for different time of the year because of daylight saving.
+	For example: As of today(2020-03-18) in EASTERN_TIMEZONE, if there are two records in db saved in UTC time. 1) 2019-12-10 00:00:00, it will show as
+	2019-12-09 19:00:00(-5:00 offset)	and 2) 2019-09-09 00:00:00 will show as 2019-09-08 20:00:00(-4:00 offset)
+10. Sometimes just defining the mock and not using also works:
+	 @Mock
+    private PageInfoHelper pageInfoHelperMock;
+11. Boolean required = ((String) required).equalsIgnoreCase("required") ? true : false;
+	Instead of above, we can do Boolean required = ((String) required).equalsIgnoreCase("required");
+12. To find the unused declaration : In latest IntelliJ versions, you should run it from Analyze->Run Inspection By Name: type unused declaration.
+	Run inspect code from Analyze to inspect entire code.
+13. If you want all of your boolean expressions evaluated regardless of the truth value of each, then you can use & and | instead of && and ||. 
+	However make sure you use these only on boolean expressions. Unlike && and ||, & and | also have a meaning for numeric types which is completely 
+	different from their meaning for booleans.
+14. /**
+	 * The utility class for reading/writing csv files.
+	 */
+	public class CsvUtils
+	{
+		private static final String CSV_DELIMITER = ",";
+
+		private static final String DOUBLE_QUOTE = "\"";
+
+		private static final String ESCAPED_DOUBLE_QUOTE = "\"\"";
+
+		private static final String SINGLE_QUOTE = "'";
+
+		/**
+		 * Builds a line in CSV format based on the list of fields
+		 *
+		 * @param fields the list of fields
+		 * @return the CSV line
+		 */
+		public static String generateCsvLine(String[] fields)
+		{
+			return Stream.of(fields).map(CsvUtils::escapeSpecialCharacters).collect(Collectors.joining(CSV_DELIMITER)) + System.lineSeparator();
+		}
+
+		/**
+		 * Escape the special characters in a CSV field
+		 *
+		 * @param fieldValue the CSV field value
+		 * @return the escaped CVS field
+		 */
+		private static String escapeSpecialCharacters(String fieldValue)
+		{
+			String escapedFieldValue = fieldValue;
+			// Surround the field with double quotes if it contains the special characters
+			if (!StringUtils.isEmpty(fieldValue) && fieldValue.contains(CSV_DELIMITER) || fieldValue.contains(DOUBLE_QUOTE) || fieldValue.contains(SINGLE_QUOTE))
+			{
+				escapedFieldValue = DOUBLE_QUOTE + fieldValue.replace(DOUBLE_QUOTE, ESCAPED_DOUBLE_QUOTE) + DOUBLE_QUOTE;
+			}
+			return escapedFieldValue;
+		}
+	}
+15. /**
+	 * Creates a zip file for a single file
+	 */
+	public class SingleFileZipWriter
+	{
+		private static final long FLUSH_SIZE = 500;
+
+		private ZipOutputStream zipOutputStream;
+
+		private long lineCount = 0;
+
+		/**
+		 * Construct
+		 *
+		 * @param os       the output stream that the zip stream is attached to
+		 * @param filename the file that needs to be zipped
+		 * @throws IOException the IO exception
+		 */
+		public SingleFileZipWriter(OutputStream os, String filename) throws IOException
+		{
+			zipOutputStream = new ZipOutputStream(new BufferedOutputStream(os));
+			zipOutputStream.putNextEntry(new ZipEntry(filename));
+		}
+
+		/**
+		 * Write the content into the zip file line by line
+		 *
+		 * @param line each line in the file
+		 * @throws IOException the IO exception
+		 */
+		public void writeLine(String line) throws IOException
+		{
+			if (!StringUtils.isEmpty(line))
+			{
+				byte bytes[] = line.getBytes("UTF-8");
+				zipOutputStream.write(bytes, 0, bytes.length);
+				if (lineCount++ % FLUSH_SIZE == 0)
+				{
+					zipOutputStream.flush();
+				}
+			}
+		}
+
+		/**
+		 * Close the Zip stream
+		 *
+		 * @throws IOException the IO exception
+		 */
+		public void close() throws IOException
+		{
+			if (zipOutputStream != null)
+			{
+				zipOutputStream.flush();
+				zipOutputStream.closeEntry();
+				zipOutputStream.close();
+			}
+		}
+	}
+16. /**
+	 * This class knows how to write a compressed(ZIP) CSV file to the http response stream
+	 */
+	public class ExportWriter
+	{
+		private OutputStream out;
+
+		private SingleFileZipWriter zipWriter;
+
+		private boolean printHeader = true;
+
+		/**
+		 * The constructor
+		 *
+		 * @param httpServletResponse the http servlet response
+		 * @param csvFilename         the csv file name. we need to set this in the response header
+		 */
+		public ExportWriter(HttpServletResponse httpServletResponse, String csvFilename)
+		{
+			httpServletResponse.setContentType("application/zip");
+			httpServletResponse.setHeader("Content-Disposition", String.format("attachment;filename=%s", csvFilename + ".zip"));
+
+			try
+			{
+				out = httpServletResponse.getOutputStream();
+				zipWriter = new SingleFileZipWriter(out, csvFilename);
+			}
+			catch (IOException e)
+			{
+				throw new CatddRuntimeException(e);
+			}
+		}
+
+		/**
+		 * Generates a line in CSV file
+		 *
+		 * @param csvData the data that needs to be written to CSV file
+		 */
+		public void writeLine(CsvSupported csvData)
+		{
+			try
+			{
+				// Prints the header
+				if (printHeader)
+				{
+					zipWriter.writeLine(CsvUtils.generateCsvLine(csvData.getCsvHeader()));
+					printHeader = false;
+				}
+				zipWriter.writeLine(CsvUtils.generateCsvLine(csvData.getCsvFields()));
+			}
+			catch (IOException e)
+			{
+				throw new CatddRuntimeException("Unexpected error when generating the export file", e);
+			}
+		}
+
+		/**
+		 * Close the stream(clean up)
+		 */
+		public void close()
+		{
+			try
+			{
+				out.flush();
+				zipWriter.close();
+			}
+			catch (IOException e)
+			{
+				throw new CatddRuntimeException("Unexpected error when closing the export file", e);
+			}
+		}
+
+	}
+----------------------------------------------------------------------------------------
+03-09-2020
+1. EWS: Internal(Plan Processor, IM(Industry menbers), PP(Plan participant)
+	ISSO : CATDC
+2.  A Mapped Diagnostic Context, or MDC in short, is an instrument for distinguishing interleaved log output from different sources.
+	Log output is typically interleaved when a server handles multiple clients near-simultaneously.
+3. mockMvc.perform(post(CatddConstants.REST_URL_BASE + "/events").contentType(MediaType.APPLICATION_JSON_UTF8).content(eventCreateRequest))
+	.andExpect(MockMvcResultMatchers.status().isBadRequest())
+	.andExpect(MockMvcResultMatchers.jsonPath("$.message", Is.is("Bad Request")))
+	.andExpect(MockMvcResultMatchers.jsonPath("$.messageDetails",hasSize(5)))
+	.andExpect(MockMvcResultMatchers.jsonPath("$.messageDetails",hasItem("The field \"eventDetail.eventFieldDataList[28].value\" contains prohibited character")))
+;
+4. NumberUtils.isParsable("abc") Vs NumberUtils.isCreatable("abc"); to check if a String is parsable
+	But instead of checking for isParsable and the logging. Its better to just catch the exception and log it. 
+5. @valid annotations from import javax.validation.Valid; to do bean validation.
+6. The standard java @Valid annotation doesn't support groups. However, Spring now includes an @Validated annotation which does the same job as @Valid,
+	but allows you to specify which groups to use in the validation:
+	https://stackoverflow.com/questions/36173332/difference-between-valid-and-validated-in-spring
+7.	We can add the @NotNull annotations inside the request body class too if we want to check for its null. Either the value is null, or if the
+	name itself is not present, we get the error message. Request body Not Null Constraint.
+8.  import com.google.common.base.Charsets;
+	import com.google.common.io.Resources;  
+	/**
+     * Convenience method that knows how to read the file from the classpath and returns the file content as a string
+     *
+     * @param fileName the file name in the classpath
+     *
+     * @return file content
+     */
+    public static String readFileAsString(final String fileName)
+    {
+        try
+        {
+            return Resources.toString(Resources.getResource(fileName), Charsets.UTF_8);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+    }
+9. Replay sqs message if it is in DLQ. if the issue has been resolve to check if it doesn't go to the DLQ again.
+------------------------------------------------------------------------------------------------
+03-06-2020
+1.   /**
+     * A method that takes a list of Generics type, and returns true if it contains duplicate or false if there is no duplicate
+     *
+     * @param list the list of Generics type
+     * @param <T> the generic type
+     *
+     * @return true if it contains duplicate Or false if there is no duplicate
+     */
+    public static <T> Boolean checkForDuplicateInAList(List<T> list)
+    {
+        final Boolean[] containsDuplicate = {false};
+        Map<T, Integer> valueCounter = new HashMap<>();
+        for (T t : list)
+        {
+            Integer val = valueCounter.get(t);
+            if (valueCounter.get(t) == null)		-> Use if(!valueCounter.containsKey(t))
+            {
+                valueCounter.put(t, 1);
+            }
+            else
+            {
+                val++;
+                valueCounter.put(t, val);
+            }
+        }
+        valueCounter.entrySet().stream().filter(map -> map.getValue() > 1).forEach(map -> {
+            LOGGER.error("Duplicate values: " + map.getKey() + ", count = " + map.getValue());
+            containsDuplicate[0] = true;
+        });
+        return containsDuplicate[0];
+    }
+	
+	NOTE:     Map<T, Integer> valueCounter = new HashMap<>();
+				if (valueCounter.get(t) == null) {} -> WRONG !!! Can't assume the map value can't have null. HashTable cannot have null values.Hashtable does not allow null keys or values.
+				HashMap allows one null key and any number of null values
+				https://stackoverflow.com/questions/3622007/why-is-it-useful-to-have-null-values-or-null-keys-in-hash-maps
+2.  Mocking when expected parameter is null.
+	when(announcementRepository.getBooleanExpression(isNull())).thenReturn(expectedBooleanExpression);
+3. Line breakers and other stuff differes from Linux to windows, so always consider StringEscapeUtils.
+	Works in Linux, Fails in Windows:
+	String atsRecord = atsFileHelper.generateSingleAtsCsvFormat(generateOrderTypeEntity(false));
+        assertEquals(
+            "123\u00017059\u0001ABCD\u0001some string\u0001some description\u00012020-02-20\u00012999-12-30\u00011969-12-31 19:00:00\u0001TestUser\u00011969-12-31 19:00:00\u0001null\u0001true\u0001122\n",
+            atsRecord);
+	--------------------------------
+	Works in both windows and linux:
+	String atsRecord = StringEscapeUtils.escapeJson(atsFileHelper.generateSingleAtsCsvFormat(generateOrderTypeEntity(false)));
+	assertEquals(StringEscapeUtils.escapeJson(
+	"123\u00017059\u0001ABCD\u0001some string\u0001some description\u00012020-02-20\u00012999-12-30\u00011969-12-31 19:00:00\u0001TestUser\u00011969-12-31 19:00:00\u0001null\u0001true\u0001122" +
+		System.getProperty("line.separator")), atsRecord);
+4.	String name = "David\tChaudhary";
+	String escapedName = StringEscapeUtils.escapeJson(name); -> Saves it as is.
+	System.out.println(name);
+	System.out.println(escapedName);
+	Prints: David Chaudhary
+			David\tChaudhary
+5. Stream api distinct is expensive than hashset.
+	Set<String> categoriesSet = new LinkedHashSet<>(categoriesList); -> LinkedHashSet preserves the order
+	categoriesList = new ArrayList<>(categoriesSet);	-> Convert back to list
+6. Use Function.getIdentity() to get the object of the class. 
+	Map<String, AnnouncementCategoryEntity> map = list.stream().collect(Collectors.toMap(AnnouncementCategoryEntity::getCategoryName, Function.identity()));
+------------------------------------------------------------------------------------------------
+03-04-2020:
+1.  HttpServletResponse mentioned in the method parameters. which can be set for header, as the method below.
+
+    public static final String HTTP_HEADER_PAGING_PAGE_COUNT = "Paging-PageCount";
+    public static final String HTTP_HEADER_PAGING_PAGE_NUMBER = "Paging-PageNumber";
+    public static final String HTTP_HEADER_PAGING_RECORDS_ON_PAGE_COUNT = "Paging-RecordsOnPageCount";
+    public static final String HTTP_HEADER_PAGING_TOTAL_RECORD_COUNT = "Paging-TotalRecordCount";
+    public static final String HTTP_HEADER_PAGING_PAGE_SIZE = "Paging-PageSize";
+
+	@GetMapping(value = "/announcements")
+    public AnnouncementDetails retrieveAnnouncements(@RequestParam(name = "category") String category,
+        @RequestParam(name = "pageNumber", required = false, defaultValue = PAGING_DEFAULT_PAGE_NUM) int pageNumber,
+        @RequestParam(name = "pageSize", required = false, defaultValue = PAGING_DEFAULT_PAGE_SIZE_ANNOUNCEMENTS) int pageSize,
+        HttpServletResponse httpServletResponse)
+    { }
+	
+	 /**
+	 * Sets HTTP headers to HTTP servlet response per specified paging information.
+	 *
+	 * @param httpServletResponse the HTTP servlet response
+	 * @param pagingInfo the paging information DTO
+	 */
+    protected void addPageInfoHttpHeaders(HttpServletResponse httpServletResponse, PageInfo pagingInfo)
+    {
+        httpServletResponse.setHeader(HTTP_HEADER_PAGING_PAGE_NUMBER, String.valueOf(pagingInfo.getPageNumber()));
+        httpServletResponse.setHeader(HTTP_HEADER_PAGING_PAGE_SIZE, String.valueOf(pagingInfo.getPageSize()));
+        httpServletResponse.setHeader(HTTP_HEADER_PAGING_PAGE_COUNT, String.valueOf(pagingInfo.getTotalPageCount()));
+        httpServletResponse.setHeader(HTTP_HEADER_PAGING_RECORDS_ON_PAGE_COUNT, String.valueOf(pagingInfo.getRecordOnPageCount()));
+        httpServletResponse.setHeader(HTTP_HEADER_PAGING_TOTAL_RECORD_COUNT, String.valueOf(pagingInfo.getTotalRecordCount()));
+    }
+	
+2. Add @JsonIgnore to getter for  pageInfo so that the response do not include the pageInfo. It should only appear in the headers.
+3. @Repository
+	public interface AnnouncementCategoryDao extends JpaRepository<AnnouncementCategoryEntity, Integer>
+	{
+		@Query(value = "select category from AnnouncementCategoryEntity category where category.categoryName = ?1")
+		List<AnnouncementCategoryEntity> findByCategoryName(String category);
+	}
+	The above method findByCategoryName would have given the same result even without the query part because it uses the derived query methods in Spring. findByCategoryName
+4. When we have a main table that has reference to 2 other lookup tables, we create a entity class for all 3 tables. Then on the main table entity class,
+	add     @ManyToOne
+			@JoinColumn(name = "ancmt_stts_id", referencedColumnName = "ancmt_stts_id")
+			private AnnouncementStatusEntity announcementStatus;
+	that links to the entity you want you join with. 
+	If query param sends the value for the lookup table, we can always create an Enum that has all the values, then we can match the provided string query param
+	with an enum and make a db query in lookup to get the id that we can use in main table dao. We could use Spring data JPA as following manner:
+	@Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementCategory category " +
+        "INNER JOIN ancmt.announcementStatus status WHERE category.categoryId =?1  AND status.statusName = 'Final' order by ancmt.publishedTimestamp desc")
+    Page<AnnouncementEntity> findAllByCategoryId(Integer categoryId, Pageable pageable);
+
+    @Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementStatus status WHERE status.statusName = 'Final' order by" +
+        " ancmt.publishedTimestamp desc")
+    Page<AnnouncementEntity> findAllFinalAnnouncements(Pageable pageable);
+5.  PageInfo pageInfo = new PageInfo();
+	pageInfo.setTotalRecordCount(announcementEntityPage.getTotalElements());
+	pageInfo.setTotalPageCount(announcementEntityPage.getTotalPages());
+	pageInfo.setPageNumber(announcementEntityPage.getNumber());
+	pageInfo.setPageSize(announcementEntityPage.getSize());
+	pageInfo.setRecordOnPageCount(announcementEntityPage.getNumberOfElements());
+6. if (!StringUtils.isEmpty(category))
+	{
+		announcementCategoryEnum = AnnouncementCategoryEnum.find(category);
+		announcementCategoryEntity = announcementHelper.getAnnouncementCategoryEntity(announcementCategoryEnum);
+		categoryId = announcementCategoryEntity.getCategoryId();
+		announcementEntityPage = announcementRepository.findAllByCategoryId(categoryId, PageRequest.of(pageNumber, pageSize));
+		announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+	}
+	else
+	{
+		announcementEntityPage = announcementRepository.findAllFinalAnnouncements(PageRequest.of(pageNumber, pageSize));
+		announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+	}
+			AnnouncementCategoryEnum announcementCategoryEnum = AnnouncementCategoryEnum.find(category);
+			AnnouncementCategoryEntity announcementCategoryEntity = announcementHelper.getAnnouncementCategoryEntity(announcementCategoryEnum);
+			Integer categoryId = announcementCategoryEntity.getCategoryId();
+		Page<AnnouncementEntity> announcementEntityPage = announcementDao.findAllByCategoryId(categoryId, PageRequest.of(pageNumber, pageSize));
+		List<AnnouncementEntity> announcementEntityList = announcementEntityPage.stream().collect(Collectors.toList());
+	---------------------------------------------------------------------------------------------------------	
+	/**
+	 * Repository interface for Announcements
+	 */
+	@Repository
+	public interface AnnouncementRepository extends JpaRepository<AnnouncementEntity, Integer>
+	{
+		@Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementCategory category " +
+			"INNER JOIN ancmt.announcementStatus status WHERE category.categoryId =?1  AND status.statusName = 'Final' order by ancmt.publishedTimestamp desc")
+		Page<AnnouncementEntity> findAllByCategoryId(Integer categoryId, Pageable pageable);
+
+		@Query(value = "SELECT ancmt FROM AnnouncementEntity AS ancmt INNER JOIN ancmt.announcementStatus status WHERE status.statusName = 'Final' order by" +
+			" ancmt.publishedTimestamp desc")
+		Page<AnnouncementEntity> findAllFinalAnnouncements(Pageable pageable);
+	}
+7. Unit test default method in repository:
+	@Mock
+    private AnnouncementRepository announcementRepository;
+	when(announcementRepository.getBooleanExpression(any())).thenCallRealMethod();
+8. Atomic reference should be used in a setting where you need to do simple atomic (i.e. thread-safe, non-trivial) operations on a reference, for which monitor-based
+ synchronization is not appropriate. Suppose you want to check to see if a specific field only if the state of the object remains as you last checked:
+9.      when(announcementRepository.findAll(expectedBooleanExpression, PageRequest.of(0, 10)))
+            .thenReturn(new PageImpl<>(Arrays.asList(announcementEntity1, announcementEntity2), PageRequest.of(0, 10), 2));
+        AnnouncementDetails announcementDetails = announcementService.getAnnouncementDetails(CATEGORY1, 0, 10);
+10. The following QuerydslPredicateExecutor has pagination support methods for QueryDsl. findAll(Predicate,Pageable).
+	@Repository
+	public interface AnnouncementRepository extends CrudRepository<AnnouncementEntity, Integer>, QuerydslPredicateExecutor<AnnouncementEntity>
+	{
+	}
+	
+	Since the pagination is added. If we sort it later after querying, we might not get proper sort overall because it will only sort on the current page, thus if we need
+	to sort in the query level itself. Refer below:
+	If you want to add sorting to it. Need to add an object of Sort to PageRequest. Like below:
+	Page<AnnouncementEntity> announcementEntityPage =
+            announcementRepository.findAll(announcementRepository.getBooleanExpression(category), PageRequest.of(pageNumber, pageSize,
+                new Sort(Sort.Direction.DESC, "publishedTimestamp")));			-> Entity property name, not the column name
+	https://stackoverflow.com/questions/43028457/spring-jpa-specification-with-sort
+	https://www.baeldung.com/spring-data-sorting
+11. verify(announcementRepository).findAll(expectedBooleanExpression, PageRequest.of(0, 10)); the findAll is from QuerydslPredicateExecutor.
+	(Pageable pageable) can accept PageRequest.of(0, 10).
+12. Assert.assertTrue(new ReflectionEquals(expected, excludeFields).matches(actual));
+--------------------------------------------------------------------------------------------
+02-27-2020
+1. Spring AOP. Need a class annotated with @Aspect which makes it an aspect. Then on method we configure it when do run.
+2. * Running jar with profile from command line:
+	java -jar "-Dspring.profiles.active=prod" application.jar
+   * From intelliJ, we can set it in the configuration, VM Options
+ 3. 	public static <T> T JsonToVO(String jsonFileName, Class<T> valueTypeRef) throws NullPointerException, IOException {
+		//Get file from resources folder
+		ClassLoader classLoader = JsonHelper.class.getClassLoader();
+		File file = new File(classLoader.getResource("json/" + jsonFileName + ".json").getFile());
+		// read JSON from a file
+		return new ObjectMapper().readValue(file, valueTypeRef);
+	}
+4. Deploy Blue/Green(BG) using Orchestrator:
+	1. Need to change the catdd-f3\f3\bgdeploy\release\build_isso(or build_ews).groovy file in f3 repo(BGDeploy branch).
+		Change the branch to the desired branch in JenkinsJob().withParameters,
+		Currently there is already branches for develop which should be used if we want to deploy develop. There is also a feature branch which we can 
+		update according to our need of feature branch
+	2. From pipeline. Go to BGDeploy -> ews-orchestrator or isso-orchestrator -> Build with parameters : orchestrator,
+		a)run the build, Build with Parameters(Select branch that is needed(develop or feature) 
+		b)then run the orchestrator environment(dev, dev-int, qa or qa-int). Build with Parameters(Select BGDeploy or develop(develop branch) or feature)
+4. Deploy BG without using orchestrator: Three steps:
+	1. CATDD-BGDeployECS ---> Build -> Create Green
+	2. CATDD-BGDeploy. CATDD-API-ISSO/EWS ---> Build(Select Feature branch / BGDeploy branch / Green-Smoke-Test )  -> BuildImage -> PushImage -> DeployGreen -> Now we can hit the endpoint with green- before the url
+		to manually test if the green is deployed. Or -> (SKIP DELETE_GREEN) ->(2nd line) Test -> Switch -> Delete 
+	3. CATDD-BGDeployECS --> (SKIP DeleteGreen) ->(2nd line) DeleteOld.
+	
+	example to manually verify green: https://green-api.portal.dev.aws.catnms.com/api/v1/currentUser
+5. Http: port 80; Https: port 443 by default
+6. default methods in interface do not need to be overridden. So if we have an interface with only default method, and if we want to access it,
+	we can create an empty class that implements it. It is not mandatory to override the default method. But we can then access it.
+7.  host:  catdd-pg-dev-pg.cjrlugb9ygux.us-east-1.rds.amazonaws.com
+	port:   5432
+	username:   catddmaster
+	password:   NnAYgwEDoU4fNF0r
+	SSL: Prefer
+	Database name: catddd
+8. Url-encoding needs to be done when sending values to Server as query params. Example. If we want to send a text with space, example "Hot Topic". We
+	need to send it as "Hot%20Topic".
+9. Thread pool is always a good solution for IO intensive operations
+
+---------------------------------------------------------------
+02-24-2020
+1. thread1.join() for having main thread wait until thread1 is done
+2. synchronize keyword makes a method thread-safe
+3. Thread.currentThread().getName()
+4.    @Test
+    public void dummy()
+    {
+        List<String> stringList = new ArrayList<>();
+        for(int i=0;i<5000;i++)
+        {
+            stringList.add("a"+i);
+        }
+
+        List<String> refinedList0 = new ArrayList<>();												//OK
+        for(int i=0;i<5;i++)
+        {
+            stringList.stream().forEach(o -> refinedList0.add(o));
+            System.out.println(refinedList0.size());
+            refinedList0.clear();
+        }
+
+        System.out.println("------------------------------------");
+
+        List<String> refinedList = new ArrayList<>();
+        for(int i=0;i<5;i++)
+        {
+            stringList.parallelStream().forEach(o -> refinedList.add(o));					 		//NOT OK. GIVES WRONG RESULT EVERY TIME
+            System.out.println(refinedList.size());
+            refinedList.clear();
+        }
+
+        System.out.println("------------------------------------");
+
+        List<String> refinedList2;
+        for(int i=0;i<5;i++)																	//OK
+        {
+            refinedList2 = stringList.parallelStream().map(o -> o+1).collect(Collectors.toList());
+            System.out.println(refinedList2.size());
+            refinedList2.clear();
+        }
+		
+		System.out.println("------------------------------------");
+
+        CopyOnWriteArrayList<String> refinedList5 = new CopyOnWriteArrayList<>();
+        for(int i=0;i<5;i++)
+        {
+            stringList.parallelStream().forEach(o -> refinedList5.add(o));					 		//OK
+            System.out.println(refinedList5.size());
+            refinedList5.clear();
+        }
+  -> CopyOnWriteArrayList is a synchronized thread safe version of ArrayList.  this works
+5. We need to ensure that the code is thread-safe. Therefor forloop that adds to arraylist gives wrong value. We can't use it.
+	Special care needs to be taken if the operations performed in parallel modifies shared data.
+6. ExecutorService service = Executors.newFixedThreadPool(200);
+	service.execute(() -> {
+	..................
+	}
+	service.shutdown();
+	// Wait until all threads are finish
+	while (!service.isTerminated()) {}
+7. host:  catdd-pg-dev-pg.cjrlugb9ygux.us-east-1.rds.amazonaws.com
+	port:   5432
+	username:   catddmaster
+	password:   NnAYgwEDoU4fNF0r
+	SSL: Prefer
+	Database name: catddd
+8. PostgresSql:
+	select NOW() - interval '30 days';
+9. Make sure a directory is always there before doing anything about it.
+	File newDirectory = new File(DIRECTORY);
+	if(!newDirectory.exists())
+	{
+		newDirectory.mkdir()
+	}
+	---------------------
+	public static void writeFile(byte[] fileContents, String fileName) throws IOException {
+		File file = new File(fileName);
+			if (file.exists()) {
+				FileUtils.deleteQuietly(file);
+				if (file.getParentFile() != null) {
+					file.getParentFile().mkdirs();
+				}
+				file.createNewFile();
+			} else {
+				if (file.getParentFile() != null) {
+					file.getParentFile().mkdirs();
+				}
+				file.createNewFile();
+			}
+		}
+	***FileUtils.cleanDirectory(directory); 
+	FileUtils provides a lot of features.
+10. URL url = new URL(catddIssoUrl + EVENT_SUBMISSION_ISSO_API);
+   *If you need to work with http protocol then use HttpURLConnection,
+	OkHttpClient, Apache's HttpClient, or if you're using Java 11 you can try its HttpClient. because in HttpURLConnection, 
+	You always have to deal with "low-level" InputStream, Reader, OutputStream, Writer. Others are easier
+	https://stackoverflow.com/questions/53795268/should-i-use-httpurlconnection-or-resttemplate
+11. Sometimes you want to create a Java class that can’t be instantiated at all. Such a class consists entirely of static fields and methods.
+	Like a constants class. Adding a private constructor prevents class from instantiating.
+---------------------------------------------------------------
+Catdd-Release-0.4.0:
+1. Deploy ALB-EWS/ALB-ISSO: verify cost center:
+	Login to aws into cat ct using MFA. Go to EC2. Then Go to Load Balancers. Then Search for instances as CATDD.
+	Appstackversion 01-ECS, 02-External, 03-ISSO. Then go to Tags, verify the Cost center.
+2. Deploy ECS-EWS/ECS-ISSO: verify AMI tag:
+	Login to aws into cat ct using MFA. Go to EC2. Then Search for instances as CATDD.
+	Appstackversion 01-ECS, 02-External, 03-ISSO. Then Select the instances, In the description, verify the AMI tag.
+3. Update RDS Server: Connect to CT database. See if the changes made for the DB is in place.
+4. Deploy SQS queue:
+5. Deploy EXT-ALB/EXT-ECS/Bastion : 
+6. Deploy Lambda : verify if Lambda is present.
+	Login to aws into cat ct using MFA. Go to EC2. Then Search for Lambda. CATDD function.
+	Appstackversion 01-ECS, 02-External, 03-ISSO. Then See if the new lambda shows up. And updates are refreshed
+7. Deploy API:
+8. Deploy UI:
+---------------------------------------------------------------------
+02-20-2020
+1. Decompress file :
+	private void extractZipToDownloadPath(Response response, String fileName)
+    {
+        String fileZip = downloadPath.concat(fileName);
+        File destDir = new File(downloadPathExtracted);
+        byte[] buffer = new byte[response.asByteArray().length];
+        ZipEntry zipEntry = null;
+        try
+        {
+            ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
+            zipEntry = zis.getNextEntry();
+            while (zipEntry != null)
+            {
+                File newFile = newFile(destDir, zipEntry);
+                FileOutputStream fos = new FileOutputStream(newFile);
+                int len;
+                while ((len = zis.read(buffer)) > 0)
+                {
+                    fos.write(buffer, 0, len);
+                }
+                fos.close();
+                zipEntry = zis.getNextEntry();
+            }
+            zis.closeEntry();
+            zis.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException
+    {
+        File destFile = new File(destinationDir, zipEntry.getName());
+
+        String destDirPath = destinationDir.getCanonicalPath();
+        String destFilePath = destFile.getCanonicalPath();
+
+        if (!destFilePath.startsWith(destDirPath + File.separator))
+        {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+        return destFile;
+    }
+2. JAMS(Schedular) -> LAMBDA(Either lambda can do all the tasks or call the API that does it) -> Call API.
+	Cons for doing everything in lambda: Connection pooling issue, need to use regular java code instead of spring boot because of its large size.
+	
+	*JAMS Job → Lambda → Lambda does all the work.
+	This requires the lambda to have all the dependencies for S3, RDS, and DM
+	If the lambda failed, JAMS can retry triggering the lambda in the same day
+	*JAMS Job → Lambda → Call the API → API does all the work.
+	this gets rid of all the dirty work the lambda may do, but requires it to have the API running
+	a new API endpoint is needed for this approach
+	*JAMS Job → run a shell script → Call the API → API does all the work.
+	this gets rid of the lambda
+	a new endpoint is needed for this approach
+	*Spring Scheduler on the API → API does all the work.
+	The API needs to be running. If it wasn't, then how would it retry.
+	very easy to implement, does not need an endpoint and has all the dependencies.
+	*Quartz -> Very powerful, flexible, but need to create tables.
+	----> Cron time readable: https://crontab.guru/
+3. Delete files from a folder:
+	private String downloadPath = "src/test/resources/downloadfiles/pendingsubmission/api/zipfile/";
+    private String downloadPathExtracted = "src/test/resources/downloadfiles/pendingsubmission/api/extractedfromzip/";
+    private String s3DownloadPath = "src/test/resources/downloadfiles/pendingsubmission/s3/";
+	
+	public void cleanup()
+	{
+		for (Path folder : Arrays.asList(Paths.get(downloadPath), Paths.get(downloadPathExtracted), Paths.get(dbDownloadPath)))
+		{
+			try
+			{
+				if (folder.toFile().listFiles() != null)
+				{
+					for (File file : folder.toFile().listFiles())
+					{
+						Files.delete(file.toPath());
+					}
+				}
+			}
+			catch (IOException ex)
+			{
+				ex.printStackTrace();
+				throw new RuntimeException(ex);
+			}
+		}
+	}
+	
+	Delete folder : Files.delete(folder);
+4. Convert List to array of desired type. Example shows to Long type:
+	givenList.stream().toArray(Long[]::new).
+	Normally, .toArray gives array of Object Type.
+5. /*
+##### README #####
+	# Set following environment variables before running tests in your laptop
+	# runOn=Local
+	# user=<<your network id (k12345)>>
+	# pass=<<network password>>
+##### END README #####
+*/
+	Instead of setting environment variables in intelliJ config everytime. We can set it up in system variable.
+	Need to restart computer for effect to take place
+--------------------------------------------------------------------------------------------------------------
 02-11-2020
 1. Assert.isTrue(ListA.containsAll(listB)
-	and Assert.isTrue(ListB.containsAll(listA). Then two lists are equal.
-	Can use for assert in automation where no sort is fixed and cannot compare equality for two objects directly.
+	and Assert.isTrue(ListB.containsAll(listA). Then two lists may NOT be equal because it could have duplicates.
+	Cannot be used for assert in automation where no sort is fixed and cannot compare equality for two objects directly.
+	@Test
+    public void nothing()
+    {
+        List<String> a = Arrays.asList("a", "b", "c", "a", "d");
+        List<String> b = Arrays.asList("a", "b", "c", "d", "d");
+        assertEquals(a.size(), b.size());
+        assertTrue(a.containsAll(b));
+        assertTrue(b.containsAll(a));
+    }
+	-> Check for sort one by one for descending sort upload timestamp:
+		Boolean isSortedAsExpected = true;
+	for(int i =0; i < actualFileStatusInfo.getFileStatusDetailOutputs().size(); i++)
+	{
+		if(i != (actualFileStatusInfo.getFileStatusDetailOutputs().size()-1))
+		{
+			Date dateForRowAbove = DateUtil.convertStringToDateWithTime(actualFileStatusInfo.getFileStatusDetailOutputs().get(i).getUpload().getTimestamp());
+			Date dateForRowBelow = DateUtil.convertStringToDateWithTime(actualFileStatusInfo.getFileStatusDetailOutputs().get(i + 1).getUpload().getTimestamp());
+
+			if (Objects.nonNull(dateForRowAbove) && Objects.nonNull(dateForRowBelow) && dateForRowAbove.before(dateForRowBelow))
+			{
+				isSortedAsExpected = false;
+			}
+		}
+	}
+	assertTrue(isSortedAsExpected);
+2. If there is a lot of records in two lists and they do not match. TO see which ones is not present in another list:
+    for(FileStatusDetailOutput fileStatusDetailOutput : actualFileStatusInfo.getFileStatusDetailOutputs())
+	{
+		if(!expectedFileStatusInfo.getFileStatusDetailOutputs().contains(fileStatusDetailOutput))
+		{
+			String a = fileStatusDetailOutput.toString();
+			System.out.println(a);
+		}
+	}
+3. During sort if only one column is specified and values are the same for the specified column, we can use stream api group by to group the similar ones
+then sort.
+4. IntelliJ plugin for Zoom. To start a quick session. Just type /zoom
+5. Convert String to big integer. new BigInteger((String)
+6. Hashcode command : In GitBash, sha256sum <filename>
+7. Compress file to bz2: In GitBash, run the command : bzip2 -zk "C:\Users\k28172\79_JPMS_20200101_MKBHD_OrderEvents_000123.json"
+8. Decompress bz2 file: In GitBash, run the command : bzip2 -dk "C:\Users\k28172\79_JPMS_20200101_MKBHD_OrderEvents_000123.json.bz2"
+
+---------------------------------------------------------------------
+Different stages after file upload: CAT
+1. Acknowledgement -> Check for filename, size, format for both data and meta.
+2. Integrity -> Check if a data file has a paired meta file or not. Also check for duplicates.
+3. Ingestion -> Open the file, then check if the records are valid according to the spec or not.
+4. Linker -> ????
 ---------------------------------------------------------------------
 02-05-2020
 1. When writing API automation, need to think not only about the user perspective but also through data perspective. Like Database if it has null rows,
@@ -27,6 +1235,12 @@
 4. QueryDsl Tuple:
 	Since Querydsl 3.0 the default type for multi-column results is com.mysema.query.Tuple.
 	Tuple provides provides a typesafe Map like interface to access column data from a Tuple row object.
+	
+	Tuples ? what are the indexes? what column does it refer to? -> In query whatever column comes first is the first index in tuple
+	-------------------------------------
+	Sort on multiple columns.
+	jpaQuery.orderBy(customerReportingRelationshipEntity.updatedOn.desc(), customerReportingRelationshipEntity.createdOn.desc());
+
 5. SQL query :
 	NULLIF(expr1, expr2)
 	The NULLIF() function returns NULL if two expressions are equal, otherwise it returns the first expression.
@@ -133,6 +1347,31 @@
                 .thenComparing(EventTypeStatistics::getEventType,Comparator.nullsLast(Comparator.naturalOrder())));
 22. Using comparator:
      Collections.sort(actualFileStatusInfo.getFileStatusDetailOutputs(), new FileStatusDetailOutputComparator());
+	*** announcementDetailList.sort(Comparator.comparing(o -> o.getAnnouncement().getPublishedTimestamp()));
+23. If we need to sort a List of entity by one of the properties, using comparator can throw null pointer sometimes if the column values are null.
+	announcementList.sort(Comparator.comparing(Announcement::getPublishedTimestamp, Comparator.nullsLast(String::compareTo)));
+	We need to provide the nullsLast inside the Comparator.comparing() because if we put it outside, its for when the entire entity object is null, not the property.
+24. Below works: Does not complain static method cannot be referenced by non-static. Since getPublishedTimestamp does not fall directly under announcementDetail.
+	It falls under Announcement inside announcementDetail. using Lambda function is easier to access.
+	* announcementDetailList.sort(Comparator.comparing(o -> o.getAnnouncement().getPublishedTimestamp(), Comparator.nullsLast(String::compareTo)));
+25. Below does not work: complains static method cannot be referenced by non-static.
+    * announcementDetailList.sort(Comparator.comparing(Announcement::getPublishedTimestamp(), Comparator.nullsLast(String::compareTo)));
+	If we have to add reversed, we need to do the following if we are using lambda expression(Not a problem with method reference):
+	announcementDetailList.sort(Comparator.comparing((AnnouncementEntity o) -> o.getAnnouncement().getPublishedTimestamp(), Comparator.nullsFirst(String::compareTo)).reversed();
+	We want null to be at last, but we still put nullsFirst because becase the reversed() will move it to the end later.
+26. Sorting Using Timestamp directly:
+	         List<AnnouncementDetail> announcementDetailList = announcementEntityList.stream()
+                .sorted(Comparator.comparing((AnnouncementEntity o) -> o.getPublishedTimestamp(), Comparator.nullsFirst(Comparator.naturalOrder())).reversed())
+                .map(o -> announcementHelper.convertToAnnouncementDetailDto(o))
+                .collect(Collectors.toList());
+	Converting Date to String, then sorting:
+		            List<AnnouncementDetail> announcementDetailList = announcementEntityList.stream()
+                .sorted(Comparator.comparing((AnnouncementEntity o) -> CatddDateUtils.dateToString(o.getPublishedTimestamp(), DATE_FORMAT_YYYYMMDDHHMMSS),
+                    Comparator.nullsFirst(String::compareTo)).reversed())
+                .map(o -> announcementHelper.convertToAnnouncementDetailDto(o))
+                .collect(Collectors.toList());
+	
+	
 public class FileStatusDetailOutputComparator implements Comparator<FileStatusDetailOutput>
 {
     @Override
@@ -187,6 +1426,8 @@ public class FileStatusDetailOutputComparator implements Comparator<FileStatusDe
 	https://artifactory.finra.org/artifactory/webapp/#/home
 	Go to the profile. Get the passkey and update the settings.xml
 10. To setup the aws location, go to the .aws folder
+11. cmd : java Main(ClassName) to run the .class file from commandline
+		  java -jar jarFileName to run the jar file from commandline
 --------------------------------------------------------------------------------------------------------
 01-15-2019
 1. When declaring static final variable for Map and list need to make it immutable:
@@ -298,7 +1539,7 @@ pre-canned- dynamic report template?? DeveloperToolds
 1. Kill a port: From the commandline
 	netstat -ano | findstr 8080
 	taskkill /pid 21424 /F
-2. URI encoding, decoding. 
+2. URI encoding, decoding. *Transcoding
 	2019-11-27T00:09:09.985-05:00, when this date is sent as String to the backand and if it has +05:00 instead, Timestamp format incorrect.
 	Need to encode the the "+", which would be "%2B"
 -----------------------------------------------------------------------------------------------------------------
@@ -416,7 +1657,9 @@ RELEASE: 0.3.0 example
                 throw new CatddRuntimeException(e);
             }
         });
-
+4. Good to add the message part at the end.  assertEquals(HttpStatus.SC_BAD_REQUEST, ex.getStatusCode(), "Expecting Bad_Request");
+5. Encode to Base64 using apace commons Base64 ->  byte[] encodedBytes = Base64.encodeBase64("Test".getBytes());
+6. java.net URL, HttpURLConnection -> To interact with any URL
 ---------------------------------------------------------------------------------------------------------------
 12-06-2019
 1. In order to make a test where we expect a certain attibute to not be present in BusinessObjectData, we can remove it from the List<Attribute> using index.
@@ -435,7 +1678,11 @@ Automation:(RestAssured)
    c) Tests -> The actual test class where we compare results from DB call and the actual API call.
    d) Note: Remember to specify what environment we want to run the test against in local -> appEnv=dev
 4.  Lombok annotations: @AllArgsConstructor, @Getter, @ToString, @EqualsAndHashCode, @Builder, @JsonIgnoreProperties(ignoreUnknown = true)
-
+5. JPA queries look up https://www.objectdb.com/java/jpa/query/execute
+6. Query query = session.createSQLQuery( String.format("select * from catdd_owner.pndng_rec where odr_id = '%s' and sbmsn_id = %d order by" +
+	" crtd_ts desc" , orderId, submissionId));
+	List<Object> rows = query.getResultList();
+	-> This gives us a list of type Object and that needs to be converted to Your class using for loop. Better avoid this and use CriteriaBuilder.
 -----------------------------------------------------------------------------------------------------------------
 11-26-2019
 1. Canonical Metamodel JPA Queries. Example AtsOrderTypeEntity_ . Underscore at the end. hibernate-jpamodelgen
@@ -445,10 +1692,41 @@ Automation:(RestAssured)
 	New requests should be routed to the green stack immediately after the switch.
 3. From lambda -> Functions -> LambdaName -> Monitoring -> ViewLogsInCloudwatch -> type:text -> MessageId
 	To see the sqs message for the lambda file executed.
-4. Converting a given Date as String to Timestamp.     
+4. Converting a given Date as String to Timestamp.    DateAsString = "2019-11-05T17:47:58.995-05:00" 
 		    ZonedDateTime zonedDateTimeFromSQS = ZonedDateTime.parse(herdBusinessObjectDataStatusChangeEvent.getEventDate());
             ZonedDateTime EasternZonedDateTime = zonedDateTimeFromSQS.withZoneSameInstant(ZoneId.of("America/New_York"));
             feedback.setGeneratedTimestamp(Timestamp.valueOf(EasternZonedDateTime.toLocalDateTime()));
+	
+	    public static Timestamp stringToTimestamp(String timestampStr, String zoneId)
+		{
+			if (StringUtils.isEmpty(timestampStr))
+			{
+				return null;
+			}
+
+			LocalDateTime localDateTime = LocalDateTime.parse(timestampStr);
+			ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of(zoneId));
+			return Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+		}
+	---------------------------------------------------
+	 public static Date stringToDate(String dateStr, String format)
+    {
+        if (StringUtils.isEmpty(dateStr))
+        {
+            return null;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format, Locale.ENGLISH);
+        LocalDateTime localDateTime;
+        try
+        {
+            localDateTime = LocalDateTime.from(formatter.parse(dateStr));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException(String.format("Cannot parse the string %s into a date using format %s", dateStr, format));
+        }
+        return Date.from(localDateTime.atZone(ZoneId.of(ZONE_ID_EASTERN)).toInstant());
+    }
 5. In order to compareTo override for arrays, do the following.
 	Boolean.valueOf(Arrays.equals(array1, that.array1)).compareTo(true); This works but the following doesn't:
 	Arrays.equals(array1, that.array1).compareTo(true) because Boolean.valueOf has compareTo method.
@@ -477,6 +1755,16 @@ Automation:(RestAssured)
 		}
 	}
 	Collections.sort(listEmployees, new EmployeeComparator());
+15. Serialization is a mechanism of converting the state of an object into a byte stream. Deserialization is the reverse process where the byte stream
+ is used to recreate the actual Java object in memory. This mechanism is used to persist the object.
+16. serialVersionUID should be included in a class that implements serializable so that when an object of the class is serialized, it is using the 
+	serialVersionUID and it can only be deserialized as long as the class maintains the same serialVersionUID. Otherwise it throws InvalidClassException.
+	You absolutely should create a serialVersionUID every time you define a class that implements java.io.Serializable. If you don't, one will be
+	created for you automatically, but this is bad. Its expensive.
+17. private final String a; -> it can be assigned different values at runtime when initialized. Thus each instance has different value of field a.
+	private static final String a; -> all instances share the same value, and can't be altered after first initialized.
+18. Collections.singletonList() to create an immutable list containing only one element.
+
 -----------------------------------------------------------------------------------
 11-22-2019
 1. In spring, CollectionUtils.isEmpty(empList) is null safe, unlike empList.isEmpty()
@@ -755,7 +2043,7 @@ Automation:(RestAssured)
 		return rs.getLong(1);
 20. Jdbc query to insert a auto-generated id automatically:
 	"INSERT INTO herd_info_lk (herd_info_id,actn_type,strg_name,name_space,bus_objct_dfntn,usage_cd," +
-        "file_type,frmt_vrsn,prtn_key) VALUES (nextval('data_rfrsh_hs_seq'),?,?,?,?,?,?,?,?);";
+        "file_type,frmt_vrsn,prtn_key) VALUES (nextval('catdd_owner.data_rfrsh_hs_seq'),?,?,?,?,?,?,?,?);";
 21. Forward vs reverse proxy.
 22. Do we need to close resultSet???? https://docs.oracle.com/javase/7/docs/api/java/sql/ResultSet.html	***Dont need to
 23. Objects.nonNull(sqsAtributes) -> Checking for map null and others too
@@ -918,11 +2206,11 @@ Automation:(RestAssured)
 		Arrays.stream(HEADER_VALUES).parallel().anyMatch(headerEntry.getValue()::contains))
 			For Array.
 	For List, ewsHeaderValueList.parallelStream().anyMatch(valueToMatch::contains)
-	
+	* Parallel stream is much faster than stream or regular for loop because of multiple thread usage. Though the output is random and not in sequence.
 	In order to combine two methods for stream:
 	Arrays.stream(feedbackObjectDefinitionNameArray).anyMatch(objectDefinitionName -> objectDefinitionName.trim().equalsIgnoreCase(businessObjectDefinitionFromSqs)) 
 3.   ewsHeaderValue: use,use-read,use-read-grant,read-grant,read  .    Application.yml for array of values. Read in java, @Value("${security.ewsHeaderValue:use}")
-																														private String[] ewsHeaderValue;
+private String[] ewsHeaderValue;
 4. ArrayUtils.isEmpty(), StringUtils.isEmpty()   Apache commons lang3
 5. In order to use reflectionTestUtils for a list, set a list as 
 	    public static final List<String> ENTITLEMENT_VALUE_LIST = Arrays.asList("use", "use-read", "use-read-grant", "read-grant", "read");
@@ -940,7 +2228,17 @@ Automation:(RestAssured)
 	'${spring.info.build.location:classpath:META-INF/build-info.properties}'.
 	Solve the above by doing mvn clean install in /code
 10. when finbugs is not working, file name too long problem, do mvn clean.
-
+11. List orderList; has 500 items lets suppose.
+	List<String> stringList = new ArrayList();
+	orderList.parallelStream.forEach( item -> {......................... stringList.add(item.......)}) will give random count in stringList. sometime 499. Sometimes 488. 
+	because. ForEach is a terminal operation and it will wait to be finished until it can go process the next line and.........need a better explanation....
+	Thus, do the following instead. 
+	List<String> stringList = orderList.parallelStream.map( list -> {}).collect(Collectors.toList());
+	https://stackoverflow.com/questions/48220469/java-parallel-stream-how-to-wait-for-threads-for-a-parallel-stream-to-finish
+	Any stream can be made paralled using:
+		Stream parallelStream = stream.parallel();
+	For any list, we could use. list.parallelStream() directly instead of list.stream().parallel()
+	https://www.oreilly.com/content/solving-a-parallel-streams-puzzler-in-java-8/
 --------------------------------------------------------------------------------------
 10-30-2019
 1. The diamond problem
@@ -962,6 +2260,65 @@ Automation:(RestAssured)
 	We need to update the application.yml file for ISSO user where we need to change the regex, headernames to match that of the isso_dev.dict.
 		Then add the security roles of ISSO_CATDD_D to allow them to access certain endpoints like FN_OSO_RELATIONSHIP_GET
 		And useEwsAuthentication: false in security:
+11. Using cache in spring:
+	Repository:
+	public interface AnnouncementCategoryRepository extends CrudRepository<AnnouncementCategoryEntity, Integer>
+	{
+		List<AnnouncementCategoryEntity> findAllByOrderByCategoryNameAsc();
+
+		@Cacheable(value = CatddConstants.ANNOUNCEMENT_CATEGORY_CACHE)
+		default Map<String, AnnouncementCategoryEntity> getAnnouncementCategoryMap()
+		{
+			return findAllByOrderByCategoryNameAsc().stream()
+				.collect(Collectors.toMap(AnnouncementCategoryEntity::getCategoryName, Function.identity()));
+		}
+	}
+	---------------------------------
+	@Configuration
+	@EnableCaching
+	@EnableJpaRepositories(
+		basePackages = "org.finra.catdd.dao",
+		entityManagerFactoryRef = ENTITY_MANAGER_NAME,
+		transactionManagerRef = TRANSACTION_MANAGER_NAME
+	)
+	public class DaoSpringModuleConfig extends JCacheConfigurerSupport
+	{
+		 /**
+		 * Produces a bean of Cache manager for Announcement Category
+		 *
+		 * @return JCacheManagerCustomizer object for Announcement Category
+		 */
+		@Bean
+		public JCacheManagerCustomizer announcementCategoryCacheManagerCustomizer()
+		{
+			return cacheManager ->
+				cacheManager.createCache(CatddConstants.ANNOUNCEMENT_CATEGORY_CACHE,
+					createConfiguration(maxEntriesHeapEwsOrganization, Duration.ofSeconds(timeToLiveSecondsEwsOrganization)));
+		}
+
+		/**
+		 * Generic Method that generates and returns a Cache Configuration
+		 *
+		 * @param maxEntriesHeap maximum entries the heap can have
+		 * @param ttl the time to live duration in seconds
+		 *
+		 * @return the Cache Configuration
+		 */
+		private javax.cache.configuration.Configuration<Object, Object> createConfiguration(long maxEntriesHeap, Duration ttl)
+		{
+			LOGGER.info("maxEntriesHeap = " + maxEntriesHeap + ", timeToLiveExpiration = " + ttl.getSeconds());
+			return Eh107Configuration.fromEhcacheCacheConfiguration(
+				CacheConfigurationBuilder.newCacheConfigurationBuilder(Object.class, Object.class,
+					ResourcePoolsBuilder.heap(maxEntriesHeap))
+					.withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(ttl))
+					.build());
+		}
+	}
+	---------------------------------
+	application.yml:
+	cache:
+	  maxEntriesHeapEwsOrganization: 10
+	  timeToLiveSecondsEwsOrganization: 3600
 ----------------------------------------------------------------------------------------------------
 10-29-2019
 1. #Add @Cacheable in DAO method instead of service layer for clean seperation	****
@@ -1645,6 +3002,10 @@ package org.finra.catdd.service;
 	-> By buffering the entire stream into memory manually, this solution only repeats manually what the AWS SDK already does automatically,
 	only this time without any printed warning! For a more efficient solution see my answer below
 	ACL - Access control list
+6. The main difference between first level and second level cache in Hibernate is that the first level is maintained at the Session level and accessible
+ only to the Session, while the second level cache is maintained at the SessionFactory level and available to all Sessions.
+7. https://www.baeldung.com/jpa-hibernate-persistence-context
+8. Stateless Object. 
 -----------------------------------------------------------------------------------------
 09-16-2019
 1. Aws s3 multipart file upload: Pros
@@ -1998,6 +3359,17 @@ OsoRelationshipRepositoryCustomImpl.java
 	And provide groups={Cheap.class or Expensive.class} in the constraint fields
 	{NOTE: the names cheap,expensive could be changed and the priority of names depend on the order it is put in
 	@GroupSequence...}		-> SKIPPED ! Not working as expected
+	--------------------------------------------------------------
+	update:2020-03-13:
+	
+	interface a1 {}
+	interface a2 {}
+	interface a3 {}
+	interface a4 {}
+	@GroupSequence({AnnouncementRequest.class, a1.class,a2.class, a3.class,a4.class})
+	
+	Adding the above to class level and then assigning the groups = a1.class and up in order checks for that order one by one.
+	
 7. To check for valid effective, and expiration date in ATS, avoided .before and .after and chose compareTo to prevent
 	null pointer exception
 8. Scenarios that I checked for post ATS:
@@ -2013,13 +3385,122 @@ OsoRelationshipRepositoryCustomImpl.java
 		07-12 : 07-14		->	07-11 : 07-11R# 		08-15 : 08-20F#	 
 		07-22 : 07-24		->	07-15 : 07-21B# 		07-20(or any before xprn of last) : 08-20S#	  		
 		08-02 : 08-06		->	07-25 : 08-01B# 		07-23 : 08-01S#
-		08-09 : null 		->	08-06 : 08-09D#			07-24 : 08-01B#   		
+		08-09 : null 		->	08-06 : 08-09D#			07-24 : 08-01B#  
+9. Custom validation: When we annotate a property with the new annotation, we can pass a custom message too.
+	package com.services.customvalidation;
+	import java.lang.annotation.Documented;
+	import java.lang.annotation.ElementType;
+	import java.lang.annotation.Retention;
+	import java.lang.annotation.RetentionPolicy;
+	import java.lang.annotation.Target;
+
+	import javax.validation.Constraint;
+	import javax.validation.Payload;
+
+	@Documented
+	@Constraint(validatedBy = Efctv_dtConstraintValidator.class)
+	@Target( { ElementType.METHOD, ElementType.FIELD })
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface Efctv_dt {
+		String message() default "invalid Effective Date !";
+		Class<?>[] groups() default {};
+		Class<? extends Payload>[] payload() default {};
+	}
+	----------------------------------------------
+	package com.services.customvalidation;
+	import java.util.Calendar;
+	import javax.validation.ConstraintValidator;
+	import javax.validation.ConstraintValidatorContext;
+	import com.services.entity.AtsOrderType;
+	import com.services.entity.OsoRelationship;
+
+	public class Efctv_dtConstraintValidator implements ConstraintValidator<Efctv_dt, Object> {
+
+	 @Override
+	 public void initialize(Efctv_dt efctv_dt) {
+	 }
+
+	 @Override
+	 public boolean isValid(Object object,ConstraintValidatorContext cxt) {
+		 Calendar calendar=Calendar.getInstance();
+		 calendar.set(Calendar.HOUR_OF_DAY, 00);
+		 calendar.set(Calendar.MINUTE, 00);
+		 calendar.set(Calendar.SECOND, 00);
+		 calendar.set(Calendar.MILLISECOND, 00);
+		 
+		 if(object instanceof AtsOrderType) { 
+			 AtsOrderType atsOrderType=(AtsOrderType) object;
+			 //Return true because it would be validated by @NotNull anyway
+			 if(atsOrderType.getAtsComposite().getEfctv_dt()==null) {
+				 return true;
+			 }
+			 if(atsOrderType.getAtsComposite().getEfctv_dt().before(calendar.getTime())) {
+				 return false;
+			 }
+			 else
+				 return true;
+		 }
+		 else if(object instanceof OsoRelationship) {
+			 OsoRelationship osoRelationship=(OsoRelationship) object;
+			 if(osoRelationship.getEfctv_dt()==null) {
+				 return true;
+			 }
+			 if(osoRelationship.getEfctv_dt().before(calendar.getTime())) {
+				 if((osoRelationship.getId()!=0)) {
+					 return true;
+				 }
+				 return false;
+			 }
+			 else
+				 return true;
+			 
+		 }
+		 else
+			 return false;
+
+		}
+	}
 -------------------------------------------------------------------------------------------------------------
 07-10-2019
 1. Always Put ==null first for && condition so that .before and .after null doesnot come up
 2. Custom validation binding result, field, property and class level
 3. The BindingResult must come right after the model object that is validated or else Spring 
 	fails to validate the object and throws an exception.
+    
+	@PostMapping(value = "/atsOrderTypes/{crtd_by}")
+    @ResponseStatus(code = HttpStatus.CREATED)
+    public Map<String, Object> createAtsOrderType(@Valid @RequestBody AtsOrderType new_atsOrderType, BindingResult bindingResult,
+        @PathVariable("crtd_by") String crtd_by)
+    {
+        LOGGER.info(" \\nPOST ATS invoked -> ");
+        Map<String, Object> map = new HashMap<>();
+        if (bindingResult.hasErrors())
+        {
+            map.put("Status", "Failed to create Oso Relationship");
+            Map<String, String> errMsgMap = new HashMap<String, String>();
+            List<ObjectError> errors = bindingResult.getAllErrors();
+            for (ObjectError objectError : errors)
+            {
+                if (objectError instanceof FieldError)
+                {
+                    String fieldError = ((FieldError) objectError).getField();
+                    errMsgMap.put(fieldError, objectError.getDefaultMessage());
+                }
+                else if (objectError instanceof ObjectError)
+                {
+                    LOGGER.info(objectError);
+                    errMsgMap.put(objectError.getCode(), objectError.getDefaultMessage());
+                }
+            }
+            map.put("Errors", errMsgMap);
+            LOGGER.error(errMsgMap);
+            return map;
+        }
+        else
+        {
+            return atsOrderTypeService.createAtsOrderType(new_atsOrderType, crtd_by);
+        }
+    }
 ---------------------------------------------------------------------------------------------------------------
 07-09-2019
 1. #Error message, send every error as a response	****
@@ -2189,6 +3670,19 @@ Questions:
 
 3. .equals() and hashcode()	has to be overridden together	****
 ---------------------------------------------------------------------------------------------------------
+06-13-2019:
+1. HashMap can have one null key and multiple values. Hashtable cannot have null key or values
+2. HashMap and Hashtable both store key/value pairs in a hash table.
+3. Hashtable is synchronized and thread-safe while HashMap is not.
+4. Computer programming uses Big O notation(O()) to classify algorithms according to how their computing
+	time or space requirements grow as the input size grows.
+5.  To get the entries:
+	for(Map.Entry<String, String> a : hashtable.entrySet())
+	{
+		System.out.println(a.getKey()+"->"+a.getValue());
+	}
+---------------------------------------------------------------------------------------------------------
+
 06-12-2019
 
 1.#expire atsorder type for the one that has null expiration date ****
@@ -2249,7 +3743,7 @@ Questions:
 	We are seeing an RSA Access manager login successful msg.
 	This is related to FIP	
 	We need the exact splunk error to be able to report to FIP team
-
+5. String text = "I like this.\rThis is David" -> if we print this, it only prints This is David. Carriage return
 
 Appendix:
 # -> needs to be done or Asked

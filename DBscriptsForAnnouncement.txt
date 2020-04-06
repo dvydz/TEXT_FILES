@@ -1,0 +1,136 @@
+CREATE TABLE  if not exists catdd_owner.ancmt_stts_lk
+(
+    ancmt_stts_id smallint NOT NULL,
+    stts_nm character varying(50) NOT NULL,
+    stts_ds character varying(500) NOT NULL,
+	crtd_ts timestamp with time zone NOT NULL,
+    crtd_by character varying(50) NOT NULL,
+    updtd_ts timestamp with time zone NOT NULL,
+    updtd_by character varying(50) NOT NULL,	
+    CONSTRAINT ancmt_stts_lk_pk PRIMARY KEY (ancmt_stts_id),
+    CONSTRAINT ancmt_stts_lk_stts_nm_key UNIQUE (stts_nm)
+);
+
+ALTER TABLE catdd_owner.ancmt_stts_lk
+    OWNER to catdd_owner;
+
+GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.ancmt_stts_lk TO catdd_datafix_role;
+GRANT ALL ON TABLE catdd_owner.ancmt_stts_lk TO catdd_owner;
+GRANT SELECT ON TABLE catdd_owner.ancmt_stts_lk TO catdd_read_role;
+
+
+INSERT into catdd_owner.ancmt_stts_lk (ancmt_stts_id,stts_nm,stts_ds,crtd_ts,crtd_by,updtd_ts,updtd_by)
+values
+(1,'Draft','Not ready to be published state',now() AT TIME ZONE 'US/Eastern','SYSTEM',now() AT TIME ZONE 'US/Eastern','SYSTEM'),
+(2,'Final','Ready to be published state',now() AT TIME ZONE 'US/Eastern','SYSTEM',now() AT TIME ZONE 'US/Eastern','SYSTEM');
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+CREATE TABLE  if not exists catdd_owner.ancmt_ctgry_lk
+(
+    ancmt_ctgry_id smallint NOT NULL,
+    ctgry_nm character varying(50) NOT NULL,
+    ctgry_ds character varying(500) NOT NULL,
+	crtd_ts timestamp with time zone NOT NULL,
+    crtd_by character varying(50) NOT NULL,
+    updtd_ts timestamp with time zone NOT NULL,
+    updtd_by character varying(50) NOT NULL,	
+    CONSTRAINT ancmt_ctgry_lk_pk PRIMARY KEY (ancmt_ctgry_id),
+    CONSTRAINT ancmt_ctgry_lk_ctgry_nm_key UNIQUE (ctgry_nm)
+);
+
+ALTER TABLE catdd_owner.ancmt_ctgry_lk
+    OWNER to catdd_owner;
+
+GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.ancmt_ctgry_lk TO catdd_datafix_role;
+GRANT ALL ON TABLE catdd_owner.ancmt_ctgry_lk TO catdd_owner;
+GRANT SELECT ON TABLE catdd_owner.ancmt_ctgry_lk TO catdd_read_role;
+
+
+
+INSERT into catdd_owner.ancmt_ctgry_lk (ancmt_ctgry_id,ctgry_nm,ctgry_ds,crtd_ts,crtd_by,updtd_ts,updtd_by)
+values
+(1,'System Announcement','System Announcement',now() AT TIME ZONE 'US/Eastern','SYSTEM',now() AT TIME ZONE 'US/Eastern','SYSTEM'),
+(2,'Hot Topic','Hot Topic',now() AT TIME ZONE 'US/Eastern','SYSTEM',now() AT TIME ZONE 'US/Eastern','SYSTEM');
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+CREATE SEQUENCE if not exists catdd_owner.ancmt_seq
+    INCREMENT 1
+    START 1000
+    MINVALUE 1000
+    MAXVALUE 9223372036854775807
+    CACHE 1;
+
+ALTER SEQUENCE catdd_owner.ancmt_seq
+    OWNER TO catdd_owner;
+
+COMMENT ON SEQUENCE catdd_owner.ancmt_seq
+    IS 'ancmt_seq id for each entry in table';
+
+GRANT SELECT ON SEQUENCE catdd_owner.ancmt_seq TO catdd_read_role;
+
+GRANT ALL ON SEQUENCE catdd_owner.ancmt_seq TO catdd_datafix_role;
+
+
+
+CREATE TABLE  if not exists catdd_owner.ancmt
+(
+    ancmt_id bigint NOT NULL,
+    title character varying(2000) NOT NULL,
+    ancmt_ctgry_id smallint NOT NULL,
+	msg_body text NOT NULL,
+    ancmt_stts_id smallint NOT NULL,
+    pblsh_ts timestamp with time zone,
+    pblsh_by character varying(50),
+    aprvl_ts timestamp with time zone,
+    xprtn_ts timestamp with time zone,
+	crtd_ts timestamp with time zone NOT NULL,
+    crtd_by character varying(50) NOT NULL,
+    updtd_ts timestamp with time zone NOT NULL,
+    updtd_by character varying(50) NOT NULL,	
+    CONSTRAINT ancmt_pk PRIMARY KEY (ancmt_id)
+);
+
+ALTER TABLE catdd_owner.ancmt
+    OWNER to catdd_owner;
+
+ALTER TABLE catdd_owner.ancmt
+  ADD CONSTRAINT ancmt_ctgry_id_ancmt_ctgry_lk FOREIGN KEY (ancmt_ctgry_id)
+  REFERENCES catdd_owner.ancmt_ctgry_lk (ancmt_ctgry_id);
+
+ALTER TABLE catdd_owner.ancmt
+  ADD CONSTRAINT ancmt_stts_id_ancmt_stts_lk FOREIGN KEY (ancmt_stts_id)
+  REFERENCES catdd_owner.ancmt_stts_lk (ancmt_stts_id);
+
+GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.ancmt TO catdd_datafix_role;
+GRANT ALL ON TABLE catdd_owner.ancmt TO catdd_owner;
+GRANT SELECT ON TABLE catdd_owner.ancmt TO catdd_read_role;
+
+
+INSERT INTO catdd_owner.ancmt(
+	ancmt_id, title, ancmt_ctgry_id, msg_body, ancmt_stts_id, pblsh_ts, pblsh_by, aprvl_ts, xprtn_ts, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES (nextval('catdd_owner.ancmt_seq'), 'Experienced a delay in providing feedback for files submitted between March 8 at 12:00 AM ET and March 9 at 9:05AM ET', 1, 'FINRA CAT, LLC experienced a delay in providing feedback files for files submitted between Sunday, March 8 at 12:00 AM ET and Monday, March 9 at 9:05AM ET. As a result, some files received during this time period may not receive feedback.  Firms may resubmit these files at this time for processing.
+<br><br> 
+Please contact the FINRA CAT Helpdesk at help@finracat.com or at (888) 696-3348 with any questions related to this content.', 2, '2020-03-09 10:30:33', 'DEV_TEAM', '2020-03-08 08:44:26.002023+00', '2021-07-03 17:44:26.002023+00', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM');
+	
+INSERT INTO catdd_owner.ancmt(
+	ancmt_id, title, ancmt_ctgry_id, msg_body, ancmt_stts_id, pblsh_ts, pblsh_by, aprvl_ts, xprtn_ts, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES (nextval('catdd_owner.ancmt_seq'), 'CAT Clock Synchronization Certification and Security of CAT Data Industry Webinar form by March 15th of each year', 2, 'Consolidated Audit Trail, LLC and FINRA CAT, LLC would like to remind the industry of the following:
+<ul><li>Industry Members are required to complete the CAT Clock Synchronization Certification form by March 15th of each year.<b>Industry Members are not required to submit such certifications to the exchanges or FINRA. Instead, originals of such certifications must be maintained by Industry Members as part of their books and records and be available to regulators upon request. Industry Members who are members of multiple Participants need only make a single clock synchronization certification.</b></li></ul>
+<ul><li>Please submit questions by March 18, 2020 in advance of the upcoming Industry Webinar: Security of CAT Data to be held at 3 pm on March 25, 2020. Questions can be directed to the FINRA CAT helpdesk at help@finracat.com or at (888) 696-3348.</li></ul>
+<br>
+Please contact the FINRA CAT Helpdesk at help@finracat.com or at (888) 696-3348 with any questions related to this content.</p>', 2, '2020-03-01 13:28:12', 'DEV_TEAM', '2020-02-28 08:44:26.002023+00', '2021-07-03 17:44:26.002023+00', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM');
+
+INSERT INTO catdd_owner.ancmt(
+	ancmt_id, title, ancmt_ctgry_id, msg_body, ancmt_stts_id, pblsh_ts, pblsh_by, aprvl_ts, xprtn_ts, crtd_ts, crtd_by, updtd_ts, updtd_by)
+	VALUES (nextval('catdd_owner.ancmt_seq'), 'Updated Industry Member Technical Specifications and New FAQ', 2, 'Consolidated Audit Trail, LLC and FINRA CAT, LLC have published the following to the CAT public website:
+<ul><li>Updated Industry Member Technical Specifications for Phase 2c v3.1 (clean)</li></ul>
+<ul><li>Updated Industry Member Technical Specifications for Phase 2c v3.1 (redlined)</li></ul>
+<ul><li>New FAQ D31 regarding the accountHolderType value for orders received from a foreign affiliate or foreign broker-dealer</li></ul>
+<ul><li>New FAQ O14 regarding CAT connectivity</li></ul>
+<br>
+Please contact the FINRA CAT Helpdesk at help@finracat.com or at (888) 696-3348 with any questions related to this content.', 2, '2020-02-25 15:11:03', 'DEV_TEAM', '2020-02-23 08:44:26.002023+00', '2021-07-03 17:44:26.002023+00', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM', '2020-02-03 17:44:26.002023+00', 'DEV_TEAM');
+
+

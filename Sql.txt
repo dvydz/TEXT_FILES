@@ -49,3 +49,9 @@
 21. NULLIF(expr1, expr2)
 	The NULLIF() function returns NULL if two expressions are equal, otherwise it returns the first expression.
 
+22. ALTER TABLE catdd_owner.ancmt ADD COLUMN urgent_fl	
+	ALTER TABLE catdd_owner.ancmt ALTER COLUMN urgent_fl SET NOT NULL;
+	ALTER TABLE catdd_owner.ancmt_stts_lk ALTER COLUMN updtd_ts TYPE timestamp without time zone;
+
+33. show timezone
+	SET TIME ZONE 'America/New_York';

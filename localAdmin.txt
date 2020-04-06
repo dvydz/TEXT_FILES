@@ -1,0 +1,4 @@
+localAdmin:
+PF1MUV1Y
+I need local admin to do multiple functions like setting up environment variables, and installing softwares like pgAdmin every
+ single time I restart my computer because my computer has issues with the pgAdmin version in software center that help desk couldn't resolve
