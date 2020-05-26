@@ -1,0 +1,35 @@
+application.yml in Himanshu's PR:                                       
+
+Already existing:
+	catprivcatddadmin				- Should not have access		
+	catprivcatdduser				- ALL	
+
+Newly added:
+	catPrivCatddPPUser				- ONLY MATCHING FAMILY	
+	catPrivCatddPPComplianceUser	- ONLY MATCHING FAMILY	
+	catPrivCatddSECComplianceUser	- ALL
+	catPrivCatddComplianceUser		- ALL
+
+--------------------------------------
+
+Automation :
+
+Already existing:
+	catprivcatddadmin										   ***
+	catprivcatdduser				- ALL					-> ***
+
+Newly added:
+	catPrivCatddPPUser				- ONLY MATCHING FAMILY	->		ppsrousertest50003, ppsrousertest50002   AND admin : ppsroadmintest50002	***
+	catPrivCatddPPComplianceUser	- ONLY MATCHING FAMILY	->		ppcompusertest50002						 AND admin : ppcompadmintest50002	***
+	catPrivCatddSECComplianceUser	- ALL					->		seccompuser50000						 AND admin : seccompadmin50000		***
+	catPrivCatddComplianceUser		- ALL					->		internalcompuser3		***				  
+
+With User 7 Compliance User 		- ALL					->  	
+--------------------------------------
+https://jira.finra.org/browse/CATDD-2137
+Story : CATDD-2137
+
+Plan Participant Reporter User	: catPrivCatddPPUser
+Plan Processor User+			: catPrivCatddUser
+Plan Processor Compliance User+	: catPrivCatddComplianceUser
+SEC Compliance User				: catPrivCatddSECComplianceUser

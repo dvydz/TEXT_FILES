@@ -1,5 +1,435 @@
+05-20-2020:
+Online Course: CodeBashing: Java Security Fundamentals:
+1. Encoding is a technique to transform data from one form to another, e.g. from binary to hexadecimal, from hexadecimal to ASCII, 
+   from ASCII to base64, etc.
+   How is it used?
+	As we have just learned, encoding is used to represent data in a format that suits best the system that processes this data.
+	Encoding can also be used to compress data in transit or storage, e.g. to reduce the size of audio or video files using some audio/video converter software for encoding and decoding.
+   How is it misused? 
+	Encoding is sometimes used instead of the encryption in order to protect data from exposure. The main problem with that is that encoding is easily reversible: given that its scheme is available, it can be decoded back into its original state by any third party that gets access to it, without any additional information required.
+	Consider, for example, these two strings:
+	AES-encrypted string: 433a6d916f962ad3dc0df4804f5afc8b
+	base64-encoded string: 72875e6dab218a7822b2d85e6deb2d	
+	They look pretty similar to a human eye, but the base64-encoded string can be easily decoded into codebashingisthebest, and the AES-encrypted string can be decrypted only with the secret key. One should never use encoding to keep the data confidential.
+2. Hashing is a one-way transformation of arbitrary data into a value of the fixed length (it's usually called message). MD5, SHA1, SHA2,
+	SHA3, SHA256. Hashing functions can be cryptographic and noncryptographic. Noncryptographic functions must not be used for security-related operations.
+	There are several properties that cryptographic hashing algorithms have:
+	1. Preimage resistance: this means that it's impossible to derive the original message from its hash.
+	2. Unpredictability: even the slightest change to the input of the hash function results in a completely different output. The output of the hash function should be unpredictable.
+	3. Collision resistance: this means that it's impossible to find two distinct messages that result in the same hash.
+	Additionally, hash functions have the following properties:
+	1. The same input always corresponds to the same output.
+	2. The computation is quick.
+   How is it used?
+	From the security perspective, hashing is used to ensure the integrity of data, i.e. to make sure that it was not altered between the two arbitrary points in time, and if it was altered - that this change becomes visible immediately after you hash it and compare the resulting hash with the original hash. For example, hashing is an essential component of digital signatures, TLS certificates, or message authentication codes.
+	The easiest example of the integrity check using hashing is comparing hashes of a file stored on the server and a downloaded file. If those hashes match, then the file hasn't been tampered during the transmission.
+   How is it misused?
+	Hashing is misused when weak hashes which are only good for integrity checks are used for confidentiality (in this case, the attacker can unhash the data by using so-called rainbow tables). Another case of misuse is when hashing is used for password storage but occurs on the client instead of the server, allowing for pass-the-hash attacks.
+3. Encryption is the transformation of data (that is colloquially referred to as plaintext or cleartext) into a format that doesn't allow
+	to derive the initial meaning from it (called ciphertext) so that even if an attacker gains access to it, they will not be able to read
+	it. To retrieve the original plaintext, it needs to be decrypted. Encryption and decryption are performed using cryptographic keys.
+	There two commonly used categories of encryption algorithms: symmetric and asymmetric. Each type has its pros and cons and is used for different purposes.
+	Symmetric algorithms use the same secret key for encryption and decryption. Only the person who holds the secret key that was used for encryption can decrypt the encrypted message.
+	Asymmetric algorithms use a pair of private and public keys for encryption and decryption. A message is encrypted using one key and decrypted using another key from the pair.
+   How is it used?
+	The main goal of encryption is to maintain the confidentiality of data. One will always need a key to decrypt the encrypted message.
+	Symmetric algorithms are widely used for encryption of arbitrary amount of data. Asymmetric algorithms, in turn, are usually used for secret key distribution and digital signatures.
+	Symmetric encryption can be used by two endpoints who share the same secret. Asymmetric encryption can be used by an endpoint with multiple clients who trust the endpoint but don't want anyone listening in.
+	Asymmetric encryption is also used for implicit authentication - e.g. if anyone can provide a token that my application can decrypt with the public key, then it must have been encrypted with the private key, which can only belong to trusted endpoints (this is basically how Kerberos authentication works, for example).
+   How is it misused?
+	Sometimes there exists an assumption that only two sides of communication can decrypt the ciphertext, and if the ciphertext is altered during the transmission, then the receiving side wouldn't be able to decrypt it at all or would get some gibberish text after the decryption.
+	This assumption is wrong: there are attacks on the ciphertext that would have a predictable influence on the plaintext. The altered ciphertext would still be decryptable, and the resulting altered plaintext would still look valid.
+	Encryption should be used if data confidentiality is the goal. Neither hashing nor encoding provides the necessary capabilities to keep data in secret. Encryption is a time-consuming operation (though symmetric algorithms have significantly better performance than asymmetric ones) and it shouldn't be used if there is no need to assure data confidentiality or token integrity.
+4. We should never store passwords as plaintext in db. It should always be encrypted.
+	Passwords can be encrypted on the row-level or table level, even the whole database can be encrypted.
+	Will that help? Yes, but only to some extent.
+	Consider, for example, the case when the passwords are encrypted on the database level. When the application accesses the database, DB decrypts the portion of data the application needs to access. Decryption is allowed because the application itself is allowed to access the DB. If an attacker accesses the DB through the application (via the SQL Injection attack), then he will be served everything that he asks for because the requests to the DB comes from the trusted source - the application.
+	----------------------
+	Hashing is another popular way to store passwords "securely". Hashing is an irreversible function, which receives a value and outputs a 
+	fixed-size digest value; the uniqueness of this value determines its robustness in a security context, as collisions in a hash function will imply different passwords may yield identical hash values. The only way to crack the hashed password is to compute hashes of all the possible passwords and compare them to the hash of the password being cracked. This could look like a hardly manageable task, but there are some shortcuts and workarounds that allow attackers to save time on computation. First, the passwords are often easily predictable. All this allows attackers to create so-called rainbow tables for cracking password hashes. Rainbow table is a dictionary that contains known passwords (leaked, constructed using predictable patterns, etc.) and their calculated hashes. They store password hashes in an optimized form that speeds up the password lookup and decreases the disk space usage.
+	To make precomputed rainbow tables less useful, salt can be used. Salt is a randomly generated value that is added (as a prefix, suffix, or both) to the password prior to hashing. Hashes of password+salt combinations, in this case, are totally different from hashes of plain passwords. Salt is not a secret value and should be stored next to the hashed password in plaintext.
+	Each password should be hashed with its own unique salt. In case the same salt is used for every password in the database, then the attacker needs to compute a rainbow table only once, for the specific salt used. When the salt is unique, then the attacker needs to recompute rainbow tables for each and every salt+password pair, and that drastically increases total computation time and decreases password cracking speed.
+	----------------------
+	Now that we have discussed wrong ways to store passwords, it is the right time to talk about the only secure way to organize password
+	storage. The only secure way to use hashing in password storage is increasing hash computation time when calculating hashes (i.e. make several iterations of hash computation: calculate the hash of the password, then calculate the hash of the hashed password, then calculate the hash of the hashed password hash, and so on). Certain algorithms allow for scalable computation time, by computing hashes using a customizable iteration count; these algorithms are called Key Derivation Functions (KDFs).
+	Popular KDFs (any of them can be used to store passwords):
+	1. bcrypt (is not standardized)
+	2. PBKDF2 (https://tools.ietf.org/html/rfc2898)
+	3. scrypt (https://tools.ietf.org/html/rfc7914)
+	4. ARGON2 (https://password-hashing.net/)
+	Properly implemented and configured KDF effectively protects the stored passwords against attacks that are targeted at passwords stored in the database.
+	----------------------
+	Hashing in Client side:
+	The algorithm of the authentication functionality looks like the following:
+	1. The user fills in username and password.
+	2. The password is hashed on the client.
+	3. The hashed password is transmitted to the server.
+	4. The server looks for the provided username/hashedPassword pair in the database.
+	In other words, the hash value of the password is used as the actual password for login. What happens when the database is stolen? The attacker will use username/hashedPassword pairs to log in as any user. Thus hashing passwords on the client is equal to storing them in plaintext. Colloquially, using hashes to authenticate rather than passwords is known as a Pass-the-Hash attack.
+	----------------------
+	How to save and store the password securely:
+	1. After the user creates the password, it is transmitted in plaintext over a secure channel (TLS) to the server.
+	2. There the password is hashed using a Key Derivation Function and saved to the database in the hashed form.
+	The password shouldn't be stored anywhere else in any other form. For example, a rejected password should not be saved to the log because an attacker can get access to it and use the rejected password to derive the correct password (e.g. obvious typos in legible passphrases).
+5. SQL Injection,
+	1. using  ' or 1=1--  as part of the filter value....This poisons the sql query and retreives all the info:
+	select * from sqli.payments where userid = 2351612 and type = 3 and comment LIKE '%' or 1=1--%' ORDER BY date
+	' or 1=1-- payload makes the condition true for every record in the table, so the query returns every record in the table. -- comments the trailing part of the query to keep the query syntax correct.
+	One could probably think about input validation (i.e. checking of legal characters, minimum/maximum string lengths, removal of "malicious" characters) as a remediation strategy, but this a bad approach. Input validation is based on blacklists, and blacklists can be bypassed by a skilled attacker.
+	2. none%' UNION SELECT a.id, a.amount, a.type, b.name, a.userid, a.date FROM payments AS a, users AS b WHERE a.userid = b.id --
+	-> Once hacker finds out the table to get the data all he has to do it is inject the filter, then sql query will fetch what he needs.
+	select * from sqli.payments where userid = 2351612 and type = 3 and comment LIKE '%none%' UNION SELECT a.id, a.amount, a.type, b.name, a.userid, a.date FROM payments AS a, users AS b WHERE a.userid = b.id --%' ORDER BY date
+	3. Prepared statements (aka parameterized queries) are an effective way to prevent SQL injection attacks.
+	Prepared statements are used to abstract SQL statement syntax from input parameters. Statement templates are first defined at the application layer, and the parameters are then passed to them. Aside from better protection against SQL injection attacks, prepared statements offer improved code quality from a legibility and maintainability perspective due to the separation of the SQL logic from its inputs. Another way to avoid SQL injections is to use ORM (Object Relational Mapping). It provides a developer with a way to manipulate the database without writing SQL queries by setting relations between database tables and application objects.
+	(Note that ORM allows raw SQL queries that are vulnerable to SQL injection if the query is built by concatenating user input with the SQL keywords. Raw queries are often used for complex SQL queries that are hard to create by using objects.
+6. The Second-Order SQL injection is a less visible kind of good old SQL injection. Unlike in regular SQL injection, user input doesn't
+	influence the SQL query directly. Instead, a malicious payload from the user input is, first, saved to the database, and only after that, it is used by the application in the SQL query.
+	The typical flow of the Second-Order SQL Injection:
+	1. Tainted data is inserted into the database securely using an approach that prevents SQL injections.
+	2. Tainted data is then insecurely used as a part of an SQL query leading to the SQL injection.
+	Do not concatenate user-supplied data with SQL queries performed by ORM.)
+	Aside from better protection against SQL injection attacks, prepared statements offer improved code quality from a legibility and maintainability perspective due to the separation of the SQL logic from its inputs.
+	Another way to avoid SQL injections is to use ORM (Object Relational Mapping). It provides a developer with a way to manipulate the database without writing SQL queries by setting relations between database tables and application objects.
+	(Note that ORM allows raw SQL queries that are vulnerable to SQL injection if the query is built by concatenating user input with the SQL keywords. Raw queries are often used for complex SQL queries that are hard to create by using objects.
+	Do not concatenate user-supplied data with SQL queries performed by ORM.)
+	Defense in depth is a concept used in Information security in which multiple layers of security controls are placed throughout an information technology system
+7. Command Injection: The most effective way to prevent Command Injection(injection in fileName for uploaded file in content disposition
+	and etc) vulnerabilities is to avoid calling OS commands from the application code (maybe the same result could be achieved by using some API or library). If the execution of OS commands cannot be avoided, don't use user-supplied input to run them. If it is not possible to avoid user-supplied input in calling out to OS commands, then strong input validation must be implemented. It must be based on a whitelist of allowed characters. Don't use blacklists because they tend to be bypassed by a skilled attacker. A better way to handle the same task is to avoid inserting user input into the OS command, for example, by using an API or a library that provides the same functionality as the OS command.
+------------------------------------------------------------------------------------------------------------
+05-18-2020:
+1. Joining two tables from different databases is complex. In postgres, we can use create FDW(foreign data wrapper) for diff database table to 
+	make it work but again we try to avoid it. dblink  is another option but they come with performance overhead. If you run a query between 2 servers not on the same network you will have a lot of latency and the performance will be very degraded
+2. Custom comparator for chained comparator:
+	package org.finra.catdd.catco.model.dto;
+	import java.util.Comparator;
+	import java.util.List;
+
+	public class ErrorCodeCountsDetailComparator implements Comparator<ErrorCodeCountsDetail>
+	{
+		private List<Comparator<ErrorCodeCountsDetail>> comparatorList;
+
+		public ErrorCodeCountsDetailComparator(List<Comparator<ErrorCodeCountsDetail>> comparatorList)
+		{
+			this.comparatorList = comparatorList;
+		}
+
+		@Override
+		public int compare(ErrorCodeCountsDetail o1, ErrorCodeCountsDetail o2)
+		{
+			int result;
+			for (Comparator<ErrorCodeCountsDetail> comparator : comparatorList)
+			{
+				if ((result = comparator.compare(o1, o2)) != 0)
+				{
+					return result;
+				}
+			}
+			return 0;
+		}
+	}
+	
+	Comparator<ErrorCodeCountsDetail> sortByCatReporterIndustryMemberId = Comparator.comparing(ErrorCodeCountsDetail::getCatReporterIndustryMemberId);
+	Comparator<ErrorCodeCountsDetail> sortByCatSubmitterId = Comparator.comparing(ErrorCodeCountsDetail::getCatSubmitterId);
+	Comparator<ErrorCodeCountsDetail> sortByErrorCode = Comparator.comparing(ErrorCodeCountsDetail::getErrorCode);
+	Comparator<ErrorCodeCountsDetail> sortByErrorType = Comparator.comparing(ErrorCodeCountsDetail::getErrorType);
+	Comparator<ErrorCodeCountsDetail> sortByErrorCount = Comparator.comparing(ErrorCodeCountsDetail::getErrorCount);
+	
+	List<Comparator<ErrorCodeCountsDetail>> comparatorList = new ArrayList<>();
+        Integer index = 0;
+        List<SortTypeEnum> sortTypeEnumList = sortHelper.getSortTypeEnumList();
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : sortHelper.getErrorCodeCountsColumnNameEnumSortList())
+        {
+            switch (errorCodeCountsColumnNameEnum)
+            {
+                case CAT_REPORTER_IMID:
+                    comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByCatReporterIndustryMemberId :
+                        sortByCatReporterIndustryMemberId.reversed());
+                    break;
+                case SUBMITTER_ID:
+                    comparatorList
+                        .add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByCatSubmitterId : sortByCatSubmitterId.reversed());
+                    break;
+                case ERROR_CODE:
+                    comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByErrorCode : sortByErrorCode.reversed());
+                    break;
+                case ERROR_TYPE:
+                    comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByErrorType : sortByErrorType.reversed());
+                    break;
+                case ERROR_COUNT:
+                    comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByErrorCount : sortByErrorCount.reversed());
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                        String.format(CatddConstants.COLUMN_SORT_FILTER_NOT_SUPPORTED, errorCodeCountsColumnNameEnum.getUiValue()));
+            }
+            index++;
+        }
+        errorCodeCountsDetailList.sort(new ErrorCodeCountsDetailComparator(comparatorList));
+
+	Note: To do the exact same, in ApacheCommons library, this method can be used:
+		  errorCodeCountsDetailList.sort(ComparatorUtils.chainedComparator(comparatorList));
+	https://medium.com/@lonell.liburd/chaining-comparators-and-sorting-in-java-498b8e1e34a8
+2. Sometimes some aggregated columns aren't physical columns and we can't sort it directly using QueryDsl or Hibernate(Possible through nativequery).
+	We need to do sorting in the Java code. In such cases First we get the list of all the objects from the database. The Sort it in the java code. Then apply pagination to the list. because even though we can apply pagination in the query and sort it later, it will give the wrong result.
+	Because pagination already limits the list and then we apply sorting which is Totally wrong.
+3. If we have multiple cases for Switch that does similar stuff. Instead we can use hashmap that contains key : (what would go on case)
+	and value : on what similar actions is being performed on. Then with a for loop just one of those action in switch case can use values from hashmap.
+	example:
+	    Comparator<ErrorCodeCountsDetail> sortByCatReporterIndustryMemberId =
+            Comparator.comparing(ErrorCodeCountsDetail::getCatReporterIndustryMemberId, Comparator.nullsLast(Comparator.naturalOrder()));
+        Comparator<ErrorCodeCountsDetail> sortByCatSubmitterId =
+            Comparator.comparing(ErrorCodeCountsDetail::getCatSubmitterId, Comparator.nullsLast(Comparator.naturalOrder()));
+     
+        List<Comparator<ErrorCodeCountsDetail>> comparatorList = new ArrayList<>();
+        Integer index = 0;
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : errorCodeCountsColumnNameEnumSortList)
+        {
+            switch (errorCodeCountsColumnNameEnum)
+            {
+                case CAT_REPORTER_IMID:
+                    comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByCatReporterIndustryMemberId :
+                        sortByCatReporterIndustryMemberId.reversed());
+                    break;
+                case SUBMITTER_ID:
+                    comparatorList
+                        .add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? sortByCatSubmitterId : sortByCatSubmitterId.reversed());
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format(CatddConstants.COLUMN_NOT_SUPPORTED, errorCodeCountsColumnNameEnum.getUiValue(), "sort"));
+            }
+            index++;
+        }
+		
+	Can be written as: 
+	    Map<ErrorCodeCountsColumnNameEnum, Comparator<ErrorCodeCountsDetail>> comparatorHashMap = new HashMap<>();
+        comparatorHashMap.put(ErrorCodeCountsColumnNameEnum.CAT_REPORTER_IMID,
+            Comparator.comparing(ErrorCodeCountsDetail::getCatReporterIndustryMemberId, Comparator.nullsLast(Comparator.naturalOrder())));
+        comparatorHashMap.put(ErrorCodeCountsColumnNameEnum.SUBMITTER_ID,
+            Comparator.comparing(ErrorCodeCountsDetail::getCatSubmitterId, Comparator.nullsLast(Comparator.naturalOrder())));
+        List<Comparator<ErrorCodeCountsDetail>> comparatorList = new ArrayList<>();
+        Integer index = 0;
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : errorCodeCountsColumnNameEnumSortList)
+        {
+			Comparator<ErrorCodeCountsDetail> comparator = comparatorHashMap.get(errorCodeCountsColumnNameEnum);
+			comparatorList.add(Objects.equals(SortTypeEnum.ASCENDING, sortTypeEnumList.get(index)) ? comparator : comparator.reversed());
+            index++;
+        }
+4. Even if its a void returnType method, to exit we can use return;
+5. Findbugs : BX_UNBOXING_IMMEDIATELY_REBOXED 
+	-> https://sourceforge.net/p/findbugs/bugs/1184/ Maybe try accepting int instead of Integer in ternary operator.
+------------------------------------------------------------------------------------
+05-07-2020:
+1. Run automation in QA environment:
+	HibernateUtil : line 19 -> cfg.getProperties().setProperty("hibernate.connection.password", "DSF09ujlk9hlKK09upujm");
+	DDRequest : line 134 -> String password = "portalimuser12314!"; or if different users used : 		String password;
+			if(StringUtils.equals(user, "tst_catdd_q"))
+			{
+				password = "somePassword";
+			}
+			else
+			{
+				password = "portalimuser12314!";
+			}
+	Catdd.properties : appEnv=qa
+2. SRG : Outer facing url. We can access from anywhere. It internally calls Private line(internal-finra).
+   Private link(Aws private link) is for some specific ISP like centuryLink. 
+3. We have similar functions for Multiple classes, use Polymorphism. 
+	In this case, List of different types of Enums(errorSummaryFilterEnum, errorSearchFilterEnum, and pendingFilterEnum) would run in a for loop
+	and do similar stuff, Instead of writing a Switch for different Class type, we can use Enum Polymorphism technique. Since for all of them we 
+	were making using of only one method(getUiValue()), we can create an interface with that method and have all the enums implement it.
+	Step 1: Create an interface e.g. BaseFilterEnum.
+	Step 2: All the Enums that we have list for: implement the BaseFilterEnum in them. All the enum class has a method getUiValue() which is also
+			in the interface so it already implements that method.
+	Step 3: The list is of genericType. So it could be anything. Thus cast it to the List<BaseFilterEnum>. And looping through it will give
+			BaseFilterEnum baseFilterEnum object
+	private <T> void setExportWriterColumnFilter(ExportWriter exportWriter, List<T> columnNameEnumFilterList, List<Object> filterValueList)
+    {
+        int index = 0;
+        //Adding the title for column filters
+        exportWriter.writeLine("\nApplied Column Filters:\n");
+        for (BaseColumnNameEnum baseColumnNameEnum : (List<BaseColumnNameEnum>) columnNameEnumFilterList)
+        {
+            exportWriter.writeLine(String.format("%s: %s", baseColumnNameEnum.getUiValue(), filterValueList.get(index)));
+            index++;
+        }
+    }
+	Enum Polymorphism: https://riptutorial.com/java/example/2746/enum-polymorphism-pattern
+4. SAML (Security Assertion Markup Language)
+5. Cyclic dependencies are bad. When two classes or modules depend on eachother. The problem is that when A depends on B, and B depends on A,
+	how do we actually start?
+	Circles between classes of a single package are kind of ok. Circles between packages are pretty ugly. Circles between Jars are a no go and actually will break many tool chains. 
+	In multi-multi module projects, we can always add the dependencies in pom for other packages but it defeats the purpose of having multi module
+	project in the first place. So We should always put things in common package that is accessible(dependency for this is added to anyone who needs it)
+	for any other packages.
+6.  String str = null;
+    System.out.println(String.valueOf(str));  // This will print a String equal to "null"        
+    System.out.println(str.toString()); // This will throw a NullPointerException
+7. 	The "Three Dots" in java is called the Variable Arguments or varargs. It allows the method to accept zero or multiple arguments.
+	Varargs are very helpful if you don't know how many arguments you will have to pass in the method. 
+	But one thing you must note is, the argument that gets the ... must be the last in the method signature. In simpler terms, 
+	abc (int i, String... strings) is correct, whereas: abc(String... strings, int i) is wrong. It take an array(not list but array) For example: 
+	1. public static String format(String format, Object... args) {
+		return new Formatter().format(format, args).toString();
+		}
+		-> args is an array(not list by array).
+	2. In the same way the orderBy in QueryDsl orderBy OrderSpecifier is an array  public Q orderBy(OrderSpecifier<?>... o) {
+		return queryMixin.orderBy(o);
+	   } 
+8.     private void applyColumnSortToJpaQuery(List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumSortList,
+		List<SortTypeEnum> sortTypeEnumList, JPAQuery jpaQuery, QErrorCodeStatisticsEntity errorCodeStatisticsEntity)
+    {
+        int index = 0;
+        OrderSpecifier[] orderSpecifier = new OrderSpecifier[sortTypeEnumList.size()];
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : errorCodeCountsColumnNameEnumSortList)
+        {
+            StringPath sortFieldPath = null;
+            try
+            {
+                Field sortField = QErrorCodeStatisticsEntity.class.getDeclaredField(errorCodeCountsColumnNameEnum.getValue());
+                sortFieldPath = (StringPath) sortField.get(errorCodeStatisticsEntity);
+            }
+            catch (NoSuchFieldException | IllegalAccessException e)
+            {
+                e.printStackTrace();
+            }
+
+            orderSpecifier[index] = Objects.equals(sortTypeEnumList.get(index), SortTypeEnum.ASCENDING) ? sortFieldPath.asc() : sortFieldPath.desc();
+            index++;
+        }
+
+        jpaQuery.orderBy(orderSpecifier);
+    }
+9. Dynamic casting : https://blog.frankel.ch/dynamic-casting-java/
+--------------------------------------------------------------------------------
+04-22-2020
+1. ExecutorService -> ThreadPool, CompletableFuture -> Asynchronous Java8, RxJava -> Good library for asynchronous based programs.
+2. Amazon Athena
+3. Use Post for Logout API.
+4. Double submission problem.
+5. Logout redirect using RedirectView: (We can using Spring redirect to redirect inside the application by using return "redirect:url")
+	@RestController
+	@RequestMapping(value = CatddConstants.REST_URL_BASE)
+	public class LogoutController
+	{
+		private static final Logger LOGGER = LogManager.getLogger(LogoutController.class);
+
+		@Value("${fip.logout}")
+		private String fipLogoutUrl;
+
+		/**
+		 * Method that UI calls to logout from the application
+		 *
+		 * @param request the HttpServletRequest
+		 * @return the redirectView for the associated logout url
+		 */
+		@ApiOperation(value = "Logs out from the application", notes = "This endpoint is used to logout from the application")
+		@GetMapping("/logout")
+		public RedirectView logout(HttpServletRequest request)
+		{
+			HttpSession session = request.getSession();
+			// Invalidate the session and remove any attribute related to it
+			session.invalidate();
+
+			// Get the HttpSession related to this request after it is invalidated. It should be null.
+			if(Objects.nonNull(request.getSession(false)))
+			{
+				throw new CatddRuntimeException("Unexpected error occurred. Session could not be invalidated.");
+			}
+
+			LOGGER.info("Session invalidated. Logging out of the Application.");
+			RedirectView redirectView = new RedirectView();
+			redirectView.setUrl(fipLogoutUrl);
+			return redirectView;
+		}
+	}
+-----------------------------------------------------------------------------
+04-16-2020
+Deployment steps BG:
+1. Create a VID. Need to know what all is part of the release and include in the VID in the deployment order. Reach out to CM.
+2. Cut the release branch from develop i.e. Create a branch from develop for UI, API, and other like EWS(infrastructure), and others if needed.
+3. Create a release branch from develop in f3 and update isso build_isso.groovy, build_ews.groovy for the release branch. Ews has both API and UI.
+	Isso only has API.
+4. Build and deploy the release branch up to QA-int. Then we need to update the pipeline with the latest build number.
+	Then on release day, the release branch is to be triggered in either CT or Prod. If accidently a wrong branch is selected then again correct one is deployed, the last step(delete old) will still fail, which can be triggered manually after the deployment is done and failed.
+	for example: https://builds4.aws.finra.org/job/CATDD/job/BGDeploy_ECS/view/ecs-ews/
+				Pipeline: 231
+				Card: ecs-ewsDeleteOld-ct
+5. Then verify the AMI for isso(03), ews (01), and external ecs(02) from amazon ec2 instances -> CATDD
+6. Then verify Build info, health and log in to see if the new functionalily is there for srg and others.
+7. Once verified, update the ticket with a comment that the release is successful.
+-----------------------------------------------------------------------------
+04-15-2020
+1. TO run CATDD automation in QA from local, we need to hardcode username and password in DDRequest and HibernateUtil.
+	Because it can't get the credentials by itself due to mfa issue.
+2. For named jdbc parameter if we want to use a where clause with like. Its hard to append :param because the where clause(where abc like '%:param')
+	would have singleQuote appended to front and back and it won't read the :param.
+	Thus,Using something like the follwing should work.
+	String final GET_QUERY = "SELECT * FROM ARTICLE WHERE TITLE LIKE '%'||:title||'%'";
+	
+	When 2018 is is a variable, we need to do '%'||2018||'%'
+	https://technicalrecyclebin.wordpress.com/2015/02/12/how-to-pass-like-parameters-values-in-namedparameterjdbctemplate-in-spring/
+3. Initial SessionFactory creation failed.org.hibernate.AnnotationException: No identifier specified for entity: catdd.entity.CatMarketCenterEntity
+	Even though db don't have any primary key, need to come up with one for api that makes it unique
+4. we can add to -> new ArrayList<>(Arrays.asList("abc") but we cannot add to Arrays.asList("aaa").
+	If we tried we would get java.lang.UnsupportedOperationException
+-----------------------------------------------------------------------------
 04-01-2020
 1. PostgreSQL provides the unnest() function to expand an array to a list of rows.
+2. When caching, if we are dealing with same table, it is better to have only one cache because multiple caches might not be in sync. So its
+	better to manipulate the same cache if possible.
+3. CriteriaBuilder query using sub-query:
+	public List<CatMarketCenterEntity> getByRegulatoryEntityId(Long regulatoryEntityId)
+    {
+        try (Session session = HibernateUtil.getSessionFactory().openSession())
+        {
+            //main query
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<CatMarketCenterEntity> query = cb.createQuery(CatMarketCenterEntity.class);
+            Root<CatMarketCenterEntity> table = query.from(CatMarketCenterEntity.class);
+
+            // sub query for parent org code
+            Subquery<String> subquery = query.subquery(String.class);
+            Root<CatMarketCenterEntity> subTable = subquery.from(CatMarketCenterEntity.class);
+
+            //sub query select
+            subquery.select(subTable.get(CatMarketCenterEntity_.regulatoryParentOrgCode))
+                .where(cb.equal(subTable.get(CatMarketCenterEntity_.regulatoryEntityId), regulatoryEntityId));
+
+            //main query select
+            query.select(table).where(cb.in(table.get(CatMarketCenterEntity_.regulatoryParentOrgCode).as(String.class)).value(subquery), cb.equal(table.get(CatMarketCenterEntity_.businessExpirationDate), CAT_MARKET_CENTER_EXPIRATION_DATE));
+            TypedQuery<CatMarketCenterEntity> typedQuery = session.createQuery(query);
+
+            List<CatMarketCenterEntity> catMarketCenterEntityList = typedQuery.getResultList();
+
+            return catMarketCenterEntityList.stream().sorted(Comparator.comparing(CatMarketCenterEntity::getCatParticipantId)).collect(Collectors.toList());
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+	regulatoryEntityId=50003 produces: select generatedAlias0 from CatMarketCenterEntity as generatedAlias0 where generatedAlias0.regulatoryParentOrgCode in (select generatedAlias1.regulatoryParentOrgCode from CatMarketCenterEntity as generatedAlias1 where generatedAlias1.regulatoryEntityId=50003L)
+	
+	public List<CatMarketCenterEntity> getAll()
+    {
+        try (Session session = HibernateUtil.getSessionFactory().openSession())
+        {
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<CatMarketCenterEntity> query = cb.createQuery(CatMarketCenterEntity.class);
+            Root<CatMarketCenterEntity> table = query.from(CatMarketCenterEntity.class);
+            CriteriaQuery<CatMarketCenterEntity> all = query.select(table);
+            return session.createQuery(all).list();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+4. To view the criteria builder query as a String:
+	String queryFinal = session.createQuery(selectQuery).unwrap(org.hibernate.Query.class).getQueryString();
+
 --------------------------------------------------------------------------
 03-24-2020
 1. text.matches(REGEX_VALIDATION) Vs Pattern, 
@@ -161,6 +591,10 @@
             }
         }
     }
+3.	RFC4180Parser rfc4180Parser = new RFC4180ParserBuilder().build();
+			CSVReaderBuilder csvReaderBuilder = new CSVReaderBuilder(reader)
+					.withCSVParser(rfc4180Parser);
+	https://dzone.com/articles/properly-handling-backslashes-using-opencsv
 ---------------------------------------------------------------------------
 03-19-2019
 1. When it comes to using Date, Timestamp, Calendar Java doesn't really know how to directly relate to SQL types. This is when @Temporal comes into play.
@@ -776,6 +1210,23 @@
 	categoriesList = new ArrayList<>(categoriesSet);	-> Convert back to list
 6. Use Function.getIdentity() to get the object of the class. 
 	Map<String, AnnouncementCategoryEntity> map = list.stream().collect(Collectors.toMap(AnnouncementCategoryEntity::getCategoryName, Function.identity()));
+7.  If we have a sort for id, and the id is the same, the output could be in random order everytime, so we could group by those similar ones then sort.
+		List<String> list = Arrays.asList("xavi", "david", "sianan", "avi", "milan", "david", "avi");
+        Map<String, Long> result = list.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        Map<String, Long> sortedMap = new LinkedHashMap<>();
+        result.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEachOrdered(e -> sortedMap.put(e.getKey(), e.getValue()));
+	https://mkyong.com/java8/java-8-collectors-groupingby-and-mapping-example/
+8.  boolean foundUnparsableErrorCode = errorEventData.getErrorCodeList().stream().map(ErrorCode::getId).anyMatch(unparsableErrorCodes::contains);
+9.  Mock the query.getResultList() because jpaQuery.fetch() cannot be directly mocked.
+	@Test
+    public void testGetDataFileStatistics()
+    {
+        Query query = mock(Query.class);
+        when(query.getResultList()).thenReturn(Arrays.asList(Mockito.mock(Tuple.class)));
+
+        when(entityManager.createQuery(anyString())).thenReturn(query);
+        metadataFileStatusDao.getMetadataFileStatistics(ORG_ID, PERSPECTIVE_ENUMS, IMID, PROCESSING_START_DATE);
+    }
 ------------------------------------------------------------------------------------------------
 03-04-2020:
 1.  HttpServletResponse mentioned in the method parameters. which can be set for header, as the method below.
@@ -892,9 +1343,25 @@
                 new Sort(Sort.Direction.DESC, "publishedTimestamp")));			-> Entity property name, not the column name
 	https://stackoverflow.com/questions/43028457/spring-jpa-specification-with-sort
 	https://www.baeldung.com/spring-data-sorting
+	http://www.programmersought.com/article/3602914308/
 11. verify(announcementRepository).findAll(expectedBooleanExpression, PageRequest.of(0, 10)); the findAll is from QuerydslPredicateExecutor.
 	(Pageable pageable) can accept PageRequest.of(0, 10).
 12. Assert.assertTrue(new ReflectionEquals(expected, excludeFields).matches(actual));
+13. QueryDsl, for aggregation and selecting particular column, need to do the following way: 
+        JPAQuery<Tuple> jpaQuery = new JPAQuery<DataFileStatusEntity>(entityManager)
+            .select(
+                Objects.equals(dateTypeEnum, DateTypeEnum.PROCESSING_DATE) ? errorCodeStatisticsEntity.catProcessingDate : errorCodeStatisticsEntity.tradeDate,
+                errorCodeStatisticsEntity.catReporterIndustryMemberId,
+                errorCodeStatisticsEntity.catSubmitterId,
+                errorCodeStatisticsEntity.errorCode,
+                errorCodeStatisticsEntity.errorType,
+                errorCodeStatisticsEntity.totalRecords.sum())
+            .from(errorCodeStatisticsEntity);
+	Instead of :
+        JPAQuery jpaQuery = new JPAQuery<ErrorCodeStatisticsEntity>(entityManager).from(errorCodeStatisticsEntity);
+	The first method should return a list of Tuples. It needs to be converted to Object. Then that Object can later be converted to
+	the DTO needed using forLoop and tuple[index]. index starts with 0 with 0 being the first column specified in JPAQuery and so on. In this
+	case the date.
 --------------------------------------------------------------------------------------------
 02-27-2020
 1. Spring AOP. Need a class annotated with @Aspect which makes it an aspect. Then on method we configure it when do run.
@@ -1203,7 +1670,8 @@ then sort.
 6. Hashcode command : In GitBash, sha256sum <filename>
 7. Compress file to bz2: In GitBash, run the command : bzip2 -zk "C:\Users\k28172\79_JPMS_20200101_MKBHD_OrderEvents_000123.json"
 8. Decompress bz2 file: In GitBash, run the command : bzip2 -dk "C:\Users\k28172\79_JPMS_20200101_MKBHD_OrderEvents_000123.json.bz2"
-
+9. BigDecimal should be used for calculations if it requires big values. A BigDecimal is an exact way of representing numbers. 
+	The disadvantage of BigDecimal is that it's slower. If you are dealing with money, or precision is a must, use BigDecimal. Otherwise Doubles tend to be good enough.
 ---------------------------------------------------------------------
 Different stages after file upload: CAT
 1. Acknowledgement -> Check for filename, size, format for both data and meta.
@@ -1238,9 +1706,10 @@ Different stages after file upload: CAT
 	
 	Tuples ? what are the indexes? what column does it refer to? -> In query whatever column comes first is the first index in tuple
 	-------------------------------------
-	Sort on multiple columns.
+	Sort on multiple columns.	
 	jpaQuery.orderBy(customerReportingRelationshipEntity.updatedOn.desc(), customerReportingRelationshipEntity.createdOn.desc());
-
+	http://www.querydsl.com/static/querydsl/3.2.0/reference/html/ch02.html
+	https://www.petrikainulainen.net/programming/spring-framework/spring-data-jpa-tutorial-part-five-querydsl/
 5. SQL query :
 	NULLIF(expr1, expr2)
 	The NULLIF() function returns NULL if two expressions are equal, otherwise it returns the first expression.
@@ -1261,6 +1730,31 @@ Different stages after file upload: CAT
 	  </component>
 10. Never blindly convert the SQL query to uppercase, the sql query itself is okay to convert to uppercase as long as the value for the column is not. Values are case sensitive.
 	SQL commands itself arent
+11. Subquery inside From. Subquery inside where
+12. /**
+ * This is the repository interface that interacts with Announcement table
+ */
+@Repository
+public interface AnnouncementRepository extends CrudRepository<AnnouncementEntity, Integer>, QuerydslPredicateExecutor<AnnouncementEntity>
+{
+    /**
+     * The method that returns the BooleanExpression. Boolean Expression comprises of The announcement status 'Final' by default
+     *
+     * @param category the category by which we need to filter the announcements
+     *
+     * @return the BooleanExpression
+     */
+    default BooleanExpression getBooleanExpression(String category)
+    {
+        BooleanExpression booleanExpression =
+            QAnnouncementEntity.announcementEntity.announcementStatus.statusName.equalsIgnoreCase(AnnouncementStatusEnum.FINAL.getValue());
+        if (StringUtils.isNotEmpty(category))
+        {
+            booleanExpression = booleanExpression.and(QAnnouncementEntity.announcementEntity.announcementCategory.categoryName.equalsIgnoreCase(category));
+        }
+        return booleanExpression;
+    }
+}
 ------------------------------------------------------------------------------------
 01-30-2020
 1. Query does not have any params that is why we use (Map<String, ?>) null. And supress warning
@@ -1371,7 +1865,8 @@ Different stages after file upload: CAT
                 .map(o -> announcementHelper.convertToAnnouncementDetailDto(o))
                 .collect(Collectors.toList());
 	
-	
+27. Page<AnnouncementEntity> announcementEntityPage = announcementRepository.findAll(announcementRepository.getBooleanExpression(category),
+            PageRequest.of(pageNumber, pageSize, Sort.by(new Order(Direction.DESC, "publishedTimestamp", NullHandling.NULLS_LAST))));	
 public class FileStatusDetailOutputComparator implements Comparator<FileStatusDetailOutput>
 {
     @Override
@@ -1398,6 +1893,31 @@ public class FileStatusDetailOutputComparator implements Comparator<FileStatusDe
             return compareUploadTimestamp;
         }
     }
+	
+	/**
+ * This is the repository interface that interacts with Announcement table
+ */
+@Repository
+public interface AnnouncementRepository extends CrudRepository<AnnouncementEntity, Integer>, QuerydslPredicateExecutor<AnnouncementEntity>
+{
+    /**
+     * The method that returns the BooleanExpression. Boolean Expression comprises of The announcement status 'Final' by default
+     *
+     * @param category the category by which we need to filter the announcements
+     *
+     * @return the BooleanExpression
+     */
+    default BooleanExpression getBooleanExpression(String category)
+    {
+        BooleanExpression booleanExpression =
+            QAnnouncementEntity.announcementEntity.announcementStatus.statusName.equalsIgnoreCase(AnnouncementStatusEnum.FINAL.getValue());
+        if (StringUtils.isNotEmpty(category))
+        {
+            booleanExpression = booleanExpression.and(QAnnouncementEntity.announcementEntity.announcementCategory.categoryName.equalsIgnoreCase(category));
+        }
+        return booleanExpression;
+    }
+}
 ----------------------------------------------------------------------
 01-21-2020
 1. a String is immutable, meaning you cannot change a String in Java. concat() returns a new concatenated string.
@@ -1508,6 +2028,20 @@ public class FileStatusDetailOutputComparator implements Comparator<FileStatusDe
 15. Can't create filename starting with . for example .properties. Create a file. Then from cmd line do ren oldfilename .newfilename
 16. ImmutableSet.of().........	
 	Collections.unmodifiableList()............
+17. @Test
+    public void testGetDeleteErrorEvent()
+    {
+        when(eventDaoHelper.getSingleResult(anyList(), anyString())).thenReturn(new EventDataDetail());
+        when(eventQueries.getQueryValues(anyString())).thenReturn("query");
+        when(namedParameterJdbcTemplate.query(eq("query"), (SqlParameterSource) any(), (RowMapper<Object>) any())).thenReturn(new ArrayList<>());
+        eventDao.getDeleteErrorEvent(BigInteger.valueOf(123456));
+        verify(eventDaoHelper).getSingleResult(anyList(), anyString());
+        verify(eventQueries).getQueryValues(anyString());
+        verify(namedParameterJdbcTemplate).query(eq("query"), (SqlParameterSource) any(), (RowMapper<Object>) any());
+    }
+	Can be used like this:
+	when(namedParameterJdbcTemplate.query(anyString(), any(MapSqlParameterSource.class), any(RowMapper.class))).thenReturn(new ArrayList<>());
+
 ---------------------------------------------------------------------------------------------------------
 12-27-2019
 1.    mockMvc.perform(post("/api/v1/errorSummary/").contentType(MediaType.APPLICATION_JSON).content(JsonUtils.marshal(errorSummaryPostRequest)))
@@ -1549,6 +2083,7 @@ pre-canned- dynamic report template?? DeveloperToolds
 	Next, submitter can give another thirdParty access to just view the orders submitted.
 2. CRD vs ORGID. Firms has CRD, people have orgId. For example, JPMS lets say has CRD : 1234, any person working for JPMS will have orgId : 1234
 3. Perspective Submitter meaning records where the logged in user is acting as submitter. 
+   
 ----------------------------------------------------------------------------------------------------------
 12-11-2019
 1. json Validator:     https://jsonlint.com/
@@ -1833,6 +2368,28 @@ Automation:(RestAssured)
 	The following works with lambda deployed. Gets the current time
 	LocalDateTime now = LocalDateTime.now(ZoneId.of("America/New_York"));		Java time
 	feedback.setCreatedOn(Timestamp.valueOf(now));
+8. Adding build time to build info:
+   <!-- Create a new buildTime property for local timezone. The system property maven.build.timestamp only supports UTC time zone -->
+	<plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>1.10</version>
+            <executions>
+               <execution>
+                  <id>timestamp-property</id>
+                  <goals>
+                     <goal>timestamp-property</goal>
+                  </goals>
+                  <configuration>
+                     <name>catdd.build.time</name>
+                     <pattern>E, dd MMM yyyy HH:mm:ss Z</pattern>
+                     <locale>en_US</locale>
+                     <timeZone>America/New_York</timeZone>
+                  </configuration>
+               </execution>
+            </executions>
+         </plugin>
+         <plugin>
 ------------------------------------------------------------------------------------------------------------------------
 11-21-2019
 1. Flyway configuration/setup is already done for jenkins pipelines and stuff. So only need to update the flyway scripts.
@@ -2273,6 +2830,9 @@ private String[] ewsHeaderValue;
 				.collect(Collectors.toMap(AnnouncementCategoryEntity::getCategoryName, Function.identity()));
 		}
 	}
+
+NOTE : If lets say there is another default method inside this DAO and we call getAnnouncementCategoryMap() from there, it will not be cached.
+There is a proxy class generated that intercepts all requests and responds with the cached value, but 'internal' calls within the same class will not get the cached value.
 	---------------------------------
 	@Configuration
 	@EnableCaching
@@ -2969,6 +3529,25 @@ package org.finra.catdd.service;
 5. sha-256 vs md5. SHA1, SHA2, SHA3
 6. Digital Ocean vs AWS	
 7. EFS vs
+8. Map<ExportHeaderEnum, String> map = ImmutableMap.<ExportHeaderEnum, String>builder()
+            .put(ExportHeaderEnum.CREATED_BY, "user")
+            .put(ExportHeaderEnum.CREATED_ON, "05/07/2020 19:47:16")
+            .put(ExportHeaderEnum.DATE_TYPE, "Processing Date")
+            .put(ExportHeaderEnum.DATE, "01/25/2020")
+            .put(ExportHeaderEnum.PRODUCT_TYPE, "Equities")
+            .put(ExportHeaderEnum.PERSPECTIVE, "SUBMITTER")
+            .put(ExportHeaderEnum.IMID, "dummy")
+            .build();
+9. List<ErrorSearchColumnNameEnum> TIMESTAMP_COLUMN_ERROR_SEARCH = Collections.unmodifiableList(Arrays.asList(
+        ErrorSearchColumnNameEnum.REPAIRED_TIMESTAMP,
+        ErrorSearchColumnNameEnum.CORRECTION_DUE
+    ));
+10 Map<Integer, String> map = new HashMap()
+        {{
+            put(95304, "FirmOne");
+            put(97116, "FirmTwo");
+            put(97351, "FirmThree");
+        }});
 -------------------------------------------------------------------------------
 09-23-2019
 1. ModelMapper -> Entity To DTO Conversion for a Spring REST API
@@ -3282,6 +3861,8 @@ OsoRelationshipRepositoryCustomImpl.java
 4. #For update, if 07-25:07-27,and 07-27:07-30, can they update the first record? NO ****
 5. For order by, if we are using native query, we can do Greater('create_ts','update_ts) which will sort by whichever is greatest for each record.
 	Jpa might not have this for criteria builder. NOT sure.
+6. Integer value cannot be directly cast to Long. Need to use Long.valueOf(IntegerValue). We can use new Long(IntegerValue) but it is
+	discouraged.
 ---------------------------------------------------------------------------------------
 07-15-2019
 1. objectError.getCode() to get the field name for object error. Changed class name to match fieldName.
@@ -3291,6 +3872,8 @@ OsoRelationshipRepositoryCustomImpl.java
 5. order by efctv_dt, xprtn_dt.... Orders first by efctv_dt and then if efctv_dt are the same, orders the same ones by xprtn_dt
 6. listIterator.next() moves to next everytime it is called. Two syso of same thing print different result.
 7. S3 select
+8. Java reflection API -> remember to use in order to manipulate a class at runtime. 
+http://www.newthinktank.com/2012/09/java-reflection-video-tutorial/
 ------------------------------------------------------------------------------------------------------------------
 07-12-2019(Api review)
 1. Save cache for crd_id and delete everyday at the end.
@@ -3579,8 +4162,6 @@ OsoRelationshipRepositoryCustomImpl.java
 	put BindingValidation rules in entityClass,not in composite
 	Cannot add GeneratedValue while using @EmbeddedId, Only possible with @IdClass
 ------------------------------------------------------------------------------------------------------------------
-Look into:
--------------
 Nightly build
 concourse
 swagger
@@ -3624,6 +4205,21 @@ Validation rules?
 1. #merge feature/API to develop branch....
 2. #http get sort by create_ts descending		****
 3. #OSO story
+4. Back when Status code naming was developed, there wasn't clear distinction between unauthorized and unauthenticated.
+	Status Code | Old foggy naming | New clear naming | Use case
+	+++++++++++ | ++++++++++++++++ | ++++++++++++++++ | ++++++++++++++++++++++++++++++++++
+	401         | Unauthorized     | Unauthenticated  | User has not logged-in
+	403         | Forbidden        | Unauthorized     | User doesn't have enough privilege
+5.  200 -> Success
+	201 -> Created
+	301 -> Permanently moved
+	302 -> found
+	400 -> Bad_request : When the request sent either in URI or request body is invalid.
+	401 -> Password or username is wrong
+	403 -> User doesn't have the permission to access the resource
+	409 -> Conflict : Duplicate
+	500 -> Internal Server Error
+	503 -> Service unavailable
 
 FTP SFTP FtpClient filezilla, cyberDuck....FTPServer....
 -----------------------------------------------------------------------------------------
@@ -3704,6 +4300,18 @@ Questions:
 5. wrapper around		****
 6. YAML	****
 7. Dependency from springboot vs apache		****
+8. Singleton Class -> Only one object can be created at a time. Some basics rules required to implement a singleton class :
+	Constructor should be private
+	Declare a static variable object of the class
+	Declare a static method to return the instance
+9. ArrayList -> Non-synchronized. Vector -> Synchronized. Vector is obsolete.
+10. == compares address, equals() method compares the value.
+11. The name Object and Instance are used interchangably. Reference variable(name of the object) resides in the stack which holds the address to the
+	Object created in the heap. Instance variables values are stored in the heap inside the object.
+12. this.car = car; this.car refers to the instance variable, not the local variable.
+13 this(); can be used to invoke current class default constructor.
+14. If nothing inherits or extends an abstract class, it is basically useless because we can't create objects of it.
+	An abstract class can have abstract or regular(concrete) methods but a regular(concrete) class cannot have abstract method.
 ---------------------------------------------------------------------------------------------------------
 06-10-2019
 
@@ -3732,6 +4340,8 @@ Questions:
 	Look for cluster name in splunk after we run the deployment, if we see same error, just paste the error from splunk in the email
 4. #Deploy the application
 5. #Connect to RDS Postgres  ****
+6. Proxy : Server doesn't know which client is connecting from.
+   Reverse Proxy : Client doesn't know which server it is connecting to.
  -----------------------------------------------------------------------------------------------------------------------------------
 06-06-2019
 1. Set exception message for lenient=OptBoolean(FALSE);		
@@ -3744,7 +4354,8 @@ Questions:
 	This is related to FIP	
 	We need the exact splunk error to be able to report to FIP team
 5. String text = "I like this.\rThis is David" -> if we print this, it only prints This is David. Carriage return
-
+6. If not Spring application, need to add     <mapping class="catdd.entity.CatMarketCenterEntity" /> in hibernate.cfg.xml for <session-factory>
+	for Entity while dealing with DAO. Otherwise its a Entity not found IllegalArgumentException.
 Appendix:
 # -> needs to be done or Asked
 Regular -> Note for future

@@ -1,0 +1,38 @@
+Splunk:
+--------
+
+Reporter Portal API Application log messages:
+
+1. ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"   /planParticipants/familyRelationships NOT status
+	-> See the Request Payload
+2. ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"   (ERRORS OR EXCEPTIONS)
+	-> See if there are any errors or exceptions
+
+
+---------------------------------------------------------------------------
+
+Reporter Portal API Deployment log messages:
+
+1. cluster="CATDD-ECS-CLUSTER-INTERNAL-EWS-CT-*" (source="/*/api_deploy_*" OR source="/*/*startup.log")
+
+---------------------------------------------------------------------------
+Reporter Portal UI FIP log messages:
+
+1. index=web sourcetype=idgateway source=*/service.catdd_svc_ui_ews_d_*/*/localhost_access.*.log
+2. index=web sourcetype=idgateway source=*/service.catdd_svc_ui_ews_q_*/*/rout*.log NOT health
+	-> Routing info. Not health
+
+
+
+---------------------------------------------------------------------------
+Reporter Portal Lambda log messages:
+ 
+1.	sourcetype="catdd" source="aws:lambda" functionName="CATDD-HerdNotificationLambda-QAINT-01"
+	sourcetype="catdd" source="aws:lambda" functionName="CATDD-FileCopyLambda-CT-*"
+	sourcetype="catdd" source="aws:lambda" functionName="CATDD-EventSubmissionLambda-DEV-01"
+	sourcetype="catdd" source="aws:lambda" functionName="CATDD-AtsOrderTypeLambda-DEV-01"
+
+
+
+---------------------------------------------------------------------------
+

@@ -1,3 +1,167 @@
+Things to-do:
+1. Fix the filterType. String value can be of type number and so on.
+2. StartRow and endrow can be negative as of now for error screens(except error code counts). Fix that **** Create minor bug ticket
+
+------------------------------------------------------------------
+05/20/2020
+ErrorCodeCounts export:
+1. Update the Api spec for errorCodeCounts *** Done
+2. sort on date, update code?	*** Done
+3. There is a weird character in the error reason ??? *** In an excel thing
+	Invalid combination ofÂ aggregatedOrders and representativeInd	
+4. Should perspective and productType header be like UI? Currently like other screens. **** Dont need to worry about it right now
+5. ALL is less than Options + Equities combined.
+------------------------------------------------------------------
+05/13/2020
+ErrorCodeCounts:
+1. Filter on errorReason? *** No. But Sort Yes
+2. Filter on ErrorCount ? *** Can't do because its not a physical column
+3. Merge package catco and catdd service ??? *** Done
+4. Ask himanshu how his caching for catmarket work? *** Done
+5. ALready applied filter do we apply again for filtermodel or what? **** yes
+6. Is filter value case-sensitive?	*** To be consistent with other api, yes. But ideally should be NO.
+7. Why error message different for Enum and the Switch in ErrorCodeCountsDao for Column filters different? 					??????????????????
+8. Submitter id and stuff is String in db, so should I have it as String or Integer in errroCodeCountsDetail. *** Entity can be String, but response dto
+	needs to be cast to String.
+9. Add pagination Support *** Done
+10. Add javaDoc ***
+11. Unprb in errorCodeLookup table *** Unparsable
+
+Acceptance criteria:
+1. Sort on All the columns except errorReason. Try each column. Sort with wrong column and one right column	***
+2. Filter on All the columns except errorReason and errorCount. Try each column	***
+3. Try sort and filter together with multiple columns. 	***
+4. Default sort. 	***
+5. Test default top level filters including new perspective THIRD_PARTY	***
+6. Verify the dataType returned	***
+7. Test pagination. *** 																				Update for errorSummary and all -ve values
+8. Test with Missing required fields and stuff for correct exceptions	***
+9. LastRow how to calculate ?	*** As of now, get the list and get the size()
+10. ErrorCode sort should work. Update the error message too.	***
+11. Check for dataTuple as null		***
+12. Check other apis after catco and catdd service packages merged.
+13. For Post call with exact same request with date sort asc after 6th call gives result similar to default sort? **** When sort column has same value,
+	order can be random
+14. Provide the filter Type in api spec.	***
+15. If error reason not found, set as null ? and log exception ****
+
+
+Test:
+List size =0
+(startRow, endRow):		(0, -1), (0, 0), (0, 1), (0, 2), (1, -1), (1, 0), (1, 1), (1, 2), (2, -1), (2, 0), (2, 1), (2, 2)
+ListSize = 2
+(startRow, endRow):		(0, -1), (0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, -1), (1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, -1), (2, 0), (2, 1), (2, 2),  (2, 3), (2, 4),
+The issue is if the size of list is 10, and if the startRow is after 10, the code is erroring out because the subList index has issues now.
+---------------------------------------------------
+Random knowledge:
+Event Stats -> Ingestion
+
+Intrafirm -> Linkage 
+
+File stats -> Ack, Integrity
+-------------------------------------------------
+Export: Include inline filter and sort
+1. Verify the Applied Inline Filters and Sorted by does not show if nothing is there.	***
+2. Verify for all the filters and sort.
+3. Comma delimiter issue in excel.
+4. Test sort and filter seperately.	***
+--------------------------------------------------------
+ThirdParty perspective in error correction screen api :
+Dates for data in db, 04/20/2020, 04/21/2020
+APIs affected: 8 
+1) IMID:	/api/v1/industryMemberIds?
+	1. IMID list is same as submitter. Submitter, ThirdParty and ALL have same results
+2) Error Summary :	 /api/v1/events/errors/summary
+	1. When thirdParty perspective selected, fetch data.	
+	2. IMID dropdown list for thirdParty perspective	
+	3. Make sure filter/sort still works	
+	4. hyperlinks ? GroupRepair, ErrorCount -> UI part	
+	5. When ALL perspective, include ThirdParty
+
+ When Y is selected in groupRepairEligible column in Error Summary ->
+3) Get the group repair eligible error field information : /api/v1/errorFields/groupRepairEligible/2082
+4) Group Repair:	/api/v1/events/errors/groupRepairEligible
+	1. Navigate to Group repair when selected Y from ErrorSummary UI.
+	
+ When ErrorCount is selected in Error Summary	->
+5) Error Search :	/api/v1/events/errors
+	1. When thirdParty perspective selected, fetch data.	
+	2. IMID dropdown list for thirdParty perspective	
+	3. Make sure filter/sort still works	
+	4. hyperlinks ? UI part		
+	5. Make sure Export works	
+	6. When ALL perspective, include ThirdParty
+	
+ When errorRoeId is selected from Error search  ->
+6) Retrieve Error Event based on errorRoeId :	/api/v1/events/errors/2000007000000010000?
+	1. Make sure thirdParty is supported 
+7) Retrieve Event type details : /api/v1/eventTypes/MONO
+8) ErrorRoe Repair:	/api/v1/events
+	1. Navigate to Error Repair when errorRoeId is selected from errorSearch UI.
+	2. Make sure thirdParty is supported.
+	
+Questions:
+1. What about pending submission because right after the error correction is done, it gives a link to that page ? *** UI will disable the pop up.
+2.Not understanding the query ????
+	SELECT ERC.err_roe_id errorRoeId, ERC.ERR_CD errorCode, ECL.ERR_DS errorReason, EFL.ERR_FLD errorField FROM catco_owner.ERR_REC_CD ERC,
+	catdd_owner.ERR_CD_LK ECL, catdd_owner.err_fld_lk EFL WHERE ERC.err_roe_id='5000000000000006580' AND ERC.ERR_CD=ECL.ERR_CD AND EFL.ERR_CD=ERC.ERR_CD
+3. Error Repair 400 not handled in UI. for ex: prohibited character ?
+4. Filter: 	1. for date UI does not make a call with that, so why show filter option?  And if not showing for filter, why call for sort?
+			2. for groupRepair N is not present but we can filter for N ?
+			3. Filtering on errorReason for MULTIPLE ERRORS will not work ?
+5. Why does buildWhereClause() in EventDaoImpl have <if (catSubmitterId != null)> apart from perspective ??? for submitter perspective, it will be
+	twice?
+6. Explain james why I have put some Perspectives as Thirdparty replacing Submitter because there are multiples
+7. For error roe repair, even though the error only shows 2, there is the eventTimestamp that is mandatory.
+8. when is the endpoint /events PUT used? because for error roe repair we use POST
+9. IMID : is thirdParty same as submitter and all?..............osorelationship
+
+
+1. Submitter perspective -> Logged in 79. When error is repaired, SubmitterId=79, and using it with the IMID from request, we get ReporterId from OSO.
+2. Reporter perspective -> logged in 79. When error is repaired, SubmitterId=79, and ReporterId=79
+3. Third party perspective -> logged in 7059. When error is repaired, SubmitterId=79, and using it with the IMID from request, we get ReporterId from OSO. We treat ThirdParty just like submitter, because technically submitter is the creator of the correction record, and regardless of thirdParty or
+submitter perspective we still look up OSO to check the relationship for the logged in firm to populate ReporterId.
+NOTE: ThirdParty column in db remains empty. 
+
+Data: TOMCAT2 imid do not have OSO relationship for both crd 36187 and 12030. Also the relationship should be for submitter 7059. Need to update
+		Fetch the data by doing where crtd_by='K28172'
+-----------------------------------------------------------------------
+Automation: Plan participant family relationships
+1. What entitlements in Finra cat can access the api? ****** admin doesn't. rest does
+2. Create User accounts with required entitlements ? *****
+------------------------------------------------------------------------
+application.yml in Himanshu's PR:
+
+Already existing:
+	catprivcatddadmin				- ALL
+	catprivcatdduser				- ALL	
+
+Newly added:
+	catPrivCatddPPUser				- ONLY MATCHING FAMILY
+	catPrivCatddPPComplianceUser	- ONLY MATCHING FAMILY
+	catPrivCatddSECComplianceUser	- ALL
+	catPrivCatddComplianceUser		- ALL
+
+------------
+Actual :
+
+catPrivCatddPPUser 				- ONLY MATCHING FAMILY
+catPrivCatddPPComplianceUser 	- ONLY MATCHING FAMILY
+catPrivCatddUser 				- ALL
+catPrivCatddComplianceUser 		- ALL
+catPrivCatddSECComplianceUser	- ALL
+
+------------
+https://jira.finra.org/browse/CATDD-2137
+Story : CATDD-2137
+
+Plan Participant Reporter User	: catPrivCatddPPUser
+Plan Processor User+			: catPrivCatddUser
+Plan Processor Compliance User+	: catPrivCatddComplianceUser
+SEC Compliance User				: catPrivCatddSECComplianceUser
+-------------------------------------------------------------------------
+1. For Csv injection, made the fix in feature/CATDD-311. Might need to pull the changes and merge it
+-------------------------------------------------------------------------
 Group repair eligible query update:
 1.
 	{
@@ -8,7 +172,13 @@ Group repair eligible query update:
 			"This connection has been closed."
 		]
 	}
-2. For Error records date: 2019-02-11, 2019-02-12
+	Should the Sql exception be thrown?	
+2. For Error records date, for testing purpose: 2019-02-14 ***
+3. For errorSummary, errorCode is of type "number", whereas for errorSearch it is of type "text" while using filterModel.
+4. For a record to be group repair eligible:
+	1. Should have only one error code(not multiple)
+	2. Should be group repair eligible errorCode(err_cd_lk table)
+	3. RepairedType is Unrepaired(U)
 -----------------------------------------------------
 Automation: Error search export : 
 -> 2008-08-27 = Half million records; 2010-08-27 = 100K records, 2016-08-27 = Some records

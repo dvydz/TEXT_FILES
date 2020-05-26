@@ -1,0 +1,388 @@
+ErrorCodeCountsDao without sort on totalError counts. Using reflection
+
+package org.finra.catdd.catco.dao.impl;
+
+import static org.finra.catdd.catco.dao.config.CatcoDaoSpringModuleConfig.PERSISTENCE_UNIT;
+import static org.finra.catdd.common.CatddConstants.UNSUPPORTED_COLUMNS_ERROR_CODE_COUNT;
+
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.servlet.http.HttpServletResponse;
+
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.StringPath;
+import com.querydsl.jpa.impl.JPAQuery;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Repository;
+
+import org.finra.catdd.catco.dao.ErrorCodeCountsDao;
+import org.finra.catdd.catco.model.entity.ErrorCodeStatisticsEntity;
+import org.finra.catdd.catco.model.entity.QErrorCodeStatisticsEntity;
+import org.finra.catdd.common.CatddConstants;
+import org.finra.catdd.common.enums.CompareTypeEnum;
+import org.finra.catdd.common.enums.DateTypeEnum;
+import org.finra.catdd.common.enums.ErrorCodeCountsColumnNameEnum;
+import org.finra.catdd.common.enums.FilterTypeEnum;
+import org.finra.catdd.common.enums.PerspectiveEnum;
+import org.finra.catdd.common.enums.ProductTypeEnum;
+import org.finra.catdd.common.enums.SortTypeEnum;
+import org.finra.catdd.common.exception.CatddRuntimeException;
+import org.finra.catdd.common.utils.CatddDateUtils;
+
+/**
+ * The implementation class of {@link org.finra.catdd.catco.dao.ErrorCodeCountsDao}
+ */
+@Repository
+public class ErrorCodeCountsDaoImpl implements ErrorCodeCountsDao
+{
+    private static final Logger LOGGER = LogManager.getLogger(ErrorCodeCountsDaoImpl.class);
+
+    private static final Integer END_ROW_GET_ALL = -1;
+
+    @PersistenceContext(unitName = PERSISTENCE_UNIT)
+    private EntityManager entityManager;
+
+    @Override
+    public List<Object[]> getErrorCodeStatistics(Integer catOrganizationId, String catReporterIndustryMemberId, DateTypeEnum dateTypeEnum, String date,
+        ProductTypeEnum productTypeEnum, PerspectiveEnum perspectiveEnum, Integer startRow, Integer endRow,
+        List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumFilterList, List<FilterTypeEnum> filterTypeEnumList,
+        List<CompareTypeEnum> compareTypeEnumList, List<Object> filterValueList, List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumSortList,
+        List<SortTypeEnum> sortTypeEnum, HttpServletResponse httpServletResponse, String csvFilename, String userId)
+    {
+        JPAQuery<Tuple> jpaQuery =
+            generateJpaQuery(catOrganizationId, catReporterIndustryMemberId, dateTypeEnum, date, productTypeEnum, perspectiveEnum, startRow, endRow,
+                errorCodeCountsColumnNameEnumFilterList, filterTypeEnumList, compareTypeEnumList, filterValueList, errorCodeCountsColumnNameEnumSortList,
+                sortTypeEnum, httpServletResponse, csvFilename, userId);
+
+        List<Tuple> tuples = jpaQuery.fetch();
+        if (CollectionUtils.isEmpty(tuples))
+        {
+            return Collections.emptyList();
+        }
+        else
+        {
+            return tuples.stream().map(Tuple::toArray).collect(Collectors.toList());
+        }
+    }
+
+    @Override
+    public Long getLastRowCountErrorCodeStatistics(Integer catOrganizationId, String catReporterIndustryMemberId, DateTypeEnum dateTypeEnum, String date,
+        ProductTypeEnum productTypeEnum, PerspectiveEnum perspectiveEnum, Integer startRow, Integer endRow,
+        List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumFilterList, List<FilterTypeEnum> filterTypeEnumList,
+        List<CompareTypeEnum> compareTypeEnumList, List<Object> filterValueList)
+    {
+        JPAQuery<Tuple> jpaQuery =
+            generateJpaQuery(catOrganizationId, catReporterIndustryMemberId, dateTypeEnum, date, productTypeEnum, perspectiveEnum, null, END_ROW_GET_ALL,
+                errorCodeCountsColumnNameEnumFilterList, filterTypeEnumList, compareTypeEnumList, filterValueList, null, null, null, null, null);
+
+        return Long.valueOf(jpaQuery.fetch().size());
+    }
+
+    /**
+     * This method returns the query based on the parameters passed
+     *
+     * @param catOrganizationId the cat organization id of logged-in user
+     * @param catReporterIndustryMemberId the cat reporter imid
+     * @param dateTypeEnum the date type enum : ProcessingDate or TradeDate
+     * @param date the date for which the records need to be fetched
+     * @param productTypeEnum the product type enum : OPTIONS, EQUITIES or ALL
+     * @param perspectiveEnum the perspective : REPORTER, SUBMITTER, TRADE_DATE or ALL
+     * @param startRow the start row for pagination
+     * @param endRow the endRow for pagination
+     * @param errorCodeCountsColumnNameEnumFilterList the list of errorCodeCountsColumnName for filter
+     * @param filterTypeEnumList the list of filter type enum
+     * @param compareTypeEnumList the list of compare type enum
+     * @param filterValueList the list of filter values
+     * @param errorCodeCountsColumnNameEnumSortList the list of errorCodeCountsColumnName for sort
+     * @param sortTypeEnumList the list of sort types
+     * @param httpServletResponse the http servlet response
+     * @param csvFilename the file name for export
+     * @param userId the userId who initiated the export
+     *
+     * @return the JpaQuery
+     */
+    protected JPAQuery<Tuple> generateJpaQuery(Integer catOrganizationId, String catReporterIndustryMemberId, DateTypeEnum dateTypeEnum, String date,
+        ProductTypeEnum productTypeEnum, PerspectiveEnum perspectiveEnum, Integer startRow, Integer endRow,
+        List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumFilterList, List<FilterTypeEnum> filterTypeEnumList,
+        List<CompareTypeEnum> compareTypeEnumList, List<Object> filterValueList, List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumSortList,
+        List<SortTypeEnum> sortTypeEnumList, HttpServletResponse httpServletResponse, String csvFilename, String userId)
+    {
+        QErrorCodeStatisticsEntity errorCodeStatisticsEntity = QErrorCodeStatisticsEntity.errorCodeStatisticsEntity;
+
+        DateTimePath dateField =
+            Objects.equals(dateTypeEnum, DateTypeEnum.PROCESSING_DATE) ? errorCodeStatisticsEntity.catProcessingDate : errorCodeStatisticsEntity.tradeDate;
+
+        JPAQuery<Tuple> jpaQuery = new JPAQuery<ErrorCodeStatisticsEntity>(entityManager)
+            .select(dateField, errorCodeStatisticsEntity.catReporterIndustryMemberId, errorCodeStatisticsEntity.catSubmitterId,
+                errorCodeStatisticsEntity.errorCode, errorCodeStatisticsEntity.errorType, errorCodeStatisticsEntity.totalRecords.sum().as("count"))
+            .from(errorCodeStatisticsEntity);
+
+        applyFilterToJpaQuery(catOrganizationId, catReporterIndustryMemberId, dateTypeEnum, date, productTypeEnum, perspectiveEnum,
+            errorCodeCountsColumnNameEnumFilterList, filterTypeEnumList, compareTypeEnumList, filterValueList, jpaQuery, errorCodeStatisticsEntity);
+
+        jpaQuery.groupBy(dateField, errorCodeStatisticsEntity.catReporterIndustryMemberId, errorCodeStatisticsEntity.catSubmitterId,
+            errorCodeStatisticsEntity.errorCode, errorCodeStatisticsEntity.errorType);
+
+        if (CollectionUtils.isNotEmpty(errorCodeCountsColumnNameEnumSortList) && CollectionUtils.isNotEmpty(sortTypeEnumList))
+        {
+            applyColumnSortToJpaQuery(errorCodeCountsColumnNameEnumSortList, sortTypeEnumList, jpaQuery, errorCodeStatisticsEntity, dateTypeEnum);
+        }
+        // startRow is null for lastRow calculation to avoid adding sort clause for lastRow query. From request, start row can never be null
+        else if (!Objects.isNull(startRow))
+        {
+            //default sort
+            jpaQuery.orderBy(errorCodeStatisticsEntity.catReporterIndustryMemberId.asc(), errorCodeStatisticsEntity.catSubmitterId.asc(),
+                errorCodeStatisticsEntity.errorCode.asc());
+        }
+
+        //Pagination
+        if (endRow >= 0)
+        {
+            jpaQuery.limit(endRow - startRow + 1);
+            jpaQuery.offset(startRow);
+        }
+        return jpaQuery;
+    }
+
+    /**
+     * Method that applies filters(where clause) to the jpaQuery
+     *
+     * @param catOrganizationId the cat organization id of logged-in user
+     * @param catReporterIndustryMemberId the cat reporter imid
+     * @param dateTypeEnum the date type enum : ProcessingDate or TradeDate
+     * @param date the date for which the records need to be fetched
+     * @param productTypeEnum the product type enum : OPTIONS, EQUITIES or ALL
+     * @param perspectiveEnum the perspective : REPORTER, SUBMITTER, TRADE_DATE or ALL
+     * @param errorCodeCountsColumnNameEnumFilterList the list of errorCodeCountsColumnName for filter
+     * @param filterTypeEnumList the list of filter type enum
+     * @param compareTypeEnumList the list of compare type enum
+     * @param filterValueList the list of filter values
+     * @param jpaQuery the jpaQuery
+     * @param errorCodeStatisticsEntity QueryDsl query type for ErrorCodeStatisticsEntity
+     */
+    private void applyFilterToJpaQuery(Integer catOrganizationId, String catReporterIndustryMemberId, DateTypeEnum dateTypeEnum, String date,
+        ProductTypeEnum productTypeEnum, PerspectiveEnum perspectiveEnum, List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumFilterList,
+        List<FilterTypeEnum> filterTypeEnumList, List<CompareTypeEnum> compareTypeEnumList, List<Object> filterValueList, JPAQuery jpaQuery,
+        QErrorCodeStatisticsEntity errorCodeStatisticsEntity)
+    {
+        String catOrganizationIdString = String.valueOf(catOrganizationId);
+
+        switch (perspectiveEnum)
+        {
+            case ALL:
+                jpaQuery.where(errorCodeStatisticsEntity.catReporterOrganizationId.eq(catOrganizationIdString)
+                    .or(errorCodeStatisticsEntity.catSubmitterId.eq(catOrganizationIdString))
+                    .or(errorCodeStatisticsEntity.catThirdPartyId.eq(catOrganizationIdString)));
+                break;
+            case REPORTER:
+                jpaQuery.where(errorCodeStatisticsEntity.catReporterOrganizationId.eq(catOrganizationIdString));
+                break;
+            case SUBMITTER:
+                jpaQuery.where(errorCodeStatisticsEntity.catSubmitterId.eq(catOrganizationIdString));
+                break;
+            case THIRD_PARTY:
+                jpaQuery.where(errorCodeStatisticsEntity.catThirdPartyId.eq(catOrganizationIdString));
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("The perspective is not supported: %s", perspectiveEnum));
+        }
+
+        if (StringUtils.isNotBlank(catReporterIndustryMemberId))
+        {
+            jpaQuery.where(errorCodeStatisticsEntity.catReporterIndustryMemberId.eq(catReporterIndustryMemberId));
+        }
+
+        if (Objects.equals(dateTypeEnum, DateTypeEnum.PROCESSING_DATE))
+        {
+            jpaQuery.where(errorCodeStatisticsEntity.catProcessingDate.eq(CatddDateUtils.getDateFromStringYYYYMMDD(date)));
+        }
+        else
+        {
+            jpaQuery.where(errorCodeStatisticsEntity.tradeDate.eq(CatddDateUtils.getDateFromStringYYYYMMDD(date)));
+        }
+
+        if (!Objects.equals(productTypeEnum, ProductTypeEnum.ALL))
+        {
+            jpaQuery.where(errorCodeStatisticsEntity.productType.eq(productTypeEnum.getUiValue()));
+        }
+
+        if (CollectionUtils.isNotEmpty(errorCodeCountsColumnNameEnumFilterList) && CollectionUtils.isNotEmpty(filterTypeEnumList) &&
+            CollectionUtils.isNotEmpty(compareTypeEnumList) && CollectionUtils.isNotEmpty(filterValueList))
+        {
+            applyColumnFiltersToJpaQuery(errorCodeCountsColumnNameEnumFilterList, filterValueList, jpaQuery, errorCodeStatisticsEntity, dateTypeEnum);
+        }
+    }
+
+    /**
+     * Method that applies Column filters to JpaQuery
+     *
+     * @param errorCodeCountsColumnNameEnumFilterList the list of errorCodeCountsColumnNameEnum for filter
+     * @param filterValueList the list of filter values
+     * @param jpaQuery the JpaQuery
+     * @param errorCodeStatisticsEntity QueryDsl query type for ErrorCodeStatisticsEntity
+     * @param dateTypeEnum the dateTypeEnum : ProcessingDate or TradeDate
+     */
+    private void applyColumnFiltersToJpaQuery(List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumFilterList, List<Object> filterValueList,
+        JPAQuery jpaQuery, QErrorCodeStatisticsEntity errorCodeStatisticsEntity, DateTypeEnum dateTypeEnum)
+    {
+        int index = 0;
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : errorCodeCountsColumnNameEnumFilterList)
+        {
+            checkIfUnsupportedColumn(errorCodeCountsColumnNameEnum);
+            Path filterColumn = getPath(errorCodeCountsColumnNameEnum, errorCodeStatisticsEntity, dateTypeEnum);
+            jpaQuery.where(Objects.equals(errorCodeCountsColumnNameEnum, ErrorCodeCountsColumnNameEnum.DATE) ?
+                ((DateTimePath) filterColumn).eq(filterValueList.get(index)) :
+                ((StringPath) filterColumn).eq(filterValueList.get(index).toString()));
+            index++;
+        }
+    }
+
+    /**
+     * Method that applies Column Sort to JpaQuery
+     *
+     * @param errorCodeCountsColumnNameEnumSortList the list of errorCodeCountsColumnNameEnum for sort
+     * @param sortTypeEnumList the list of sort types
+     * @param jpaQuery the JpaQuery
+     * @param errorCodeStatisticsEntity QueryDsl query type for ErrorCodeStatisticsEntity
+     * @param dateTypeEnum the dateTypeEnum : ProcessingDate or TradeDate
+     */
+    private void applyColumnSortToJpaQuery(List<ErrorCodeCountsColumnNameEnum> errorCodeCountsColumnNameEnumSortList, List<SortTypeEnum> sortTypeEnumList,
+        JPAQuery jpaQuery, QErrorCodeStatisticsEntity errorCodeStatisticsEntity, DateTypeEnum dateTypeEnum)
+    {
+        int index = 0;
+        OrderSpecifier[] orderSpecifier = new OrderSpecifier[sortTypeEnumList.size()];
+        for (ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum : errorCodeCountsColumnNameEnumSortList)
+        {
+            checkIfUnsupportedColumn(errorCodeCountsColumnNameEnum);
+            Path sortColumn = getPath(errorCodeCountsColumnNameEnum, errorCodeStatisticsEntity, dateTypeEnum);
+            if (Objects.equals(errorCodeCountsColumnNameEnum, ErrorCodeCountsColumnNameEnum.DATE))
+            {
+                orderSpecifier[index] = Objects.equals(sortTypeEnumList.get(index), SortTypeEnum.ASCENDING) ? ((DateTimePath) sortColumn).asc() :
+                    ((DateTimePath) sortColumn).desc();
+            }
+            else
+            {
+                orderSpecifier[index] = Objects.equals(sortTypeEnumList.get(index), SortTypeEnum.ASCENDING) ? ((StringPath) sortColumn).asc() :
+                    ((StringPath) sortColumn).desc();
+            }
+            index++;
+        }
+        jpaQuery.orderBy(orderSpecifier);
+    }
+
+    /**
+     * Method that uses Reflection API to get the path expression. Paths refer to variables, properties and collection members access.
+     *
+     * @param errorCodeCountsColumnNameEnum the error code counts column name enum
+     * @param errorCodeStatisticsEntity QueryDsl query type for ErrorCodeStatisticsEntity
+     * @param dateTypeEnum  the dateTypeEnum : ProcessingDate or TradeDate
+     *
+     * @return the path
+     */
+    private Path getPath(ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum, QErrorCodeStatisticsEntity errorCodeStatisticsEntity,
+        DateTypeEnum dateTypeEnum)
+    {
+        Path fieldPath;
+        try
+        {
+            Field field;
+            if (Objects.equals(errorCodeCountsColumnNameEnum, ErrorCodeCountsColumnNameEnum.DATE))
+            {
+                field = Objects.equals(dateTypeEnum, DateTypeEnum.PROCESSING_DATE) ?
+                    QErrorCodeStatisticsEntity.class.getDeclaredField("processingDate") :
+                    QErrorCodeStatisticsEntity.class.getDeclaredField("tradeDate");
+            }
+            else
+            {
+                field = QErrorCodeStatisticsEntity.class.getDeclaredField(errorCodeCountsColumnNameEnum.getValue());
+            }
+            fieldPath = (Path) field.get(errorCodeStatisticsEntity);
+        }
+        catch (NoSuchFieldException | IllegalAccessException exception)
+        {
+            LOGGER.error(exception);
+            throw new CatddRuntimeException(exception);
+        }
+        return fieldPath;
+    }
+
+    /**
+     * Method that checks if unsupported columns are used for filter and sort
+     *
+     * @param errorCodeCountsColumnNameEnum the error code counts column name enum
+     */
+    private void checkIfUnsupportedColumn(ErrorCodeCountsColumnNameEnum errorCodeCountsColumnNameEnum)
+    {
+        if (UNSUPPORTED_COLUMNS_ERROR_CODE_COUNT.stream().anyMatch(errorCodeCountsColumnNameEnum::equals))
+        {
+            throw new IllegalArgumentException(String.format(CatddConstants.COLUMN_SORT_FILTER_NOT_SUPPORTED, errorCodeCountsColumnNameEnum.getUiValue()));
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------------------------------------------
+https://github.com/querydsl/querydsl/issues/2504
+https://groups.google.com/forum/#!topic/querydsl/WH582YIY98I
+-----------------------------------------------------------------------------------------------------------------------------
+    @Test
+    public void testGetErrorCodeCounts_errorReasonNotFound_throwException()
+    {
+        ErrorCodeCountsRequest errorCodeCountsRequest =
+            getErrorCodeCountsRequest(DATE, DATE_TYPE_PROCESSING, PRODUCT_TYPE_OPTIONS, ORG_ID, REPORTER_PERSPECTIVE, null);
+        ErrorCodeCountsPostRequest errorCodeCountsPostRequest = getErrorCodeCountsPostRequest(START_ROW, END_ROW, null, null, errorCodeCountsRequest);
+
+        List<Object[]> errorRecordStatisticsTupleList = new ArrayList<>();
+        errorRecordStatisticsTupleList.add(new Object[] {CatddDateUtils.getDateFromStringYYYYMMDD("2019-01-01"), "IMID", ORG_ID.toString(), "1311", "RPR", 61});
+
+        when(latestDateHelper.getEventDate(any(), any(DateTypeEnum.class))).thenReturn(DATE);
+        when(perspectiveHelper.getPerspectiveEnumTemp(anyString())).thenReturn(PerspectiveEnum.REPORTER);
+        when(errorCodeCountsDao
+            .getErrorCodeStatistics(catOrganizationIdCaptor.capture(), catOrganizationImidCaptor.capture(), dateTypeEnumCaptor.capture(), dateCaptor.capture(),
+                productTypeEnumCaptor.capture(), perspectiveEnumCaptor.capture(), startRowCaptor.capture(), endRowCaptor.capture(),
+                columnNameEnumArgumentCaptorFilter.capture(), filterTypeEnumArgumentCaptor.capture(), compareTypeEnumArgumentCaptor.capture(),
+                filterValueListArgumentCaptor.capture(), columnNameEnumArgumentCaptorSort.capture(), sortTypeEnumArgumentCaptor.capture(), isNull(), isNull(),
+                isNull())).thenReturn(errorRecordStatisticsTupleList);
+        when(errorCodeLookupRepository.getErrorCodeLookupMap()).thenReturn(new HashMap<Integer, String>()
+        {{
+            put(2001, "Some error description");
+            put(2009, "Some other error description");
+        }});
+
+        Exception thrown = assertThrows(CatddRuntimeException.class, () -> errorCodeCountsService.getErrorCodeCounts(errorCodeCountsPostRequest, null, false));
+
+        assertEquals(String.format("Error reason not found for error code \"%s\" in error code lookup table", "1311"), thrown.getMessage());
+        assertEquals(ORG_ID, catOrganizationIdCaptor.getValue());
+        assertEquals(null, catOrganizationImidCaptor.getValue());
+        assertEquals(DateTypeEnum.PROCESSING_DATE, dateTypeEnumCaptor.getValue());
+        assertEquals(DATE, dateCaptor.getValue());
+        assertEquals(ProductTypeEnum.OPTIONS, productTypeEnumCaptor.getValue());
+        assertEquals(PerspectiveEnum.REPORTER, perspectiveEnumCaptor.getValue());
+        assertEquals(START_ROW, startRowCaptor.getValue());
+        assertEquals(END_ROW, endRowCaptor.getValue());
+        assertEquals(Collections.EMPTY_LIST, columnNameEnumArgumentCaptorFilter.getValue());
+        assertEquals(Collections.EMPTY_LIST, filterTypeEnumArgumentCaptor.getValue());
+        assertEquals(Collections.EMPTY_LIST, compareTypeEnumArgumentCaptor.getValue());
+        assertEquals(Collections.EMPTY_LIST, filterValueListArgumentCaptor.getValue());
+        assertEquals(Collections.EMPTY_LIST, columnNameEnumArgumentCaptorSort.getValue());
+        assertEquals(Collections.EMPTY_LIST, sortTypeEnumArgumentCaptor.getValue());
+
+        verify(latestDateHelper).getEventDate(any(), any(DateTypeEnum.class));
+        verify(perspectiveHelper).getPerspectiveEnumTemp(anyString());
+        verify(errorCodeLookupRepository).getErrorCodeLookupMap();
+        verify(errorCodeCountsDao)
+            .getErrorCodeStatistics(anyInt(), any(), any(DateTypeEnum.class), anyString(), any(ProductTypeEnum.class), any(PerspectiveEnum.class), anyInt(),
+                anyInt(), any(), any(), any(), any(), any(), any(), isNull(), isNull(), isNull());
+    }
+    

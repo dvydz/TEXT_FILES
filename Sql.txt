@@ -55,3 +55,9 @@
 
 33. show timezone
 	SET TIME ZONE 'America/New_York';
+
+34. The EXISTS operator is used to test for existence of rows in a subquery. (vs NOT EXISTS)
+	SELECT column_1 FROM table_1 WHERE EXISTS( SELECT 1 FROM table_2 WHERE column_2 = table_1.column_1);
+
+35. Like for integer column:
+	SELECT * FROM catco_owner.err_rec_info where CAST(err_roe_id as TEXT) LIKE '5000000000001%';

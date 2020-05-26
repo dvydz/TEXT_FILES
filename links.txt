@@ -145,6 +145,14 @@ https://stackoverflow.com/questions/43028457/spring-jpa-specification-with-sort
 https://www.baeldung.com/spring-data-sorting
 https://www.baeldung.com/jpa-hibernate-persistence-context
 https://www.javainuse.com/spring/boot_security_csrf
+https://mkyong.com/java8/java-8-collectors-groupingby-and-mapping-example/
+https://www.youtube.com/watch?v=UcPuWY0wn3w
+https://www.edureka.co/blog/interview-questions/java-interview-questions/
+https://riptutorial.com/java/example/2746/enum-polymorphism-pattern
+http://www.newthinktank.com/2012/09/java-reflection-video-tutorial/
+https://www.petrikainulainen.net/programming/spring-framework/spring-data-jpa-tutorial-part-five-querydsl/
+https://ajayiyengar.com/2017/12/14/sorting-a-list-in-java-with-null-values/
+https://medium.com/@lonell.liburd/chaining-comparators-and-sorting-in-java-498b8e1e34a8
 ------------------------------------------------------------------------------------------------------
 Finra:
 https://wiki.finra.org/display/RAS/Splunk+Sidecar

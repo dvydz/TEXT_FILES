@@ -1,0 +1,467 @@
+---------------------------------------------
+-- select prcsg_dt based count
+-- 12.01 sec (prior to upgrade)
+-- 3.48 sec  (after upgrade)
+---------------------------------------------
+select prcsg_dt,count(1) from catco_owner.err_rec_info group by prcsg_dt
+prcsg_dt	count
+2020-02-21	1156644
+2020-02-24	833352
+2020-02-25	876952
+2020-02-26	1536361
+2020-02-27	1339330
+2020-02-28	865438
+2020-03-02	1231513
+2020-03-03	860529
+2020-03-04	2360944
+2020-03-05	1511882
+2020-03-06	1958044
+2020-03-09	2112461
+2020-03-10	1093239
+2020-03-11	3011665
+2020-03-12	3360868
+2020-03-13	1981990
+2020-03-16	3207362
+2020-03-17	2882198
+2020-03-18	3143526
+2020-03-19	3469852
+2020-03-20	1312880
+2020-03-23	652743
+2020-03-24	1574895
+2020-03-25	2046094
+2020-03-26	1823268
+2020-03-27	1055028
+
+---------------------------------------------
+--12 sec  (prior to upgrade)
+--3.59 sec (after upgrade)
+---------------------------------------------
+select trd_dt,count(1) from catco_owner.err_rec_info group by trd_dt
+
+
+---------------------------------------------
+--13.47 sec  2891 recs  (prior to upgrade)
+--2.9 sec  (after upgrade)
+---------------------------------------------
+select prcsg_dt,cat_rprtr_org_id,count(1) from catco_owner.err_rec_info group by prcsg_dt,cat_rprtr_org_id
+
+
+--***************************************************************
+--TEST 1
+------------
+--reporter summary
+-- for 2020-02-21	8209	511408
+-- 18.24 sec  (prior to upgrade)
+--3.35 sec (after upgrade)
+--60 records
+---------------------
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.prcsg_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U' AND L1.err_cd IS NOT NULL AND COALESCE(Q1.cnt1,0) = 1 AND pnd.err_roe_id IS NULL THEN 'Y'
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             erc.err_cd err_cd
+      FROM catco_owner.err_rec_info eri
+        JOIN catco_owner.err_rec_cd erc
+          ON (eri.err_roe_id = erc.err_roe_id
+         AND eri.cat_rprtr_org_id = 8209
+         AND eri.prcsg_dt = '2020-02-21'::date)
+        LEFT JOIN (SELECT eri.err_roe_id roeid,
+                          COUNT(1) cnt1
+                   FROM catco_owner.err_rec_info eri
+                     JOIN catco_owner.err_rec_cd erc
+                       ON (eri.err_roe_id = erc.err_roe_id
+                      AND eri.cat_rprtr_org_id = 8209
+                      AND eri.prcsg_dt = '2020-02-21'::date
+                      AND eri.rprd_st = 'U')
+                   GROUP BY eri.err_roe_id) Q1 ON (Q1.roeid = eri.err_roe_id)
+        LEFT JOIN catdd_owner.err_cd_lk L1
+               ON (L1.err_cd = erc.err_cd
+              AND L1.grp_rpr_elgbl = 'Y')
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd 
+
+
+---------------------------------------------
+-- AFTER grp rprbl flag from info table
+---4.04 sec (prior to upgrade)
+--1.9 sec (after upgrade)
+--46 records
+---------------------------------------------
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.prcsg_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U'  AND pnd.err_roe_id IS NULL AND eri.grp_rpr_elgbl = 'Y' THEN 'Y'  --- additional AND condition of grp_rpr_fl from source..now ignored to get some counts
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             erc.err_cd err_cd
+      FROM catco_owner.err_rec_info eri
+        JOIN catco_owner.err_rec_cd erc
+          ON (eri.err_roe_id = erc.err_roe_id
+         AND eri.cat_rprtr_org_id = 8209
+         AND eri.prcsg_dt = '2020-02-21'::date)
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd
+
+		 
+---------------------------------------------
+--AFTER re-writing the query
+-- 3.82 sec  (prior to upgrade)
+--2.8 sec (after upgrade)
+ --46 recs
+---------------------------------------------
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.prcsg_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U'  AND pnd.err_roe_id IS NULL AND eri.grp_rpr_elgbl = 'Y' THEN 'Y' --- additional AND condition of grp_rpr_fl from source..now ignored to get some counts
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             trim (unnest(regexp_split_to_array(eri.err_list, ',')))::int err_cd
+      FROM catco_owner.err_rec_info eri
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)
+                             WHERE eri.cat_rprtr_org_id = 8209
+         AND eri.prcsg_dt = '2020-02-21'::date) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+ GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd
+		 
+		 
+		 
+-- ******************************************************************
+-- TEST 2		 
+---------------------------------------------
+--13.7 sec  4258 recs  (prior to upgrade)
+--3.73 sec (after upgrade)
+---------------------------------------------
+select trd_dt,cat_rprtr_org_id,count(1) from catco_owner.err_rec_info group by trd_dt,cat_rprtr_org_id
+
+
+
+-----------------------------
+--reporter summary with trd_dt
+-- 2020-03-11	816	390763
+-- 30.65 sec
+-- 12.15 sec
+--13 recs
+-----------------------------		 
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.trd_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U' AND L1.err_cd IS NOT NULL AND COALESCE(Q1.cnt1,0) = 1 AND pnd.err_roe_id IS NULL THEN 'Y'
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             erc.err_cd err_cd
+      FROM catco_owner.err_rec_info eri
+        JOIN catco_owner.err_rec_cd erc
+          ON (eri.err_roe_id = erc.err_roe_id
+         AND eri.cat_rprtr_org_id = 816
+         AND eri.trd_dt = '2020-03-11'::date)
+        LEFT JOIN (SELECT eri.err_roe_id roeid,
+                          COUNT(1) cnt1
+                   FROM catco_owner.err_rec_info eri
+                     JOIN catco_owner.err_rec_cd erc
+                       ON (eri.err_roe_id = erc.err_roe_id
+                      AND eri.cat_rprtr_org_id = 816
+                      AND eri.trd_dt = '2020-03-11'::date
+                      AND eri.rprd_st = 'U')
+                   GROUP BY eri.err_roe_id) Q1 ON (Q1.roeid = eri.err_roe_id)
+        LEFT JOIN catdd_owner.err_cd_lk L1
+               ON (L1.err_cd = erc.err_cd
+              AND L1.grp_rpr_elgbl = 'Y')
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd
+		 
+		 
+		 
+		 
+---------------------------------------------
+-- When the Flag is populated
+-- 17.26 sec  (prior to upgrade)
+-- 7.41.sec (after upgrade)
+--10 rec
+---------------------------------------------
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.trd_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U'  AND pnd.err_roe_id IS NULL  AND eri.grp_rpr_elgbl = 'Y' THEN 'Y' --- additional AND condition of grp_rpr_fl from source..now ignored to get some counts
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             erc.err_cd err_cd
+      FROM catco_owner.err_rec_info eri
+        JOIN catco_owner.err_rec_cd erc
+          ON (eri.err_roe_id = erc.err_roe_id
+         AND eri.cat_rprtr_org_id = 816
+         AND eri.trd_dt = '2020-03-11'::date)
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd		 
+		 
+		 
+---------------------------------------------
+-- After re-writing the query
+--2.43sec  (prior to upgrade)
+--1.71sec (after upgrade)
+--10 rec
+---------------------------------------------
+SELECT DATE,
+       abc.cat_rprtr_imid catImid,
+       abc.cat_sbmtr_id catSubmitterId,
+       abc.rprd_smry repairedStatus,
+       abc.grp_rpr_fl groupRepairFlag,
+       abc.err_type errorType,
+       abc.err_cd errorCode,
+       l2.err_ds errorReason,
+       abc.rpr_type_cd repairedType,
+       COUNT(*) errorCount
+FROM (SELECT eri.trd_dt DATE,
+             eri.err_roe_id err_roe_id,
+             eri.cat_rprtr_org_id cat_rprtr_org_id,
+             eri.cat_rprtr_imid cat_rprtr_imid,
+             eri.cat_sbmtr_id cat_sbmtr_id,
+             eri.prdct_type prdct_type,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'R'
+               WHEN eri.rprd_st = 'U' AND pnd.err_roe_id IS NULL THEN 'U'
+               ELSE pnd.rprd_st
+             END AS rprd_smry,
+             CASE
+               WHEN eri.rprd_st = 'R' THEN 'N'
+               WHEN eri.rprd_st = 'U'  AND pnd.err_roe_id IS NULL AND eri.grp_rpr_elgbl = 'Y' THEN 'Y' --- additional AND condition of grp_rpr_fl from source..now ignored to get some counts
+               ELSE 'N'
+             END AS grp_rpr_fl,
+             eri.err_type err_type,
+             eri.rpr_type_cd rpr_type_cd,
+             trim (unnest(regexp_split_to_array(eri.err_list, ',')))::int err_cd
+      FROM catco_owner.err_rec_info eri
+        LEFT JOIN (SELECT err_roe_id,
+                          MAX(rprd_st) AS rprd_st
+                   FROM catdd_owner.pndng_rec
+                   WHERE err_roe_id IS NOT NULL
+                   GROUP BY err_roe_id) pnd ON (eri.err_roe_id = pnd.err_roe_id)
+                             WHERE eri.cat_rprtr_org_id = 816
+         AND eri.trd_dt = '2020-03-11'::date) ABC
+  JOIN catdd_owner.err_cd_lk L2 ON (L2.err_cd = ABC.err_cd)
+ GROUP BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd,
+         L2.err_ds,
+         abc.rpr_type_cd
+ORDER BY DATE,
+         abc.cat_rprtr_imid,
+         abc.cat_sbmtr_id,
+         abc.rprd_smry,
+         abc.grp_rpr_fl,
+         abc.err_type,
+         abc.err_cd

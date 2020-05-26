@@ -1,0 +1,232 @@
+ErrorSearch Post request : All filters applied
+{
+  "startRow": 0,
+  "endRow": -1,
+   "filterModel": {
+   		"errorRoeId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"firmRoeId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"errorCode": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"errorReason": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"errorType": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"repairedStatus": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"catReporterOrganizationId": {
+			   "filterType": "number",
+			   "type": "equals",
+			   "filter": 79
+		   },
+		"catReporterIndustryMemberId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"catSubmitterId": {
+			   "filterType": "number",
+			   "type": "equals",
+			   "filter": 79
+		   },
+		"orderId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"orderKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"tradeId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "null"
+		   },
+		"tradeKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"fulfillmentId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"fulfillmentKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"quoteId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"quoteKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"symbol": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"optionId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"eventType": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"eventTimestamp": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"seqNum": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"quantity": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"senderImid": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"receiverImid": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"destination": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"routedOrderId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"session": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"tapeTradeId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"parentOrderId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"parentOrderKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorOrderId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorOrderKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorFulfillmentId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorFillKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorQuoteId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"priorQuoteKeyDate": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"repairedTimestamp": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"repairedBy": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"repairedType": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"correctionDue": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   },
+		"fileName": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2018"
+		   }
+  },
+  "sortModel": [
+   ],
+  "errorSearch" : {
+        "date": "2020-05-23",
+        "dateType": "TradeDate",
+        "productType": null,
+        "catOrganizationId": 79,
+        "catSubmitterId": 79,
+        "catReporterIndustryMemberId": null,
+        "perspective": "ALL",
+        "errorCode": null,
+        "groupRepairEligible": null,
+        "repairedStatus": null,
+        "errorType": null
+  }
+}
