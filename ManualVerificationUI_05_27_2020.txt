@@ -1,0 +1,32 @@
+Manual QA verification for multiple screens in UI:
+
+Report to CAT : Download Feedback
+1. Look and feel : Headers OK, Columns OK, icons OK
+2. Functionality : 1. Default Sorted by feedback time desc. Sort/Filter OK
+				   2. Download : csv OK, bz2 OK, json OK, success file empty OK   
+					(Verify json are valid for feedback download ? **** We dont check for file name)
+				   3. No export
+				   
+Report to CAT : Pending Submissions
+1. Look and feel : Headers OK, Columns OK, icons OK
+2. Functionality : 1. Sort/Filter OK
+				   2. Export OK
+				   3. Submission OK, Download OK
+				   
+				   
+OSO Relationships/ATS : 
+1. Look and feel : Tables OK, Add relationship: Third-party dropdown name is cut-off just a little on the bottom
+												And the date selection icon is not aligned properly
+2. Functionality : Sort/Filter OK
+				   Export OK
+				   Add/Edit OK
+
+
+
+
+For export files: Server side vs Client side is not consistent
+1. Headers like created by and created on are separated by an empty line in client side export, while in Server side they are right on the next line. Plus, some of the headers are not included.
+2. After headers, there is a 3 lines gap between the actual data and headers while in server side there is two lines.
+3. In Client side export the file name doesn't have underscore between the name and date.
+
+			

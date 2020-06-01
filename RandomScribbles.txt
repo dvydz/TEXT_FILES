@@ -1,6 +1,115 @@
 Things to-do:
 1. Fix the filterType. String value can be of type number and so on.
 2. StartRow and endrow can be negative as of now for error screens(except error code counts). Fix that **** Create minor bug ticket
+--------------------------------
+Ag-grid testing:
+
+Not use ag-grid:
+1. Reporting summary
+2. event type counts
+3. Create cat eventSourc
+4. File upload
+
+Test in firefox:
+-----------------------------------
+
+Ingestion -> Event Stats
+
+Intrafirm -> Linkage 
+
+File -> Ack, Integri
+
+
+		{
+	      "colId": "catReporterIndustryMemberId",
+	      "sort": "asc"
+	    },
+	     {
+	      "colId": "errorCode",
+	      "sort": "asc"
+	    }
+
+
+
+	"catSubmitterId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "90012"
+		   },
+   		"catReporterIndustryMemberId": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "JPMS"
+		   },
+		"errorCode": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "2150"
+		   },
+		"errorType": {
+			   "filterType": "text",
+			   "type": "equals",
+			   "filter": "REJECTION"
+		   },
+	   	"date": {
+		   "filterType": "date",
+		   "type": "equals",
+		   "filter": "2020-05-11"
+	   }
+	   
+	   
+	   
+	   
+	   
+	   [
+		{
+	      "colId": "date",
+	      "sort": "asc"
+		},
+		{
+	      "colId": "catReporterIndustryMemberId",
+	      "sort": "desc"
+		},
+		{
+	      "colId": "catSubmitterId",
+	      "sort": "desc"
+		},
+		{
+	      "colId": "errorCode",
+	      "sort": "desc"
+		},
+		{
+	      "colId": "errorType",
+	      "sort": "desc"
+		},
+		{
+	      "colId": "errorCount",
+	      "sort": "desc"
+		}
+	]
+	
+	
+	
+	{
+		"statusCode": 400,
+		"statusDescription": "Bad Request",
+		"message": "The column \"Error Reason\" is not supported for sort.",
+		"messageDetails": []
+	}
+	
+
+	{
+		"statusCode": 400,
+		"statusDescription": "Bad Request",
+		"message": "The column \"Error Reason\" is not supported for filter.; nested exception is java.lang.IllegalArgumentException: The column \"Error Reason\" is not supported for filter.",
+		"messageDetails": [
+			"The column \"Error Reason\" is not supported for filter."
+		]
+	}
+	
+
+
+
 
 ------------------------------------------------------------------
 05/20/2020

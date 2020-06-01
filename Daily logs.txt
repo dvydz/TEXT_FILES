@@ -1,3 +1,16 @@
+05-28-2020
+1. HotSwap : from edit configuration, use On 'Update' action : 'Update Classes and resources' to automatically load new updates. 
+	So that we dont have to restart the application everytime. For Server : example Tomcat Server.
+2. Responsive UI : Bootstrap (from twitter)
+3. Git -> https://davidson.chaudhary@bitbucket.com/....../.... if sometimes the clone doesn't work
+4. Canary -> AGS level Health Check
+5. MessageDigest hashSum = MessageDigest.getInstance("SHA-256");
+   hashSum.update(new byte[total]);
+   bytes[] messageDigest = hashSum.digest();
+
+   byte[] bytes = record.getBytes("UTF-8");
+
+------------------------------------------------------------
 05-20-2020:
 Online Course: CodeBashing: Java Security Fundamentals:
 1. Encoding is a technique to transform data from one form to another, e.g. from binary to hexadecimal, from hexadecimal to ASCII, 
@@ -231,6 +244,7 @@ Online Course: CodeBashing: Java Security Fundamentals:
 				password = "portalimuser12314!";
 			}
 	Catdd.properties : appEnv=qa
+	Also, change DatabaseUtils and set the password same as HibernateUtil if using catco
 2. SRG : Outer facing url. We can access from anywhere. It internally calls Private line(internal-finra).
    Private link(Aws private link) is for some specific ISP like centuryLink. 
 3. We have similar functions for Multiple classes, use Polymorphism. 
