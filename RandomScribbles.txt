@@ -1,6 +1,349 @@
+----------------------------------------------------------------
 Things to-do:
 1. Fix the filterType. String value can be of type number and so on.
 2. StartRow and endrow can be negative as of now for error screens(except error code counts). Fix that **** Create minor bug ticket
+3. Filter Type, add a check for Type enum.
+------------------------------------------------------
+07-30-2020
+Automation CAIS Add:
+1. Don't like the validation on CAIS for dates. Repetetive
+2. Effective date message wrong     "message": "The field \"effectiveDate\" 2020-07-29 must be greater than or equal to the current date",
+	When in fact the current date is allowed
+----------------------------------------------------------------
+07-27-2020 release :
+1. application.yml review ***
+2. add the fip pipeline as the very first step in the VID ***
+3. update the release/2.0.0 in f3 for build numbers ***
+
+Steps:
+1. Update config files ***
+
+----------------------------------------------------------------
+on for qa-int, and off for qa REPORT CARD FEATURE
+
+Interfirm Linkage :
+1. What db to read from ? *** catco database. We have same table in catdd db only for testing purpose
+2. getStatisticsDetail refactor? why need to set = 0 and all ? Himanshu *** Its ok
+3. Get one resultset for Interfirm and filter by subtype? *** Sure
+4. Do we show null catReporterImid ? *** Imid has not null constraint
+5. Add coverage for daily report card dao	***
+6. Add javadoc to cache repository	***
+7. Null if empty. Not 0s ???
+8. Ask himanshu why duplicate unit test in StatsImpl ?
+
+		linkerStatisticsInterFirmSentEntityList = new ArrayList<>();
+        linkerStatisticsInterFirmSentEntityList.add(new Object[]{"JPMS", 90012L, "ERROR", "KEY DUPE", 105L, false, 0L, "E"});
+        linkerStatisticsInterFirmSentEntityList.add(new Object[]{"JPMS", 90012L, "ATTEMPTED", "ATTEMPTED", 16L, true, 0L, "O"});
+        linkerStatisticsInterFirmSentEntityList.add(new Object[]{"JPMX", 90012L, "ERROR", "UNLINKED", 20L, true, 0L, "O"});
+        linkerStatisticsInterFirmSentEntityList.add(new Object[]{"JPMS", 90012L, "WARNING", "ACCEPTED WARNING", 31L, true, 0L, "O"});
+        linkerStatisticsInterFirmSentEntityList.add(new Object[]{"JPMX", 90012L, "WARNING", "REJECTED WARNING", 42L, true, 0L, "O"});
+		
+		
+		linkerStatisticsEntityList = new ArrayList<>();
+        linkerStatisticsEntityList.add(new Object[] {"JPMS1", 1L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS1", 1L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS2", 2L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS2", 2L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS2", 2L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS3", 3L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS3", 3L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS3", 3L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS3", 3L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS4", 4L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS4", 4L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS4", 4L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS4", 4L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS4", 4L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS5", 5L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM SENT"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+        linkerStatisticsEntityList.add(new Object[] {"JPMS6", 6L, "INTERFIRM RECEIVED"});
+--------------------------------
+IM Report card EXPORT:
+1. Export zip or csv ?	*** zip to be consistent with other APIs
+2. Export file name ? ***
+3. Api uri /reportcards/daily/files.zip correct? *** yes
+4. Do we select a month(period) and export daily report for that month ? if not provided latest period ? *** yes
+5. how we getting for a month ? how to calculate the last date ? ***
+			use Date.from(period.atDay(1).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()); ***
+6. SETUP A KICKOFF MEETING. ***
+7. Add a version to the query param ? *** Yes
+8. Should we move to catco dto package ? *** No its only for catco db, not catco schema in catdd db
+9. Make period mandatory ? ***
+10. Return 404 for empty
+
+Test cases:
+1. Invalid format YearMonth ? *** 400
+2. Required field not sent ? Every single field ? *** 400
+3. Empty Csv for month of may maybe ? Do we need the header atleast? *** Yes just headers for empty
+4. Response : for July only Equities ? ***
+5. Response : for August everything ? ***
+6. FeatureFlag ?	***
+7. Do we need to move this exportWriter into a different package ? currently in eventDaoHelper ? No ***
+8. valid filename ? ***
+
+
+Two comments:
+If just to validate the query param date, why append a date and then check it? why not use YearMonth from DateTime java 8 package ? ***
+Move produces to method level so that other methods don't have to use it. ***
+--------------------------------
+Preferences PATCH:
+1. Do we need a previousId column to keep track of old records if updated? ***No
+2. Enum for preference value ? Only JSON and CSV ? ***Choice lookup table created
+3. Preference name should it be used from db or accept anything ?	*** From table
+
+Steps:
+1. Create entities out of the request.
+	If found already exists : Find by checking orgId, preferenceName, activeFlag -> Update 
+	-> If preserve record : get existing one; set existing one activeFlag to false;  new entity save
+	-> If update directly : find existing, set values : save
+	
+	If not found : create an entity : save
+
+Scenarios:
+1. Pass multiple same preference name ? 400 *** What names should message contain ? ***->
+2. Invalid preference name ? 400	***->
+3. Invalid value ? 400	***	->
+4. Single update ? 200	***	->
+5. Multiple valid update ? json with values	***	->
+6. Preference name/value Null values ? 400 ***	->
+7. Empty request. Null request ?	***	->
+8. Constraint violated?
+9. DB has no records in name table ?	***-> 400 names not found
+10. DB has no records in choice table ? *** 400 if the choice is invalid for preferences that has some data. For some that don't have anthing. accept
+	any value *** ->
+11. DB has no records in preference table ? *** create one if name and choice table has it	->	***
+12. If no choices are available for any preferences, accept any values ?	***->
+13. localhost:8080/api/v1/preferences/organizations/7009 -> New org which has no preference setup. With update, save the object ?
+	{
+    "preferences":
+    [
+        {
+          "name": "namedFeedbackFileFormat2",
+          "value": "JSON"
+        },
+         {
+          "name": "namedFeedbackFileFormat",
+          "value": "CSV"
+        }
+    ]
+	}
+
+
+//                if (!preferenceNameEntityMap.values().stream().map(PreferenceNameEntity::getPreferenceName).collect(Collectors.toList()).stream()
+//                    .anyMatch(o -> Objects.equals(o, preferenceDetailRequest.getName())))
+//                {
+//                    hasValidPreferenceName = false;
+//                }
+
+        // check for npe
+//        if (updatedPreferenceEntityList.size() != preferenceUpdateRequest.getPreferences().size())
+//
+//        if (!hasValidPreferenceName)
+//        {
+//            List<String> preferenceNameList =
+//                preferenceUpdateRequest.getPreferences().stream().map(PreferenceDetailRequest::getName).collect(Collectors.toList());
+//            throw new ObjectNotFoundException(String.format(PREFERENCE_NAME_NOT_FOUND, StringUtils.join(preferenceNameList, ", ")));
+//        }
+        // change cache to 10 min
+//        if (!hasValidPreferenceValue)
+//        {
+//            List<String> preferenceValueList =
+//                preferenceUpdateRequest.getPreferences().stream().map(PreferenceDetailRequest::getValue).collect(Collectors.toList());
+//            throw new ObjectNotFoundException(String.format(INVALID_PREFERENCES_VALUES, StringUtils.join(preferenceValueList, ", ")));
+//        }
+
+--------------------------------
+
+Preferences GET:
+1. What is the expected behaviour if the api call has query params with preference names that do not belong to the org?
+2. Tests:
+	1. Isso Endpoint with no org Id or no query param should get all preferences for all the orgId.	
+	2. Ews endpoint : no names provided. Should fetch all the preferences for provided org	***	---
+					  valid names but not for provided org : Original Submission Format	*** ----
+					  One valid one invalid name : 404	*** ---
+					  One invalid, one valid but not set : 404	*** ---
+					  One valid set, and one valid but not set for org : One Original Submission Format, one valid	*** ---
+					  multiple valid	*** ---
+	3. Ews endpoint : for orgs that has no data. 
+					  no names provided : 	Get all the preference in lookup table with default value	*** ---
+					  names provided: Name is valid but no preferences set, give Original Submission Format	for provided name	*** ----
+					  Multiple names : Name is valid but no preferences set, give Original Submission Format for all names provided	*** ---
+					  with invalid names query param:  404	***---
+					  same names multiple times, only one response ? Only one	***---
+					  same names multiple times default, only one response ? Only one	***---
+3. check if cache is working ***
+4. Default value : Original Submission Format	***
+
+New tests:
+1. If three names passed, one is valid but not set, and if the supportDefaultValue=false, set it all as null except name.
+2. Audit info update. Set the whole thing as null for Default values.	***
+
+DB has records:
+1. localhost:8080/api/v1/preferences/organizations 											-> get all for all the orgs
+2. localhost:8080/api/v1/preferences/organizations?supportDefaultValue=true					-> 400
+3. localhost:8080/api/v1/preferences/organizations?names=namedFeedbackFileFormat			-> get the org associated with this name
+4. localhost:8080/api/v1/preferences/organizations?names=namedFeedbackFileFormat,			-> get the orgs associated with these names
+	namedFeedbackFileFormat3
+	
+	
+	
+DB has no records:														supportDefaultValue=false						supportDefaultValue=true
+1. localhost:8080/api/v1/preferences/organizations						Everything with null values								400
+2. localhost:8080/api/v1/preferences/organizations/79					Everything with null values					Everything with Default values
+3. /preferences/organizations/79?names=namedFeedbackFileFormat			get 1 with null values						
+4. /preferences/organizations/79?names=namedFeedbackFileFormat&supportDefaultValue=true																		
+	
+	
+	
+	* If No preferences set. But wanting to get the preferences, get default for everything in the table ?????
+	* If Preferences set 2, Should we get 2 set preferences and rest regular?
+	localhost:8080/api/v1/preferences/organizations/79/?supportDefaultValue=true
+	
+	------------------------- For ISSO, where supportDefaultValue=false
+	If names are NOT provided, empty list if preference table is empty.
+	If names are NOT provided, and only some are found, only return those, not the null for remaining ones.
+	
+	If names are provided, and nothing found null value for those ?
+	If names are provided, and only some are found -> Set found ones to actual value, but not found ones(which are passed) need to be null
+	
+	
+	localhost:8080/api/v1/preferences/organizations?supportDefaultValue=false&names=namedFeedbackFileFormat,namedFeedbackFileFormat2
+	namedFeedbackFileFormat is in the preference table. In this case, what should be returned ?
+	
+	Shouldn't be ews isso related. Should be flag related
+	
+	-------------------------
+
+2 cases for Default values:						
+							PreferenceName passed: 
+								entityList empty      :	getFromPreferenceNamesPassed
+								entityList with values: if equal continues automatically ELSE minus
+							
+							PreferenceName not passed: 
+									entityList empty      : getAllFromMap
+									entityList with values: continues automatically.
+							
+							
+----------------------------------------------------------------
+Repair Fields for LINKAGE errors on Error Corrections pages:
+
+As of 06/10/2020, CATCO updates err_rec_info table in catco_owner schema with the latest data for Ingestion Errors after it has been repaired. However, for Linkage Errors, the data in err_rec_info table never gets updated by CATCO after the repair. Thus, to be consistent and to have the up-to-date data we need a way to retrieve latest data for Linkage Errors.
+Database design : Added New Columns in pndng_rec : sbmtd_by, sbmtr_org_id, upld_ts
+
+Steps: (Data date: 05/20/2020, 05/21/2020)
+
+1. Error Search Screen → Repair an error → Record created in pndng_rec table with repairedStatus = 'P'. 
+2. Pending Events Screen → Submit the pending events → 
+	1. /events/submissions   API is called and pndng_rec  table is updated.   repairedStatus →  'S', submittedBy → 'Logged-in-user-id' and submitterOrgId -> 'logged-in-user-org-id'
+	2. A SQS message is sent → Lambda triggered
+                             → Lambda calls   /events/submissions/files  API
+                             → API generates and register files to DM.  pndng_rec  table is updated.  uploadTimestamp → 		
+							   'upload-completion-timestamp'
+                             → err_rec_info table is updated. Based on submissionId, the pending records are located and the repairType, 
+							   repairedBy, repairedTimestamp, repairOrgId and repairSource in err_rec_info is updated
+
+1. HardCode repairType to RPR if repairStatus is R, and repairSource to WEB in the API for Linker errors? ***
+2. Distinguish Linkage(LINKAGE) and ingestion(REJECTED) error based on errorCode or errorType column? *** errorType is fine but we dont 
+	need it not since we are updating the error record table directly, and errorRoeId will give exact records
+3. Doing in java code creates N+1 problem, need to do using join in the query or populate the catco table with details? ***Design discussion
+4. Columns to add to pending records table : uploadTimestamp and submitterOrgId and submittedBy? ***
+5. Verify if updtd_by in pending records table is the logged in user ?	*** Yes it is
+6. How does filter work on columns that populate from both error info and pending records table? Should we do it in the java code 
+	just like error code counts api? *** We populate err_rec_cd table so this isn't an issue anymore
+7. Update the name of different fields repair vs repaird. Verify and update?
+8. add feature flag to the API so that if in the future CATCO decides to populate the LINKER details in err_rec_info table, we will disable
+	the feature. We will however continue to populate the pending table. ***
+9. repairOrgId is it orgId or firstName+lastName? *** its the orgId
+10. Assume : Submitted 10 pending events which had 3 different IMIDs. 3 data files are created. Each data file is uploaded and registered 
+	separately so each file will have different uploadTimestamp. we can use the file_sbmsn_info_id to find the record in pending table then 
+	update the uploadTimestamp. Because if we use eventSubmissionId, all files will have same uploadTimestamp ??? *** Yep, just do batch update.
+11. Support export for newly added column filters.	***
+12. Populate filename column too in error rec info table.	***
+13. Enhance query. Consider index ???	***
+14. NPE check for errorRoeId And Check for new events.	***
+15. groupRepairEligible ???
+16. undo changes for renaming repaired -> repair ***
+
+          
+  if (rowsUpdatedErrorRecords == 0)
+            {
+                throw new ObjectNotFoundException(String.format("The error records for errorRoeId \"%s\" could not be updated.",
+                    pendingEventInfoList.stream().map(PendingEventInfo::getErrorRoeId).collect(Collectors.joining(", "))));
+            }
+
+When repairing an error, if the data has bad value(example starting with invalid character), the 400 is not handled in UI. Nothing happens.
+try correcting errorRoeId 4245713056757
+
+Things to verify:
+1. ErrorSearch API has added columns: rpr_type = 'RPR' and rpr_src = 'WEB'	***
+2. ErrorSummary API has rpr_type = 'RPR'	
+3. Export for both APIs. Sort and Filter on new Columns in error search	
+4. API flow, Check Pending Update + Error Update. ***
+5. Check if the Bulk update is done. ***
+6. Check for LINKAGE + ingestion(REJECTION) error records. Ingestion records should not be updated	***
+7. What about group repair and all? *** Nothing
+8. Check the code coverage. *** 92%
+
+.error(String.format("Unexpected error occurred. Only %d out of %d error records updated.", rowsUpdated, errorRoeIdsChunk.size()));
+            LOGGER.info(String.format("Updating Error records for eventSubmissionId \"%d\" for Linkage errors", eventSubmissionId));
+
+
+9. EventIdChunk check for 6, 4
+
+---------------------------------------------------------
+What happens In pending Submission API:
+1. Get the next available event submission id.
+	eventSubmissionDao.getNextAvailableEventSubmissionId()
+2. Submit the pending event in pending table.
+	eventSubmissionDao.submitEvents(...........) -> Based on filterModel and based on EventIds
+3. Group the events based on IMID to create files for similar imid
+	eventSubmissionDao.groupEventsOnReporterImids(eventSubmissionId);
+4. Get submission Id for data file.
+	eventSubmissionDao.getNextAvailableFileSubmissionId()
+5. Get submission Id for meta file.
+	eventSubmissionDao.getNextAvailableFileSubmissionId()
+6. Create file submission for meta file.
+	eventSubmissionDao.createFileSubmission(........)
+7. Use create data file submission using associated meta file submissionId.
+	eventSubmissionDao.createFileSubmission(........)
+8. Update the selected events with the data file name.
+	eventSubmissionDao.addEventsFileSubmissionId(......)
+--------------------------------------------------------------
+Update upload timestamp from upload start time to upload end time:
+
+1. UploadTimestamp: Update the herd attribute before setting status to valid.	***
+2. If upload error, set status to invalid.	***
+3. Remove submitTimestamp request param. Update api spec.	***
+4. Unit tests	***
+
+Run automation in QA environment:
+	HibernateUtil:			cfg.getProperties().setProperty("hibernate.connection.password", "DSF09ujlk9hlKK09upujm");
+	DDRequest: 	String password;
+				if (StringUtils.equals(user, "tst_catdd_d"))
+				{
+					password = "18!0}1N84Cp7P<%b{!\"yE5ry";
+				}
+				else if (StringUtils.equals(user, "tst_catdd_q"))
+				{
+					password = "xE2>$Dku48~l=n@4_oqSDI.A";
+				}
+				else
+				{
+					password = "portalimuser12314!";
+				}
+	DatabaseUtil:         String password = "DSF09ujlk9hlKK09upujm";
+	catdd.properties : dev
+
 --------------------------------
 Ag-grid testing:
 
@@ -606,7 +949,7 @@ FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, user
 
 FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:25, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:32, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=null), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
 FileStatusDetailOutput(catSubmitterId=79, catReporterIndustryMemberId=null, userId=k28172@nasd.corp, uploadedFileName=79__20170101_Pokemon_OrderEvents_000123.meta.json, pairedMetaDataFileName=null, upload=FileStatusUploadDetailOutput(timestamp=2020-02-05 19:49:25, method=WEB), acknowledgement=FileStatusTimeStampInfoOutput(timestamp=2020-02-05 19:49:32, fileStatus=Failure), integrity=FileStatusTimeStampInfoOutput(timestamp=null, fileStatus=Duplicate), ingestion=FileStatusIngestionDetailOutput(timestamp=null, processed=0, accepted=0, rejected=0))
-
+ 
 
 CASE WHEN D.ACKNOWLEDGE_RESULT = 'Success' 
  This is false for above records which is why it does not change to Timeout or Duplicate

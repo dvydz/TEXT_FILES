@@ -152,6 +152,13 @@ Extras:
 	to see a list of all the remote branches
 35. <git remote get-url origin>
 	to see the remote origin url
+36. <git reset --soft HEAD~1>
+	If commiteed unwanted code, we can use this command to undo the commit, then make changes accordingly.
+	Reset will rewind your current HEAD branch to the specified revision. In our example above, we'd like to return to the one before the current revision - effectively making our last commit undone. Note the --soft flag: this makes sure that the changes in undone revisions are preserved.
+37. <git reset --hard HEAD~1>
+	If you don't want to keep these changes, simply use the --hard flag
+
+
 ===================================================================================================================
 
 

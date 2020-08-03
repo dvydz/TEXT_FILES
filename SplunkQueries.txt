@@ -5,8 +5,9 @@ Reporter Portal API Application log messages:
 
 1. ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"   /planParticipants/familyRelationships NOT status
 	-> See the Request Payload
-2. ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"   (ERRORS OR EXCEPTIONS)
-	-> See if there are any errors or exceptions
+2. ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"   (ERROR OR EXCEPTION)
+	-> See if there are any error or exception
+3. index=web sourcetype=idgateway source=*/service.catdd_svc_ui_ews_c_*/*/rout* -> Shows the users that accessed it (UI as well)
 
 
 ---------------------------------------------------------------------------

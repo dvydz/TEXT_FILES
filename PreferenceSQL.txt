@@ -1,0 +1,179 @@
+CREATE SEQUENCE if not exists catdd_owner.prfnc_seq
+    INCREMENT 1
+    START 1000
+    MINVALUE 1000
+    MAXVALUE 9223372036854775807
+    CACHE 1;
+
+ALTER SEQUENCE catdd_owner.prfnc_seq
+	OWNER TO catdd_owner;
+
+COMMENT ON SEQUENCE catdd_owner.prfnc_seq
+    IS 'prfnc_seq id for each entry in table';
+
+GRANT SELECT ON SEQUENCE catdd_owner.prfnc_seq TO catdd_read_role;
+
+GRANT ALL ON SEQUENCE catdd_owner.prfnc_seq TO catdd_datafix_role;
+
+-------------------------------------------------------------------------------------------------
+
+CREATE TABLE if not exists catdd_owner.prfnc
+(
+    prfnc_id		bigint NOT NULL,
+    org_id			bigint,
+    user_id 		character varying(100),
+    prfnc_nm_id		smallint NOT NULL,
+    prfnc_value		character varying(100) NOT NULL,
+    actv_fl			boolean DEFAULT true,
+    crtd_ts			timestamptz NOT NULL,
+    crtd_by			character varying(50) NOT NULL,
+    updtd_ts		timestamptz NOT NULL,
+    updtd_by		character varying(50) NOT NULL
+);
+
+ALTER TABLE catdd_owner.prfnc 
+	OWNER to catdd_owner;
+
+ALTER TABLE catdd_owner.prfnc
+   ADD CONSTRAINT prfnc_pk
+   PRIMARY KEY (prfnc_id);
+   
+ALTER TABLE catdd_owner.prfnc
+  ADD CONSTRAINT prfnc_nm_id_prfnc_nm_lk FOREIGN KEY (prfnc_nm_id)
+  REFERENCES catdd_owner.prfnc_nm_lk (prfnc_nm_id)
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION;
+
+GRANT ALL ON TABLE catdd_owner.prfnc TO catdd_owner;
+GRANT INSERT, SELECT, UPDATE, DELETE ON TABLE catdd_owner.prfnc TO catdd_datafix_role;
+GRANT SELECT ON TABLE catdd_owner.prfnc TO catdd_read_role;
+
+-------------------------------------------------------------------------------------------------
+
+CREATE TABLE catdd_owner.prfnc_nm_lk
+(
+   prfnc_nm_id	  smallint       NOT NULL,
+   name		      varchar(100)   NOT NULL,
+   dscr		      varchar(500)   NOT NULL,
+   prfnc_ctgry	  varchar(50)    NOT NULL,
+   dflt_value	  varchar(100)   		 ,
+   crtd_ts        timestamptz    NOT NULL,
+   crtd_by        varchar(50)    NOT NULL,
+   updtd_ts       timestamptz    NOT NULL,
+   updtd_by       varchar(50)    NOT NULL
+);
+
+ALTER TABLE catdd_owner.prfnc_nm_lk OWNER TO catdd_owner;
+
+ALTER TABLE catdd_owner.prfnc_nm_lk
+   ADD CONSTRAINT prfnc_nm_lk_pk
+   PRIMARY KEY (prfnc_nm_id);
+
+ALTER TABLE catdd_owner.prfnc_nm_lk
+   ADD CONSTRAINT prfnc_nm_lk_name_key UNIQUE (name);
+
+
+
+GRANT UPDATE, SELECT, REFERENCES, INSERT, TRUNCATE, DELETE, TRIGGER ON catdd_owner.prfnc_nm_lk TO catdd_owner;
+GRANT UPDATE, SELECT, DELETE, TRUNCATE, TRIGGER, REFERENCES, INSERT ON catdd_owner.prfnc_nm_lk TO catdd_datafix_role;
+GRANT SELECT ON catdd_owner.prfnc_nm_lk TO catdd_read_role;
+
+-----------------------------------------------------------------------------------------------------------
+
+CREATE TABLE catdd_owner.prfnc_chc_lk
+(
+   prfnc_chc_id	  smallint       NOT NULL,
+   prfnc_nm_id	  smallint       NOT NULL,
+   chc  		  varchar(100)   NOT NULL,
+   crtd_ts        timestamptz    NOT NULL,
+   crtd_by        varchar(50)    NOT NULL,
+   updtd_ts       timestamptz    NOT NULL,
+   updtd_by       varchar(50)    NOT NULL
+);
+
+ALTER TABLE catdd_owner.prfnc_chc_lk OWNER TO catdd_owner;
+
+ALTER TABLE catdd_owner.prfnc_chc_lk
+   ADD CONSTRAINT prfnc_chc_lk_pk
+   PRIMARY KEY (prfnc_chc_id);
+
+ALTER TABLE catdd_owner.prfnc_chc_lk
+  ADD CONSTRAINT prfnc_nm_id_prfnc_nm_lk FOREIGN KEY (prfnc_nm_id)
+  REFERENCES catdd_owner.prfnc_nm_lk (prfnc_nm_id)
+  ON UPDATE NO ACTION
+  ON DELETE NO ACTION;
+  
+GRANT UPDATE, SELECT, REFERENCES, INSERT, TRUNCATE, DELETE, TRIGGER ON catdd_owner.prfnc_chc_lk TO catdd_owner;
+GRANT UPDATE, SELECT, DELETE, TRUNCATE, TRIGGER, REFERENCES, INSERT ON catdd_owner.prfnc_chc_lk TO catdd_datafix_role;
+GRANT SELECT ON catdd_owner.prfnc_chc_lk TO catdd_read_role;
+-----------------------------------------------------------------------------------------------------------
+INSERT INTO catdd_owner.prfnc_chc_lk
+(
+  prfnc_chc_id,
+  prfnc_nm_id,
+  chc,
+  crtd_ts,
+  crtd_by,
+  updtd_ts,
+  updtd_by
+)
+VALUES
+(  1,  1, 'JSON', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  2,  1, 'CSV', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  3,  1, 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM');
+
+
+-----------------------------------------------------------------------------------------------------------
+
+INSERT INTO catdd_owner.prfnc_nm_lk
+(
+  prfnc_nm_id,
+  name,
+  dscr,
+  prfnc_ctgry,
+  dflt_value,
+  crtd_ts,
+  crtd_by,
+  updtd_ts,
+  updtd_by
+)
+VALUES
+(  1,  'Named Feedback Preference',  'The Named Feedback preference is in which file format their feedback should come back if they are named by another reporter in Interfirm linkage', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM');
+--------------------------------------------------------------------------------------------------------------
+Dummy data:
+INSERT INTO catdd_owner.prfnc
+(prfnc_id, org_id, user_id, prfnc_nm_id, prfnc_value, actv_fl, crtd_ts, crtd_by, updtd_ts, updtd_by)
+values
+(1000, 79, null, 1, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1001, 79, null, 2, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1002, 7059, null, 3, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1003, 79, null, 4, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1004, 7059, null, 5, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1005, 79, null, 6, 'CSV', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1006, 79, null, 7, 'JSON', true, now(), 'SYSTEM', now(), 'SYSTEM'),
+(1007, 79, null, 8, 'CSV', true, now(), 'SYSTEM', now(), 'SYSTEM');
+
+
+INSERT INTO catdd_owner.prfnc_nm_lk
+(
+  prfnc_nm_id,
+  name,
+  dscr,
+  prfnc_ctgry,
+  dflt_value,
+  crtd_ts,
+  crtd_by,
+  updtd_ts,
+  updtd_by
+)
+values
+(  1,  'namedFeedbackFileFormat',  'The Named Feedback preference is in which file format their feedback should come back if they are named by another reporter in Interfirm linkage', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  2,  'namedFeedbackFileFormat2',  'Description2', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  3,  'namedFeedbackFileFormat3',  'Description3', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  4,  'namedFeedbackFileFormat4',  'Description4', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  5,  'namedFeedbackFileFormat5',  'Description5', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  6,  'namedFeedbackFileFormat6',  'Description6', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  7,  'namedFeedbackFileFormat7',  'Description7', 'FIRM', 'Original Submission Format', now(),  'SYSTEM',  now(),  'SYSTEM'),
+(  8,  'namedFeedbackFileFormat8',  'Description8', 'FIRM', '', now(),  'SYSTEM',  now(),  'SYSTEM');
+
+

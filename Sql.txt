@@ -61,3 +61,18 @@
 
 35. Like for integer column:
 	SELECT * FROM catco_owner.err_rec_info where CAST(err_roe_id as TEXT) LIKE '5000000000001%';
+
+36. INSERT INTO table_name (column_list) VALUES (value_list_1), (value_list_2),...(value_list_n);
+
+37. Copy data from one table to another in same schema:
+	INSERT INTO newTable SELECT * FROM oldTable
+
+38. Copy data from one table and insert into another for same tables in different db. Using Dbeaver.
+	We can do a select for the records we want, then Right click on the results, select export, Export to SQL insert statements,
+	fetchSize, select copy to clipboard or to a file, start.
+
+39. where CAST (trd_dt as varchar) like '2020-05-%' -> like can't be used for dates so cast then use like
+
+40. INSERT INTO catdd_owner.rc_fatr_cnfgn(rc_fatr_cnfgn_id,  fatr_nm,  efctv_dt,  xprtn_dt,  eqty_fl,  other_prdct_types_fl,  crtd_ts,  crtd_by,
+	updtd_ts,  updtd_by) VALUES (1,  'CMPLC_SMMRY',  DATE '2020-06-01',  DATE '2020-08-01',  TRUE,  FALSE,  now(),  'SYSTEM',  now(),  'SYSTEM');
+	-> DATE before the value ????

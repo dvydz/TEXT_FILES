@@ -1,4 +1,242 @@
-05-28-2020
+07-29-2020
+Understanding CM for CATDD application :
+1. 
+-------------------------------------------------------------------------
+
+07-22-2020:
+Zero hour person : Basically responsible to keep in contact with outside team and check the error notifications email and deployment and stuff
+1. NAMESPACE: LoadBalancer=app/AWSALBICATDDED03D/e21bf8b745eed161;
+	d -> dev						01 -> EWS Internal
+	i -> dev-int					02 -> EWS External
+	q -> qa							03 -> ISSO
+	j -> qa int
+	s -> qa stress
+	c -> ct
+	p -> prod
+2. Reporter Portal API Application log messages:  Application log message after entering the application.
+		ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-DEV-*" source="/*/catdd_api.log"
+   
+   Reporter Portal API Tomcat access log messages: Before coming to the controller in application
+		ags=CATDD cluster="CATDD-ECS-CLUSTER-INTERNAL-ISSO-CT-*" source="*/APP/logs/*access*"
+		
+	Note: Stack could be EWS or ISSO. And Environment could be DEV, DEV-INT, QA, QA-INT, QA-STRESS, CT, PROD
+   
+   Reporter Portal ALB log messages: 
+   For All ALB logs -> 01 for Internal and 02 for External. The last letter and the letter before 01 both is the environment
+		index=aws-data ELB_NAME=AWSALBICATDDEC01C sourcetype="aws:elb:accesslogs"
+
+3. All the requests first goes to ALB. Then FIP
+4. Smart rules is present in internal ALB
+5. OC Team -> People who check the logs and stuff
+6. Splunk logs shows in UTC
+7. 502 Error Status code -> It never went inside the application
+8. Splunk logs format guidance ALB:
+	https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+9.  assertThat(unlinkedNamedErrorsStatisticsResponse.getList().get(0).getCatReporterIndustryMemberId()).isEqualTo("ABCD"); -> Right way to AssertThat
+	assertThat(unlinkedNamedErrorsStatisticsResponse.getList().get(0).getCatReporterIndustryMemberId().equals("JPMS1")) -> Wrong. because assertThat expects String
+	so this is the wrong way to assert.
+10. index=web sourcetype=idgateway source=*/service.catdd_svc_api_isso_i_*/*/rout* (ERROR OR EXECEPTION)
+	-> Adding rout* in fip to check the logs
+11. If we have a html page in github and its public we can directly use it has a host. We just need to use the naming convention:
+	https://[username].github.io/repositoryName/htmlFile
+12. Convert excel to insert statement.
+13. ALB :  elb_status_code=502
+14. Messages in DLQ -> Check the ESMP Console, check for Desired DLQ, the export the message, in the export tab get the details and debug lambda.
+	
+-------------------------------------------------------------------------
+07-10-2020:
+1. Tomcat has 2 logs: Access log, Application log.
+		Any logged message in the application will show in application log.
+2. Test case for a Class which has a 2 level of dependency injection. I use @Spy annotation for the 1 level dependency injection object, and I would
+	like to Mock the 2nd level of injection. However, I kept getting null pointer exception on the 2nd level. 
+	Can't use @Spy and @InjectMocks together on same object. The following won't work:
+	@Spy
+	@InjectMocks
+	private MySpy spy;
+
+	However the following hybrid method works:
+	@Mock
+	private NeedToBeMocked needToBeMocked;
+
+	@InjectMocks
+	private MySpy mySpy;
+
+	@InjectMocks
+	private SubjectUnderTest sut;
+
+	@BeforeMethod
+	public void setUp() {
+		mySpy = Mockito.spy(new MySpy());
+		MockitoAnnotations.initMocks(this);
+	}
+	(SubjectUnderTest here depends on MySpy, and MySpy in its turn depends on NeedToBeMocked).
+	https://stackoverflow.com/questions/43926636/mockito-inject-mock-into-spy-object
+3.  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+	on date field to specify the format
+4. CSV viewer Online : https://sheet.zoho.com/sheet/excelviewer
+5. Rename using command line. ren currentFileName newFileName -> Using this we can also rename file starting with .(dot)
+6. If value of something can be null and to avoid null check, we can do the following:
+	unlinkedInterfirmSentTotal += Optional.ofNullable(entry.getValue().getUnlinkedInterfirmSent()).orElse(0L);
+	-> Doesn't directly accept null, but value coming from some other object can be null
+7. Sort a map by its value where value is a list, and need to sort the list using one of the fields that the entity list contains:
+	        Map<String, List<AnnouncementEntity>> map = announcementEntityList.stream().collect(Collectors.groupingBy(AnnouncementEntity::getTitle));
+
+        for (Map.Entry<String, List<AnnouncementEntity>> entry : map.entrySet())
+        {
+            List<AnnouncementEntity> sortedList = entry.getValue().stream().sorted(Comparator.comparing(AnnouncementEntity::getAnnouncementId)).collect(
+                Collectors.toList());
+            map.put(entry.getKey(), sortedList);
+        }
+8. "America/New York" supports daylight saving
+9. Understanding O(1) vs O(n) Time Complexity Intuitively
+-------------------------------------------------------------------------
+07-02-2020
+1. StringTokenizer
+2. Map<Optional<Integer>, List<PreferenceEntity>> orgIdToPreferenceEntityMap =
+            preferenceEntityList.stream().collect(Collectors.groupingBy(o -> Optional.ofNullable(o.getOrganizationId())));
+3. List<PreferenceNameEntity> preferenceNameEntityList =
+                preferenceNameEntityMap.entrySet().stream().filter(o -> namesList.stream().anyMatch(name -> name.equals(o.getValue().getPreferenceName())))
+                    .map(o -> o.getValue()).collect(Collectors.toList());
+4. Sometimes collections can be null and running a stream in it will throw NPE. In such cases we can use 
+	CollectionUtils.emptyIfNull(allowedPreferenceChoiceEntityList).stream()'
+5. Round-Robin
+6. long months = ChronoUnit.MONTHS.between(periodDateFromUser, LocalDate.parse(latestPeriodDate).withDayOfMonth(1));
+7. Get start and end date of month using year and month:
+	YearMonth yearMonth = YearMonth.parse(yearMonthString);
+	LocalDate startMonthDate = yearMonth.atDay(1);
+	LocalDate endMonthDate = yearMonth.atEndOfMonth();
+	
+	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM yyyy");
+	YearMonth.parse("12 2015", formatter);
+	
+	Date startDateOfMonth = Date.from(period.atDay(1).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+	Date endDateOfMonth = Date.from(period.atEndOfMonth().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+8. null == a OR a == null. Always choose null == a, because if we use a == null, in case of boolean, if we forget and add only one =, compile will be 
+	successful, but at runtime it will throw npe.
+	example : 	Boolean b = null;
+	if(b = null)
+	{				-> NPE during runtime, compiler doesn't throw error. Thus if used null = b, compiler complains
+	}
+9. When getting 406, always check the @RequestMapping in the class level because sometimes the entire class is set to accept or consume a certain type.
+	And if any of the method is returning something else without specifially specifying its a 406
+---------------------------------------------------------
+06-07-2020
+1. Convert Joda DateTime to Timestamp:
+	  DateTime uploadCompletionDateTime = new DateTime();
+	  Timestamp timestamp = new Timestamp(uploadCompletionDateTime.getMillis());
+2. When request comes to fip, it does authentication first. If userId/password is invalid 401 from FIP.
+	Then it has smart rules to authenticate users, if no smart rules for that login, its a 403 from FIP.
+	In dictionary file, FIP_HEADERS needs to have the entitlement.
+	And in FIP code, there is a part where we have catdd related code to allow the entitlements.
+3. Comma separated String to List : Arrays.stream(namesString.split(",")).map(String::trim).collect(Collectors.toList());
+4. Comma separated String as value for query param, in the controller, Spring will automatically convert.
+	@RequestParam(name = "names", required = false) String[] names
+	Or a List:
+	@RequestParam(name = "names", required = false) List<String> namesList
+	localhost:8080/api/v1/preferences/organizations/79?names=abcd,namedFeedbackFileFormat
+5. Filter a map to a list based on an array of keys:
+	String[] names = {"abc", "def", "ghi"};
+	Map<String, PreferenceNameEntity> preferenceNameEntityMap = preferenceNameRepository.getPreferenceNameMap();
+	List<Integer> preferenceNameIdList = preferenceNameEntityMap.entrySet().stream().filter(o -> Arrays.stream(names).anyMatch
+	(name -> name.equals(o.getValue().getPreferenceName()))).map(o -> o.getValue().getPreferenceNameId()).collect(Collectors.toList());
+6. Using pathparam, if {} part it not provided, its a totally different URI so unless we have our controller accept it without
+	the path param, it would not work. Example below:
+	@GetMapping(value = {"/preferences/organizations", "/preferences/organizations/{organizationId}"}, produces = "application/json")
+7. @ManyToOne(fetch= FetchType.LAZY) -> by default it is EAGER for ManyToOne and OneToOne. LAZY for oneTomany and manyToMany for JPA and
+	new Hibernate versions
+8. We don't need sequence for lookup table. But for regular table need to specify in entity id the sequence even after we create the
+9. If the key is null, this won't work: Will get 500 : element cannot be mapped to a null key
+	Map<Integer, List<PreferenceEntity>> orgIdToPreferenceEntityMap =
+            preferenceEntityList.stream().collect(Collectors.groupingBy(PreferenceEntity::getOrganizationId));
+	Solution: Either use Collectors.toMap manually, or use Optional like below:
+	Map<Optional<Integer>, List<PreferenceEntity>> orgIdToPreferenceEntityMap =
+            preferenceEntityList.stream().collect(Collectors.groupingBy(o -> Optional.ofNullable(o.getOrganizationId())));
+10. Any 400 error means user made a mistake. But in this case, user is not making any mistake. The user just want to get all the records in
+	the table. He does not know there is no record in the table.
+11. Unit testing tips:
+	* List down a list of test cases.
+	* Write unit tests based on test cases not as a code coverage.
+	* This way if anything is changes, we dont need to manually test everything again.
+-------------------------------------------------------------------------------
+06-09-2020
+1. N+1 problem in java for select query
+2. String[] mystring = list.toArray(new String[0]);
+	Reason to pass new String[0] -> So that you get back a String[]. The one without any argument gives back to you an Object[].
+	See you have 2 versions of this method: Object[] toArray() and <T> T[] toArray(T[] a). By passing String[] array, you are using the 
+	generic version.
+3. Using jdbcTemplate vs NamedParameterJdbcTemplate to bulk update a table;
+	Sql Query: UPDATE catdd_owner.pndng_rec SET upld_ts=:uploadTimestamp WHERE file_sbmsn_info_id=:fileSubmissionId AND rprd_st='R'
+	@Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+	// Using NamedParameterJdbcTemplate
+	public Integer setUploadTimestampForPendingEvent(List<Integer> fileSubmissionInfoIdList, List<String> uploadTimestampListString)
+    {
+        Assert.isTrue(fileSubmissionInfoIdList.size() == uploadTimestampListString.size(),
+            "Unexpected error. fileSubmissionInfoIdList and uploadTimestampList should be of same size");
+        List<Timestamp> uploadTimestampList = uploadTimestampListString.stream().map(o -> Timestamp.valueOf(o)).collect(Collectors.toList());
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (int i = 0; i < fileSubmissionInfoIdList.size(); i++)
+        {
+            int index = i;
+            list.add(new HashMap()
+            {{
+                put(UPLOAD_TIMESTAMP_PARAM_NAME, uploadTimestampList.get(index));
+                put(FILE_SUBMISSION_ID_PARAM_NAME, fileSubmissionInfoIdList.get(index));
+            }});
+        }
+        return IntStream
+            .of(namedParameterJdbcTemplate.batchUpdate(eventQueries.getQueryValues(UPDATE_PENDING_EVENTS_BY_FILE_SUBMISSION_ID), list.toArray(new HashMap[1]))).sum();
+    }
+	
+	--------------
+	Sql Query: UPDATE catdd_owner.pndng_rec SET upld_ts=? WHERE file_sbmsn_info_id=? AND rprd_st='R' 
+	@Autowired
+    private JdbcTemplate jdbcTemplate;
+	// Using JdbcTemplate
+	public Integer setUploadTimestampForPendingEvent(List<Integer> fileSubmissionInfoIdList, List<String> uploadTimestampListString)
+    {
+        Assert.isTrue(fileSubmissionInfoIdList.size() == uploadTimestampListString.size(),
+            "Unexpected error. fileSubmissionInfoIdList and uploadTimestampList should be of same size");
+
+        List<Timestamp> uploadTimestampList = uploadTimestampListString.stream().map(o -> Timestamp.valueOf(o)).collect(Collectors.toList());
+
+		int[] updateCounts =
+		jdbcTemplate.batchUpdate(eventQueries.getQueryValues(UPDATE_PENDING_EVENTS_BY_FILE_SUBMISSION_ID), new BatchPreparedStatementSetter()
+			{
+                @Override
+                public void setValues(final PreparedStatement ps, final int i) throws SQLException
+                {
+                    ps.setTimestamp(1, uploadTimestampList.get(i));
+                    ps.setInt(2, fileSubmissionInfoIdList.get(i));
+                }
+
+                @Override
+                public int getBatchSize()
+                {
+                    return fileSubmissionInfoIdList.size();
+                }
+            });
+
+        return IntStream.of(updateCounts).sum();
+    }
+4. Feature Flags with Spring :
+	1. Using togglz : 
+	https://tech.asimio.net/2018/05/31/Adding-Feature-Toggles-to-Spring-Boot-applications-using-Togglz.html (without annotation)
+	https://www.baeldung.com/spring-togglz (with annotation)
+	2. Using FF4J
+	3. Using @ConditionalOnProperty
+	4. Regular properties file where you set a boolean property. Then get the value and check for the boolean.
+5. If different new updated values -> BatchUpdate -> Running multiple queries(for example multiple updates queries)
+   If same new updates values -> In the where clause use id in (1,2,3) rather than 3 update statements.
+6. An index is used to speed up searching in the database. An index can be used to efficiently find all rows matching some column in your 
+	query and then walk through only that subset of the table to find exact matches. If you don't have indexes on any column in the WHERE 
+	clause, the SQL server has to walk through the whole table and check every row to see if it matches, which may be a slow operation on 
+	big tables.
+7.  List<PendingEventInfo> pendingEventInfoByFileName = pendingEventInfoList.stream().collect(
+	Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(PendingEventInfo::getFileName))), ArrayList::new));
+
+---------------------------------------------------------
+5-28-2020
 1. HotSwap : from edit configuration, use On 'Update' action : 'Update Classes and resources' to automatically load new updates. 
 	So that we dont have to restart the application everytime. For Server : example Tomcat Server.
 2. Responsive UI : Bootstrap (from twitter)
@@ -7,9 +245,91 @@
 5. MessageDigest hashSum = MessageDigest.getInstance("SHA-256");
    hashSum.update(new byte[total]);
    bytes[] messageDigest = hashSum.digest();
-
    byte[] bytes = record.getBytes("UTF-8");
+6. Netcat
+7. You should use a whitelist of domains that the server is allowed to access. Try to avoid using redirects and wildcard domains because they could be 
+	used to bypass the whitelist.
+	Do not blacklist domains or IP addresses. There exist multiple valid ways to represent the same domain name or IP addresses thus bypassing the blacklist. For example, these are several ways to represent localhost: http://0/ = http://2130706433/ = http://127.0.1.3 = http://127.127.127.127 = http://[::]:80/ = http://127.0.0.1/ = http://localhost/ = http://0177.0.0.1/
+	Some URL-parsing libraries could also be tricked into parsing a malformed URL the way the attacker needs.
+	An attacker could use the DNS server that resolves a specific domain name as a local IP address. There are online services that provide this kind of DNS.
+8. A SAN or subject alternative name is a structured way to indicate all of the domain names and IP addresses that are secured by the certificate. 
+	Included on the short list of items that are considered a SAN are subdomains and IP addresses. 
+9. DBUnit -> it is a junit extension that helps to test the applications that are dependent on the database.
+10. The path we need to consider is relate to .class file, not .java. Thus, we need a path inside of target folder.
+	URL url = getClass().getResource("../../testdata/query.sql");
+	Also:
+	If a file is in this location: C:\Users\k28172\eclipse-workspace\FINRA_PROJECT\catdd-api-automation\test-api-dao\src\main\resources\testdata\query.sql	
+	To get an instance of file, 
+	1. 	using the absolute path method:
+		File file = new File("C:\\Users\\k28172\\eclipse-workspace\\FINRA_PROJECT\\catdd-api-automation\\test-api-dao\\src\\main\\resources\\testdata\\delQuery.sql");
+	2. Use relative path:
+		File script = new File(getClass().getResource("../../testdata/query.sql").getFile());
+	Absolute Path starts with a / while Relative path does not start with a /
+	https://www.cis.upenn.edu/~matuszek/cit597-2006/Pages/finding-files.html#:~:text=FileReader%20r%20%3D%20new%20FileReader(%22dummy.,-txt%22)%3B&text=txt%22%20is%20a%20relative%20path,or%20your%20IDE)%20started%20Java.
+11. Execute a .sql file in java:
+	mybatis provides ScriptRunner class that executes the .sql files.
+	     <dependency>
+			  <groupId>org.mybatis</groupId>
+			  <artifactId>mybatis</artifactId>
+			  <version>3.5.5</version>
+			  <scope>compile</scope>
+		   </dependency>
+		   
+     /**
+     * Method that executes the sql queries from .sql file based on the provided filePath
+     *
+     * @param filePath the path of the .sql file
+     */
+    public void executeTestDataSql(String filePath)
+    {
+        Connection connection = CatddDatabaseUtil.getConnection();
+        ClassLoader classLoader = new TestDataDao().getClass().getClassLoader();
+        File file;
+        try
+        {
+            file = new File(classLoader.getResource(filePath).getFile());
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("The provided filePath must be invalid !", ex);
+        }
 
+        //Initialize the script runner
+        ScriptRunner scriptRunner = new ScriptRunner(connection);
+        //With setStopOnError set as true, exception is thrown if Sql Error is Encountered
+        scriptRunner.setStopOnError(true);
+        //Send full script instead of line by line execution because for a large number of queries it won't work without this
+        scriptRunner.setSendFullScript(true);
+
+        //Creating a reader object
+        try(Reader reader = new BufferedReader(new FileReader(file)))
+        {
+            scriptRunner.runScript(reader);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        CatddDatabaseUtil.releaseConnection(connection);
+    }
+	
+	Calling the method:
+	testDataDao.executeTestDataSql("testdata/dummyData.sql");  -> Doesn't start with /
+	https://howtodoinjava.com/java/io/read-file-from-resources-folder/
+12. Convert Reader to String:
+		Reader reader = new BufferedReader(new FileReader(file)));
+		char[] arr = new char[8 * 1024];
+		StringBuilder buffer = new StringBuilder();
+		int numCharsRead;
+		while ((numCharsRead = reader.read(arr, 0, arr.length)) != -1) {
+			buffer.append(arr, 0, numCharsRead);
+		}
+		reader.close();
+		String targetString = buffer.toString();
+13. UberJar : The advantage is that you can distribute your uber-jar and not care at all whether or not dependencies are installed at the destination, as your 
+	uber-jar actually has no dependencies.
+	All the dependencies of your own stuff within the uber-jar are also within that uber-jar. As are all dependencies of those dependencies
 ------------------------------------------------------------
 05-20-2020:
 Online Course: CodeBashing: Java Security Fundamentals:
@@ -108,7 +428,232 @@ Online Course: CodeBashing: Java Security Fundamentals:
 	Defense in depth is a concept used in Information security in which multiple layers of security controls are placed throughout an information technology system
 7. Command Injection: The most effective way to prevent Command Injection(injection in fileName for uploaded file in content disposition
 	and etc) vulnerabilities is to avoid calling OS commands from the application code (maybe the same result could be achieved by using some API or library). If the execution of OS commands cannot be avoided, don't use user-supplied input to run them. If it is not possible to avoid user-supplied input in calling out to OS commands, then strong input validation must be implemented. It must be based on a whitelist of allowed characters. Don't use blacklists because they tend to be bypassed by a skilled attacker. A better way to handle the same task is to avoid inserting user input into the OS command, for example, by using an API or a library that provides the same functionality as the OS command.
-------------------------------------------------------------------------------------------------------------
+8. Denial of Service(Dos) Attack: Denial of service via resource exhaustion happens when a server consumes 100% of the available resource (CPU, memory,
+	disk space, network bandwidth, etc.) and is not able to process any further requests. File upload could lead to the resource exhaustion when the file storage is misconfigured and necessary security controls are not implemented at the application and OS levels.Given a virtually unlimited amount of users with a virtually unlimited amount of time and bandwidth, any system's resource can be eventually exhausted, but a defense-in-depth approach can make exhaustion significantly harder. The following security controls should form a multi-layered defense mechanism against storage depletion:
+	1. File size check. Uploading large files could cause a depletion of disk space. The maximum size of the file should be set according to the business requirements and communicated to users.
+	2. File name check. A long filename could lead to unexpected errors or memory issues. If the business logic of the application allows, the names of the uploaded files should be restricted in length, sanitized using a whitelist of allowed characters, or changed to random strings.
+	3. Restriction on the amount or total size of uploaded files by a single user. This security control could help against a distributed file upload attack (if the creation of a new user is not trivial and an attacker cannot create thousands of users) and could drastically decrease the risk of disk space exhaustion. Make sure to align the restrictions with the application business requirements and to avoid breaking the user experience of non-malicious users.
+	4. File upload or parsing library should be up to date. If it is not updated regularly, it could contain a vulnerability that leads to denial of service. For example, when a malicious file is loaded using a vulnerable library, it could send the library to an infinite loop of parsing the file.
+	5. Resource monitoring. Depletable or finite server resources should be monitored by the application support or operations team: the overall amount of disk space left, the disk space allocated for storing the uploaded files, the number of active and long-lasting connections to the web server, etc. Once the operations team is notified of suspicious activity, they can get involved to manually prevent DoS.
+	6. Scalable storage, such as via a private cloud. If storage is scalable, it could expand when required, helping both in cases of intentional exhaustion and also during abnormally high activity spikes.
+9. Directory (Path) Traversal attack: Example : url -> https://traderesearch.codebashing.com/trade_news?file=5543
+	5543 is the filename that gets appended to the tmp path to get the file in the code. the code doesn't have any validation for the filename input. 
+	If the url is tampered and passed something like https://traderesearch.codebashing.com/trade_news?file=../etc/passwd,
+	the hacker could possibly just manage to access TradeRESEARCH's /etc/passwd file by simply appending ../etc/passwd string to the file input !
+	The ability to traverse file paths and load arbitrary files from the system is called the Directory Traversal (or Path Traversal) attack. 
+	We can make use of Java's getCanonicalPath() method which gets the full path string of Alice's file parameter by resolving the files relative path 
+	against the current directory, and further removes any relative pathing characters such as ./ and ../
+10. Leftover Debug Code: In web-based applications, debug code is helper functionality, used for testing and modifying web application properties,
+	configuration information, and functions. If debug functionality is left on a production system, this will give attackers a chance to use it for bad.
+	Do not leave debug statements that could be executed in the source code. Ensure that all debug functionality and information is removed as a part of the production build process. Remove debug code before deploying the application.
+	Further, leftover comments from the development process can reveal to would-be attackers potentially useful information about the application's architecture, its configuration, version numbers, and so on, so please ensure these are removed too.
+11. User Enumeration: When it is possible to determine whether a user name is valid or not, it is known as a Username Enumeration vulnerability.
+	When using login Fogot Password, the response for valid and invalid email should be the same so that the hacker can't tell if one
+	was correct or not.
+12. Horizontal Privilege Escalation: Lets say for example a webpage supports profile edit option. When it is selected, the url called is 
+	https://tradejob.codebashing.com/trade_job/edit_profile?uid=1000750
+	Assume in the backend, there is no security model to check if the logged in user and the uid provided are for the same people. Then if the uid is
+	changed, depending on if the user exists hacker can easily access other peoples account for profile edit. This is also known as an "Insecure Direct Object Reference" (IDOR) attack.
+13. Vertical Privilege escalation: Not only the user should be check for authentication, user should also be check for authorization to check if the
+	user has correct role to access certain features. Spring provides built in hasRole option to check for that.
+14. Cross Site Request Forgery (POST): Cross site request forgery (CSRF), also known as XSRF, Sea Surf or Session Riding, is an attack vector that 
+	tricks a web browser into executing an unwanted action in an application to which a user is logged in. Another link that contains malicious code has to be clicked while the session is still valid for the original page, when the malicious link is only clicked some action is performed based on 
+	the logic of the malicious code, which affects the original page.  CSRF attacks specifically target state-changing requests, not theft of data, since the attacker has no way to see the response to the forged request.
+	Example: By calling submit() on TradeIDEAS's delete_all resource, Alice(TrustedUser) will automatically be redirected to TradeIDEA's web page, raising suspicion about Bob's email.
+	This is where the iframe tag comes handy. By creating a hidden iframe, Bob's(Hacker) submit() method will post the form against this static iframe , thereby ensuring Alice never gets redirected to TradeIDEA.
+	Defending against CSRF attacks isn't as simple as defending against XSS attacks. A Synchronizer Token Pattern is required to defend against CSRF attacks. A synchronizer token is also referred to as Anti-CSRF token, CSRF token, Challenge Token, or Nonce.
+	-> To be effective, each response from the web server requires a random token to be generated. This token is then inserted by the application as a hidden text into the sensitive form fields.
+	By taking this approach, the application can then check, whenever a user submits a form, that the token is both valid and correct. This is a good strategy to protect against CSRF attacks because the attacker should never know this randomly generated value.
+	It allows the application to answer a simple question: Was the form POSTed by the user legitimately created by the application or by an unknown third party? Is it valid or invalid?
+	Note that wherever a cryptographically secure pseudo-random number generation (pRNG) is required, the wheel should not be re-invented. Correct use of java.security.SecureRandom is strongly preferred over custom random number generation code because the latter is extremely prone to developer error. The most effective method to protect against CSRF attacks is by having the application dynamically insert a random token value within the Delete All form tag.
+	Then, when the Delete All form is submitted by Alice, this random token value is checked by the TradeIDEA application, on the server side.
+	Given that Bob's malicious web page cannot guess or know this value beforehand, his malicious POST request would fail, thereby preventing the CSRF attack against Alice.
+	This technique of programmatically inserting random token values in every web page is known as the synchronizer token pattern
+	The pattern implements the generating of random "challenge" tokens that are associated with the user's current session, which are then verified for the existence and correctness of this token on the server side.
+	Example:
+	<form action="/ideas/delete_all" method="post">
+	  <input type="hidden" name="scope" value="all">
+	  <button class="button redB" id="delete_button" style="margin: 5px;">Delete All</button>
+	  <input type="hidden" name="csrf-token" value="uRARsEXKdVjX6iUnQkDcfHiNqvG">
+	</form>
+15. Server-Side Request Forgery: Server Side Request Forgery (SSRF) is a type of attack that can be carried out to compromise a server. The 
+	exploitation of a SSRF vulnerability enables attackers to send requests made by the web application, often targeting internal systems behind a firewall. Sometimes a server needs to make URL-request based on user input. A clear example would be an import-function, where you can import images from a URL, perhaps when setting a profile picture. When you as a user enter a URL, the server will make a request to that URL and fetch the image. 
+	A robust approach to SSRF prevention is to avoid using user-defined URLs in requests initiated by the server. Any HTTP header and the request body are under full user control and could contain arbitrary data (e.g. some malicious content).
+	If there is no option to avoid user input in the requested URL, then it should be properly validated. The following approach to validation should be applied:
+	1. You should use a whitelist of domains that the server is allowed to access. Try to avoid using redirects and wildcard domains because they could be used to bypass the whitelist.
+	2. Do not blacklist domains or IP addresses. There exist multiple valid ways to represent the same domain name or IP addresses thus bypassing the blacklist. For example, these are several ways to represent localhost:
+	http://0/ = http://2130706433/ = http://127.0.1.3 = http://127.127.127.127 = http://[::]:80/ = http://127.0.0.1/ = http://localhost/ = http://0177.0.0.1/
+	Some URL-parsing libraries could also be tricked into parsing a malformed URL the way the attacker needs.
+	An attacker could use the DNS server that resolves a specific domain name as a local IP address. There are online services that provide this kind of DNS.
+	3. Use a whitelist of allowed protocols, e.g. HTTP or HTTPS. Do not try to blacklist them because you'd definitely forget about some exotic or legacy protocols that could be used to make a request (like file://, phar://, gopher://, data://, php://, dict://, sftp://, ldaps://, ldapi://, etc.)
+	4. Do not initiate requests from the server to the URLs from the Referer, Host or any other HTTP header. HTTP headers are under user's full control which means that they must be sanitized prior to usage in requests.
+	5. Finally, you should use authentication between all the internal application components, third-party storages, microservices, etc. It drastically reduces the harm that an attacker could inflict by exploiting the SSRF.
+16. Race Condition: Modern applications are expected to have very high performance. To achieve that level of performance, an application concurrently 
+	processes multiple user requests, runs multiple services, communicates with other applications, manipulates files on the server. So, concurrency is the application's ability to run different components at the same time (regardless of the order in which these components are executed) without negative consequences. For example, a banking website that uses an api to convert rewards points to the balance. In the API, first step is to check 
+	if they have enough points, then Second step is to convert the points to balance(add to the balance), then third step is to remove the points(subtract) because it has already been converted to balance. If lets say 100 threads are used to process the same request using a proxy client,
+	and after the first thread has already passed the first step, 2nd and 3rd thread can just run the second step and hacker will get more 3X the reward.
+	Concurrency is based on the ability of modern hardware to perform parallel computation on multiple CPU cores. Concurrent applications use threads to concurrently execute several tasks. The threading mechanism is built-in into the operating systems. The Scheduler is the part of the OS that manages threads and defines which thread runs at the specific CPU core in the specific timeframe. The way the Scheduler handles the threads is non-deterministic, meaning that without any guidance it can execute the instructions in any order. Therefore the applications that use multithreading but do not manage threads, could experience unexpected behavior.
+	One of the security-related outcomes of this unpredictable behavior is a Race Condition. It usually happens when multiple threads execute the same piece of code or carry out some action over the same resource (e.g. variable) resulting in unexpected application behavior.
+	From a CPU perspective, even the simplest sum operation is a set of instructions such as "get data from RAM and load it into the registry", "run the calculation on the data from registry", "save the result of the calculation to RAM". There is room for a mistake even in this simple set of instructions.
+	In this lesson, we studied the case when multiple unsynchronized threads execute a piece of code with an IF condition. Several unsynchronized concurrent threads manage to enter the IF condition code block though they were not supposed to. This causes the unpredictable behavior of the application.
+	A Race Condition is a logical weakness that is extremely hard to detect. The bigger is the piece of code executed by multiple threads, the harder it is to determine where exactly something went wrong.
+	There are different ways to prevent Race Conditions, and in all of them, the main idea is to let only one thread at a time access the critical piece of code.
+	1. Use keywords provided by the programming language (e.g. synchronized)
+	2. Use libraries that guarantee atomicity for the desired operations
+	3. Use libraries that provide advanced lock implementations (e.g. util.java.concurrency library)
+	Try to avoid implementing your own lock because it's not a trivial thing to do. Attempting to fight race conditions, you may end up with a deadlock, i.e. with a condition when two threads are waiting infinitely for each other to release the lock. Use proven libraries and make sure not to introduce deadlocks.
+	Synchronized keyword specifies that only a single thread can access the synchronized block at a time.
+	Synchronized can be used on the method level or code block level. Here it's used on the instance method which means that one thread per instance of the class can execute the method. Locking only the critical parts of the code keeps both security and performance on a sufficient level.
+17. Insecure TLS(Transport Layer Security) Validation: As with any user-supplied input, it is important to ensure there is a context-specific input 
+	validation strategy in place. For example, consider the case of a TLS/SSL man-in-the-middle attack that could abuse the incorrectly defined certificate validation logic. Subject Alternative Names(SANs)
+18. Insecure Object Deserialization: Insecure Deserialization is an attack where a manipulated object is injected into the context of the web 
+	application. If the application is vulnerable, the object is deserialized and executed, which can result in SQL Injection, Path Traversal, Application Denial of Service and Remote Code Execution.
+	Vulnerabilities arise when developers try to construct an object from an untrusted serialization stream, and they assume that this stream is always correct. In this lesson, the deserialization vulnerability in the XStream library will be explored. This library serializes objects to XML and deserializes them back again.
+	As a malicious object, a specially designed gadget will be used , as gadget-based exploits are very popular ''in the wild''.
+	The gadget is a series of self-constructing objects that are nested in a way that will eventually lead to command execution via the deserialized object. In other words, the attacker re-purposes towards malicious ends types that are already available on the deserialization host.
+	To mitigate the issue with the default XStream object having access to any and all classes available to the code, the scope of classes XStream has access to must be reduced to only those that are required and were designed by the developer in a way that does not permit execution of any malicious code. NoTypePermission.NONE sets the TypePermissions to None, and XStream may no longer access the entire space of classes available to running code.
+	public class XStreamDeserializer {
+	  public static AccountManager getAccountManager(HttpRequestServlet request) {
+		XStream xstream = new XStream();
+		xstream.addPermission(NoTypePermission.NONE);
+		TypePermission tp = new ExplicitTypePermission(
+		  new Class[] {
+			AccountManager.class
+			  });
+		xstream.addPermission(tp);
+		try {
+		  String accountManagerXML = IOUtils.toString(request.getReader());
+		  AccountManager am = (AccountManager)xstream.fromXML(accountManagerXML);
+		  return am;
+		}
+		catch ( /*..*/ ) {
+		  /* Handle various XStream parsing exceptions */
+		  return null;
+		}
+	  }
+	}
+19. Components With Known Vulnerabilities: When development teams use component-heavy development patterns, they sometimes not even understand which 
+	components they use in their applications or APIs, much less keeping them up to date.
+	Developers often do not know:
+	The versions of all components they use (both client-side and server-side);
+	If the software they use (OS, web/application server, database management systems, run-time environments, and libraries) is vulnerable, unsupported, or out of date;
+	If the underlying platform, frameworks, and dependencies are fixed or upgraded in a timely fashion;
+	If the compatibility of updated, upgraded, or patched libraries is tested.
+	Some of the largest breaches (like the Equifax hack) have relied on exploiting known vulnerabilities in components.
+	The nastiest consequence of exploiting such kind of vulnerability is the Remote Code Execution .
+	If you can execute the remote Bash command on the server - then you have a foot in the door, and can do everything to this server:
+	Get access to internal data and dump internal files for public retrieval.Upload and execute a backdoor.
+	Use the server as a cryptocurrency miner. Use the server as a part of a botnet.
+	#ShellShock #mod_cgi #cPanel 
+	Always update the components to the latest version and check for any known vulnerabilities.
+20. XXE(XML External Entity) Processing: The DOCTYPE foo declaration references an external Document Type Definition (DTD) file, which we have named 
+	foo. 
+	net_trade.xml
+		<!DOCTYPE foo [<!ELEMENT foo ANY >
+		<!ENTITY bar SYSTEM "file:///etc/passwd" >]>
+		<trades>
+			<metadata>
+				<name>Apple Inc</name>
+				<stock>APPL</stock>
+				<trader>
+					<foo>&bar;</foo>
+					<name>C.K Frode</name>
+				</trader>
+				<units>1500</units>
+				<price>106</price>
+				<name>Microsoft Corp</name>
+				<stock>MSFT</stock>
+				<trader>
+					<name>C.K Frode</name>
+				</trader>
+				<units>5000</units>
+				<price>45</price>
+			</metadata>
+		</trades>
+	The DOCTYPE foo declaration references an external Document Type Definition (DTD) file, which we have named foo.
+	The XML declaration ELEMENT foo ANY declares that foo DTD can contain any combination of parsable data.
+	Finally we use the XML declaration ENTITY to load additional data from an external resource. The syntax for the ENTITY declaration is ENTITY name SYSTEM URI where URI is the full path to a remote URL or local file. In our example we define the ENTITY tag to load the contents of "file:///etc/passwd"
+	The following line maps our tag foo to the external entity &bar; that points to "file:///etc/passwd"
+	When this XML document is processed by BatchTRADER's SAX parser, any instances of &bar; will get replaced by the contents of /etc/passwd file.
+	By using XML entities, the SYSTEM keyword causes an XML parser to read data from a URI and permits it to be substituted in the document.
+	Simply put the XML parser was tricked into accessing a resource that the application developer's did not intend to be accessible, in this case a file on the local file system of the remote server.
+	In this example, the following XML code fetched the /etc/passwd file present on BatchTRADER's web server and displayed it to the user of the application.
+	<!ENTITY bar SYSTEM "/etc/passwd" >]>
+	Because of this vulnerability any file on the remote server (or more precisely, any file that the web server has read access to) could be obtained.
+	A malicious attacker could easily use this to gain access to arbitrary files such as system files, or files containing sensitive data such as passwords or user data.
+	Web applications using XML libraries are particularly vulnerable to external entity (XXE) processing attacks 
+	because the default	settings for most XML SAX(Simple API for XML) parsers is to have XXE enabled by default. To use these parsers safely, you have to explicitly disable referencing of external entities in the SAX parser implementation you use. We'll revisit this in the remediation section later.
+	Let's now take a look at how BatchTRADE's server side SAX parser is configured to process incoming XML files.
+	public class TradeDocumentBuilderFactory {
+    public static DocumentBuilderFactory newDocumentBuilderFactory() {
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			try {
+              documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", true);
+              documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", true);
+				} catch(ParserConfigurationException e) {
+					throw new RuntimeException(e);
+				}
+				return documentBuilderFactory;
+			}
+		}
+	
+	The BatchTRADER's server side SAX parser is developed using the DocumentBuilderFactory class, part of the Java API for XML Processing, or JAXP for 
+	short, that enables applications to parse and transform XML documents. In this example the developers have configured the SAX parser using the setFeature method to enable loading of external-general-entities by setting it's value to true. Similarly, the SAX parser has also been configured to process external-parameter-entities entities. Both of these options allow the SAX parser to load external entities, which when specified within our trade.xml file can be abused by an attacker to read arbitrary system files. Were these set to false the SAX parser would automatically reject the referencing of external entities.
+	Because user supplied XML input comes from an "untrusted source" it is very difficult to properly validate the XML document in a manner to prevent against this type of attack.
+	Instead the XML processor should be configured to use only a locally defined Document Type Definition (DTD) and disallow any inline DTD that is specified within user supplied XML document(s).
+	Due to the fact that there are numerous XML parsing engines available, each has its own mechanism for disabling inline DTD to prevent XXE. You may need to search your XML parser's documentation for how to "disable inline DTD" specifically.
+	Let's see how the above fix can be applied to our vulnerable example to remediate the XXE vulnerability.
+	Instead of setting up feature like above, do the following:
+	 documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+     documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+     documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);    
+	The most robust method to protect against XXE attacks is to configure the applications XML parser to not allow DOCTYPE declarations. This is done by setting the parsers disallow-doctype-decl parameter to true. With this set, an exception occurs if our trade.xml contains a DOCTYPE declaration and parsing stops, preventing the vulnerability from exposing sensitive information.
+	However, if DOCTYPE declarations are required by the application, a good alternative is to configure the server side SAX parser to disallow declaring of external entities by setting the value for external-general-entities to false
+21. LDAP(Lightweight Directory Access Protocol) Injection: 
+	​	LDAP is a protocol for accessing and maintaining directory information services. It allows applications and services connecting to the LDAP server to retrieve data from the directory, e.g. for authenticating users. To search and retrieve data from the directory, a filter should be defined and the matched data will be returned accordingly.
+	LDAP injection occurs when unsanitized user input is used as a part of the LDAP filter. It allows the attacker to manipulate the query and bypass security mechanisms, retrieve sensitive data, or execute the malicious code.
+	In general, the consequences of a successful LDAP injection depends on the context where the LDAP query is used:
+	Authentication bypass
+	(&(username=%user_input%)(password=%user_input%))
+	Elevation of privileges
+	(&(documentName=%user_input%)(securityLevel=low)(type=secretDocuments))
+	Information disclosure
+	(&(username=%user_input%)(group=marketing))
+	1. As a general recommendation, one should completely avoid using user input as a part of the LDAP query. If this is not possible, then the in-depth security approach should be used: security controls should be in place both in the application that makes LDAP queries and the Directory server.
+	2. Sanitize user input and allow only alphanumeric characters to be used as a part of LDAP queries. Note that blacklisting special characters could solve the problem, but blacklists tend to be bypassed, thus the whitelist approach is preferable.
+	3. Do not make access decisions solely on the application side. For example, if you set the access level in the query, then in case of an LDAP injection, there could be a way to bypass the hardcoded access level.
+	4. Use parametrization to build search filters. In this case user input is used as a parameter and doesn't break the filter syntax.
+	5. Note that if you build a string and use it as a search filter, regardless of how you built it (e.g. by concatenation or by interpolation) your code is likely vulnerable.
+	@Repository
+	public class UserRepositoryImpl implements UserRepository {
+		@Autowired
+		  private LdapTemplate ldapTemplate;
+
+		@Autowired
+		  public void setLdapTemplate(LdapTemplate ldapTemplate) {
+			this.ldapTemplate = ldapTemplate;
+		  }
+		  @Override
+		  public boolean authenticate(String login, String password) {
+			List<String> user = ldapTemplate.search(
+			  //query().filter("(&(uid=" + login + ")(userPassword=" + password + "))"), 
+			  query().where("uid")
+			  .is(login)
+			  .and("userPassword")
+			  .is(password),
+			  new AttributesMapper<String>(){
+				@Override
+				public String mapFromAttributes(Attributes attributes) throws NamingException {
+				  return attributes.get("cn").get().toString();
+				}
+			  }
+			);
+			if (user.size() > 0){return true;} 
+			else {return false;}
+		  }
+	}
+	The query is built using LdapQueryBuilder class. It allows building a query with user input securely.
+-----------------------------------------------------------------------------------------------------------
 05-18-2020:
 1. Joining two tables from different databases is complex. In postgres, we can use create FDW(foreign data wrapper) for diff database table to 
 	make it work but again we try to avoid it. dblink  is another option but they come with performance overhead. If you run a query between 2 servers not on the same network you will have a lot of latency and the performance will be very degraded
@@ -358,19 +903,85 @@ Online Course: CodeBashing: Java Security Fundamentals:
 	}
 -----------------------------------------------------------------------------
 04-16-2020
-Deployment steps BG:
+Deployment steps BG: Release
 1. Create a VID. Need to know what all is part of the release and include in the VID in the deployment order. Reach out to CM.
-2. Cut the release branch from develop i.e. Create a branch from develop for UI, API, and other like EWS(infrastructure), and others if needed.
-3. Create a release branch from develop in f3 and update isso build_isso.groovy, build_ews.groovy for the release branch. Ews has both API and UI.
-	Isso only has API.
+	In the vid the first part is pre-deployment steps:
+	1. Config files: Compare against last release
+		API : Dictionary files for CT and PROD for both ISSO and EWS. 
+			  Application.yml files for CT and PROD for EWS only.
+			  If DockerFile has been updated for the release verify that as well
+		UI  : Dictionary files for CT and PROD for EWS if Fip image is updated or any other change
+			  UI config files which is in the code package, verify config.CT.json, config.PROD.json
+		If SNS Topic is to be published, verify SNS Topic config. Example: Repo: CATDD-infrastructure/resources/deploy_report_card_topic.sh
+
+2. Cut the release branch from develop i.e. Create a branch from develop for UI, API, and other like Infrastructure, and others like Lambda if needed.
+   When we update AMIs, we also need to deploy the EWS External.
+	1. Steps to update AMI :
+			Repo : CATDD-infrastructure
+					/external/app.groovy -> update amiId for all the environments
+					/internal/alb-ecs-ews/app.groovy -> update imageId for all the environments
+					/internal/alb-ecs-isso/app.groovy -> update imageId for all the environments
+	2. Steps to update apache_image :
+			Repo : CATDD-infrastructure
+					/external/app.groovy -> update apache_image for all the environments (Changing the year and month basically)
+			Repo : CATDD-portal-ui
+					/cm/Dockerfile -> Update : FROM 465257512377.dkr.ecr.us-east-1.amazonaws.com/finra/java8:2020.06 (year and month basically)
+	3. Steps to update the Java8 image :
+			Repo : CATDD-portal-api
+					/cm/Dockerfile -> Update : FROM 465257512377.dkr.ecr.us-east-1.amazonaws.com/finra/java8:2020.06 (year and month basically)
+	4. Steps to update the FIP image :
+			Repo : CATDD-portal-ui
+					/cm/dictionaries -> update FIP_IMAGE_TAG in .dict files for all the environments
+			Repo : CATDD-portal-api
+					/cm/dictionaries -> update FIP_IMAGE_TAG in .dict files for all the environments
+					
+	These upgrades must reflect in both Develop and Release branch so its best to merge to develop first and then create a release branch. Avoids
+	multiple PR.
+	
+3. Deploy the release branch for UI and API in ISSO and EWS in qa and qa-int. Infrastructure release branch is used for multiple things like
+	deploying external ecs(02), external bastion(02), reportCardSNS and others.
+	
+	External ECS												External Bastion			
+	provision_type: ecs											provision_type: target
+	APPSTACKVERSION: 02											APPSTACKVERSION: 02
+	CATDD_INFRA_BRANCH: release/2.0.0							CATDD_INFRA_BRANCH: release/2.0.0
+	COMMAND_ENV: stack-update									COMMAND_ENV: stack-update
+	
+	{Create a release branch from develop in f3 and update isso build_isso.groovy, build_ews.groovy for the release branch. Ews has both API and UI.
+	Isso only has API. (Madhu(CM) will update with the pipelines with release build number because there could be other builds after the release build) }
+	
 4. Build and deploy the release branch up to QA-int. Then we need to update the pipeline with the latest build number.
 	Then on release day, the release branch is to be triggered in either CT or Prod. If accidently a wrong branch is selected then again correct one is deployed, the last step(delete old) will still fail, which can be triggered manually after the deployment is done and failed.
 	for example: https://builds4.aws.finra.org/job/CATDD/job/BGDeploy_ECS/view/ecs-ews/
 				Pipeline: 231
 				Card: ecs-ewsDeleteOld-ct
-5. Then verify the AMI for isso(03), ews (01), and external ecs(02) from amazon ec2 instances -> CATDD
-6. Then verify Build info, health and log in to see if the new functionalily is there for srg and others.
-7. Once verified, update the ticket with a comment that the release is successful.
+				
+	DBA(Biju) will provide with the pipeline number and scripts to verify whats going into the release.
+	Verification: Verify the tables are created : And data is inserted if lookup table
+				
+	NOTE : SNS Topic, Security Group, Flyway-Scripts can be run in parallel
+		   EWS and ISSO applications can run in parallel
+		   External ECS has to deploy before External Bastion because Bastion is just an apache image in the ECS thus have a dependency
+
+5. Verify Applications by running buildinfo and health check.
+
+6. In order to verify External ECS and External Bastion(what to verify?), we can do a verification of AMI for isso(03), ews (01), and external ecs(02) from 
+	aws -> ec2 -> Search CATDD -> Verify.
+	We can sort descending the ec2 by time and then check if everything on that day has update ami 
+
+7. If SNS Topic is published, need to verify by going to AWS Console → SNS → Search CATDD → Verify if created something like this :
+	ESMP-X-I-CATDD-RPRTR_PRTL_RPRTR_CARD-TOPIC. I is for dev-int, C for CT and P for Prod
+
+8. Verification of Security Group : (Inbound Rules) AWS -> EC2 -> Security group -> Search CATDD - Shared Service(or related one) - (CATDC and LINKER
+   for example) should be added
+
+9. Then verify Build info, health and log in to see if the new functionalily is there for srg and others.
+
+10. Once verified, update the ticket with a comment that the verification is completed.
+
+11. -> We will see some 503s in splunk because the external has some downtime. (503 - 1559 755 "GET https://srg.ct.catnms.com:443/ HTTP/1.1) is expected.
+		Internal is Zero down time.
+	-> FIP team runs some security tests every sunday from 10pm-Midnight, which causes 500 500 380 92 "GET https://i-00113b12c4ca1ea8c:443/info
 -----------------------------------------------------------------------------
 04-15-2020
 1. TO run CATDD automation in QA from local, we need to hardcode username and password in DDRequest and HibernateUtil.
@@ -386,6 +997,11 @@ Deployment steps BG:
 	Even though db don't have any primary key, need to come up with one for api that makes it unique
 4. we can add to -> new ArrayList<>(Arrays.asList("abc") but we cannot add to Arrays.asList("aaa").
 	If we tried we would get java.lang.UnsupportedOperationException
+5. when(namedParameterJdbcTemplate.query(eq("query"), (SqlParameterSource) any(),
+	(RowMapper<Object>)any())).thenReturn(Collections.singletonList(pendingEventInfoList));
+   when(namedParameterJdbcTemplate.batchUpdate(eq("query"), any(Map[].class))).thenReturn(new int[]{3,2,1});
+6. Java passes primitives (ints/floats/strings) to methods by COPYING their VALUE. On the other hand, other OBJECTS are not copied when passed into a 
+	method (that is, other objects maintain state, and can be modified by an external method).
 -----------------------------------------------------------------------------
 04-01-2020
 1. PostgreSQL provides the unnest() function to expand an array to a list of rows.
@@ -1120,6 +1736,28 @@ Deployment steps BG:
 		}
 
 	}
+17. 
+    private final static String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
+    private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormat.forPattern(TIMESTAMP_FORMAT);
+	
+	
+    /**
+     * Private method that checks if the timestampFormat is correct
+     *
+     * @param submitTimestamp submitTimestamp string
+     */
+    private void checkTimestampFormat(String submitTimestamp)
+    {
+        try
+        {
+            DATE_TIME_FORMATTER.parseDateTime(submitTimestamp);
+        }
+        catch (IllegalArgumentException ex)
+        {
+            throw new IllegalArgumentException(String.format(INVALID_SUBMIT_TIMESTAMP_FORMAT, submitTimestamp, TIMESTAMP_FORMAT), ex);
+        }
+    }
 ----------------------------------------------------------------------------------------
 03-09-2020
 1. EWS: Internal(Plan Processor, IM(Industry menbers), PP(Plan participant)
@@ -1241,6 +1879,9 @@ Deployment steps BG:
         when(entityManager.createQuery(anyString())).thenReturn(query);
         metadataFileStatusDao.getMetadataFileStatistics(ORG_ID, PERSPECTIVE_ENUMS, IMID, PROCESSING_START_DATE);
     }
+10. Apache commons, CollectionUtils.removeAll() removes all the occurences.
+	CollectionUtils.subtract() only remove one.
+11. Apache commons, CollectionUtils.isEqualCollection() is not nullsafe, Objects.equals() is.
 ------------------------------------------------------------------------------------------------
 03-04-2020:
 1.  HttpServletResponse mentioned in the method parameters. which can be set for header, as the method below.
@@ -1878,7 +2519,14 @@ public interface AnnouncementRepository extends CrudRepository<AnnouncementEntit
                     Comparator.nullsFirst(String::compareTo)).reversed())
                 .map(o -> announcementHelper.convertToAnnouncementDetailDto(o))
                 .collect(Collectors.toList());
+	------>
+	If we want to sort a list with whatever fields first then second....But if any specific field in the list is null and want to sort it at the last.
+	meaning not just at the end of first sort item, but to the very end:
 	
+    statisticsResponse.getList().sort(Comparator.comparing(StatisticsDetail::getCatReporterIndustryMemberId)
+		.thenComparing(StatisticsDetail::getCatSubmitterId, Comparator.nullsLast(Comparator.naturalOrder())));
+	statisticsResponse.getList().sort(Comparator.comparing(StatisticsDetail::getCatSubmitterId, Comparator.nullsLast(Comparator.naturalOrder())));
+
 27. Page<AnnouncementEntity> announcementEntityPage = announcementRepository.findAll(announcementRepository.getBooleanExpression(category),
             PageRequest.of(pageNumber, pageSize, Sort.by(new Order(Direction.DESC, "publishedTimestamp", NullHandling.NULLS_LAST))));	
 public class FileStatusDetailOutputComparator implements Comparator<FileStatusDetailOutput>
@@ -2949,6 +3597,10 @@ There is a proxy class generated that intercepts all requests and responds with 
 	        ReflectionTestUtils.setField(fileUploadHelper, "fileRootFolderName", "/");
 	give only "/" to create on the root. Platform independent
 3. For return type null, use         doThrow(new Exception).when() instead of when().thenThrow();
+	Note:
+		doNothing().when(herdDao).updateBusinessObjectDataAttribute(any(), any(), any());
+        doThrow(RuntimeException.class).when(s3Dao).copyS3Object(any(), any(), any(), any());
+        doNothing().when(herdDao).updateBusinessObjectDataStatus(businessObjectData, BusinessObjectDataStatusEnum.INVALID);
 4. @MockitoSettings(strictness = Strictness.LENIENT) -> class level
 	    lenient().when(mockList.add("one")).thenReturn(true); -> method level
 
@@ -3565,6 +4217,8 @@ package org.finra.catdd.service;
 -------------------------------------------------------------------------------
 09-23-2019
 1. ModelMapper -> Entity To DTO Conversion for a Spring REST API
+	If the conversion gives null, makes sure setters and getters are there for the classes.
+	ModelMapper used to convert Entity to DTO.
 2. attachments3serviceimpl, herd for fileUpload
 3. #Check to see how to get the size of the uploaded stream without hogging the memory.  1) Upload in chunks, by buffering like 1mb at a time 
 4. ModelAndView, DispatcherServlet, @ConfigurationProperties
@@ -3780,7 +4434,7 @@ OsoRelationshipRepositoryCustomImpl.java
 	* Setting in application.yml
 	* Never put configuration files in the application because we can't change it while
 	the application id deployed.
-2. mvn clean install -DskipTest
+2. mvn clean install -DskipTests
 3. mvn checkstyle:check, mvn pmd:check, mvn findbugs:check
 4. Object mapper. Json object to string
 5. Marshal/Unmarshal -> Convert to byteStream/Convert back to data, like serialization

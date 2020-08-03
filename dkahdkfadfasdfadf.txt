@@ -1,0 +1,96 @@
+
+
+endpoint	supportDefaultValue=false	supportDefaultValue=true	remarks
+Without rows in Preference table	
+
+
+
+
+localhost:8080/api/v1/preferences/organizations	Empty List ***	400 ***	1-1
+
+/organizations?names=namedFeedbackFileFormat,namedFeedbackFileFormat2
+
+Empty List ***	400 ***	1-0
+
+preferences/organizations?names=namedFeedbackFileFormat,namedFeedbackFileFormat	Empty List ***	400 ***	1-0
+
+localhost:8080/api/v1/preferences/organizations/79	Empty List ***	Everything with Default values	1-1
+
+/preferences/organizations/79?names=namedFeedbackFileFormat	get provided name value with null ***	get provided name value with DEFAULT	1-1
+
+organizations/79?names=nasdkhfakdhf	404 ***	404 ***	-ve
+
+organizations?names=dummy	404 ***	404 ***	
+
+
+
+
+
+With rows in Preference table	
+
+
+
+
+localhost:8080/api/v1/preferences/organizations	Everything with actual values ***	400 ***	1-1
+
+/organizations?names=namedFeedbackFileFormat,namedFeedbackFileFormat2
+
+ namedFeedbackFileFormat exists but namedFeedbackFileFormat2 doesn't in prfnc tbl.
+For names found in table, get the
+actual result + add null for not
+found one. add null for all the org ***	400 ***	1-1
+
+/organizations?names=namedFeedbackFileFormat,namedFeedbackFileFormat3
+
+Both names exists in the prfnc table. namedFeedbackFileFormat = 79
+namedFeedbackFileFormat3=7059
+Get actual results for both based 
+on their org Id ***	400 ***	1-0
+
+preferences/organizations?names=namedFeedbackFileFormat,namedFeedbackFileFormat	One one because everything is the
+same ***	400 ***	1-0
+
+localhost:8080/api/v1/preferences/organizations/79	Everything that is found for 79 ***	Everything found for 79 + Default values for the rest ***	1-1
+
+/preferences/organizations/79?names=namedFeedbackFileFormat	If found, return actual value. ***
+If not found return null for provided
+name. ***	If found, return actual value. ***
+If not found return Default for provided
+name. ***	1-1
+
+organizations/79?names=dummy	404 ***	404 ***	-ve
+
+organizations?names=dummy	404 ***	400 ***	
+
+
+
+
+
+
+Empty List ***	
+
+
+
+check for 403	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
